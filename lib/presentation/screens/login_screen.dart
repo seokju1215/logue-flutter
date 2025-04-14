@@ -28,7 +28,6 @@ class LoginScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("🧪 로그인 화면입니다!"), // 테스트용 텍스트
             ElevatedButton(
               onPressed: () => _login(context),
               child: const Text("Google로 로그인"),
