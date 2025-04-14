@@ -32,7 +32,6 @@ class MyApp extends StatelessWidget {
         textTheme: AppTextTheme.textTheme,
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
       routes: appRoutes, // 우리가 정의한 라우트 사용
     );
   }
