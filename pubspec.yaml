@@ -33,6 +33,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   flutter:
     sdk: flutter
+  flutter_svg: ^1.0.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -58,3 +59,5 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - assets/logue_logo_with_text.svg
+    -
