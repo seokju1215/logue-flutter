@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'app_colors.dart';
 
-final TextTheme appTextTheme = const TextTheme(
-  headlineLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-  bodyMedium: TextStyle(fontSize: 16, color: Colors.black87),
-  labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-);
+class AppTextTheme {
+  static TextTheme get textTheme => TextTheme(
+    titleMedium: GoogleFonts.inter(
+      fontSize: 18,
+      fontWeight: FontWeight.w400,
+      color: AppColors.black900,
+    ),
+    bodyLarge: GoogleFonts.inter(
+      fontSize: 20,
+      fontWeight: FontWeight.normal,
+      color: AppColors.black900,
+    ),
+    bodyMedium: GoogleFonts.inter(
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+      color: AppColors.black900,
+    ),
+    bodySmall: GoogleFonts.inter(
+      fontSize: 12,
+      fontWeight: FontWeight.w400,
+      color: AppColors.black500,
+    ),
+  );
+}
