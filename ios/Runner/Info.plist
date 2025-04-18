@@ -50,7 +50,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>io.supabase.flutter</string>
+        <string>dev.seokju.logue</string>
         </array>
       </dict>
     </array>

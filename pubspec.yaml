@@ -34,6 +34,9 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_svg: ^1.0.0
+  google_sign_in: ^5.0.7
+  flutter_web_auth_2: ^2.0.3
+
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -60,4 +63,4 @@ flutter:
   assets:
     - .env
     - assets/logue_logo_with_text.svg
-    -
+    - assets/google_logo.svg.png

@@ -4,5 +4,5 @@ import '../screens/home_screen.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
   '/': (context) => const LoginScreen(),
-  '/honme' : (context) => const HomeScreen(),
+  '/home' : (context) => const HomeScreen(),
 };
