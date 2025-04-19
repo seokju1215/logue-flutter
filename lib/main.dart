@@ -34,7 +34,8 @@ class MyApp extends StatelessWidget {
         textTheme: AppTextTheme.textTheme,
         useMaterial3: true,
       ),
-      routes: appRoutes, // 우리가 정의한 라우트 사용
+      initialRoute: '/',  // ✅ 요거 추가해줘야 해!
+      routes: appRoutes,
     );
   }
 }

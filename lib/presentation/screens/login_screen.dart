@@ -11,14 +11,7 @@ class LoginScreen extends StatelessWidget {
     final loginUseCase = LoginWithGoogle(Supabase.instance.client);
 
     try {
-      final success = await loginUseCase();
-      if (success && context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home',
-              (route) => false,
-        );
-      }
+      await loginUseCase(context); // 리턴값 안 받아도 됨
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('로그인 실패: $e')),
@@ -64,7 +57,7 @@ class LoginScreen extends StatelessWidget {
                     color: AppColors.black900,
                   ),
                 ),
-              )
+              ),
             ),
           ),
         ],
