@@ -4,7 +4,7 @@ import 'core/themes/app_colors.dart';
 import 'core/themes/text_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/routes/app_routes.dart';
-import 'package:logue/presentation/screens/login_screen.dart';
+import 'package:logue/presentation/screens/signup/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
