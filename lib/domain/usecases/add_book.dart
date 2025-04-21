@@ -22,22 +22,9 @@ class AddBookUseCase {
           'image': book.image,
           'publisher': book.publisher,
         });
-        print('✅ 책 저장 성공: ${book.title}');
       } catch (e) {
-        print('🔥 개별 책 저장 실패: $e');
+        print('! 개별 책 저장 실패: $e');
       }
     }
-    // final user = client.auth.currentUser;
-    // if (user == null) return;
-    //
-    // for (final book in books) {
-    //   await client.from('user_books').insert({
-    //     'user_id': user.id,
-    //     'title': book.title,
-    //     'author': book.author,
-    //     'image': book.image,
-    //     'publisher': book.publisher,
-    //   });
-    // }
   }
 }
