@@ -1,5 +1,5 @@
 class BookModel {
-  final String image; // 책 표지 URL
+  final String image;
 
   BookModel({required this.image});
 
@@ -8,4 +8,12 @@ class BookModel {
       image: json['image'] ?? '',
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is BookModel && runtimeType == other.runtimeType && image == other.image;
+
+  @override
+  int get hashCode => image.hashCode;
 }
