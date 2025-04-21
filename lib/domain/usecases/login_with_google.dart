@@ -1,6 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/material.dart';
 import 'package:logue/data/repositories/agreement_repository.dart';
 
 class LoginWithGoogle {
@@ -41,17 +41,29 @@ class LoginWithGoogle {
       final user = client.auth.currentUser;
 
       if (user != null) {
+        // 약관 동의 여부 확인
         final hasAgreed = await AgreementRepository().hasAgreedTerms(user.id);
+        if (!hasAgreed) {
+          if (context.mounted) {
+            Navigator.pushReplacementNamed(context, '/terms');
+          }
+          return;
+        }
+
+        // 책 3권 선택 여부 확인
+        final books = await client
+            .from('user_books')
+            .select('id')
+            .eq('user_id', user.id);
 
         if (context.mounted) {
-          if (hasAgreed) {
-            Navigator.pushReplacementNamed(context, '/home');
+          if (books.length < 3) {
+            Navigator.pushReplacementNamed(context, '/select-3books');
           } else {
-            Navigator.pushReplacementNamed(context, '/terms');
+            Navigator.pushReplacementNamed(context, '/home');
           }
         }
       } else {
-        // 로그인 실패 or 세션 없음
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('로그인 실패')),
         );

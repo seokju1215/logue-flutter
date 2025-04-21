@@ -53,7 +53,7 @@ class _TermsScreenState extends State<TermsScreen> {
     });
 
     if (context.mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/select-3books');
     }
   }
 

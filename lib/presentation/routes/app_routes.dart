@@ -7,5 +7,6 @@ import '../screens/signup/select_3books_screen.dart';
 Map<String, WidgetBuilder> appRoutes = {
   '/': (context) => const LoginScreen(),
   '/home' : (context) => const HomeScreen(),
-  '/terms': (context) => const Select3BooksScreen(),
+  '/terms': (context) => const TermsScreen(),
+  '/select-3books' : (context) => const Select3BooksScreen(),
 };

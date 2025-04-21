@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../data/datasources/naver_book_api.dart';
 import '../../../data/models/book_model.dart';
+import '../../../domain/usecases/add_book.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Select3BooksScreen extends StatefulWidget {
   const Select3BooksScreen({super.key});
@@ -55,6 +57,18 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     return _selectedBooks.any((b) => b.image == book.image);
   }
 
+  Future<void> _submitBooks() async {
+    final usecase = AddBookUseCase(Supabase.instance.client);
+    try {
+      await usecase(_selectedBooks);
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      print('저장 실패: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isQueryEmpty = _searchController.text.isEmpty;
@@ -62,11 +76,30 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text("책 추가", style: Theme.of(context).textTheme.titleMedium),
+        centerTitle: true,
+        title: Text(
+          "책 추가",
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: _selectedBooks.length == 3 ? _submitBooks : null,
+            child: Text(
+              "확인",
+              style: TextStyle(
+                color: _selectedBooks.length == 3 ? Color(0xFF0055FF) : Colors.grey,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8), // 오른쪽 여백 약간
+        ],
       ),
       body: Column(
         children: [
-          Text("당신의 인생 책 3권을 선택해주세요. (프로필에서 수정 가능해요)", style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            "당신의 인생 책 3권을 선택해주세요. (프로필에서 수정 가능해요)",
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 3, 22, 12),
             child: TextField(
@@ -81,21 +114,17 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                 hintText: "책 이름을 검색해주세요.",
                 hintStyle: TextStyle(fontSize: 14, color: Color(0xFF858585)),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF858585), width: 1.0), // 기본 테두리 색과 두께
+                  borderSide: BorderSide(color: Color(0xFF858585), width: 1.0),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF858585), width: 1.0), // 기본 테두리 색과 두께
+                  borderSide: BorderSide(color: Color(0xFF858585), width: 1.0),
                   borderRadius: BorderRadius.circular(5),
                 ),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 9), // 높이 조절
-
-
+                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 9),
               ),
             ),
           ),
-
-          // 선택된 개수 표시
           Padding(
             padding: const EdgeInsets.only(right: 16, bottom: 4),
             child: Row(
@@ -108,8 +137,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
               ],
             ),
           ),
-
-          // 검색어 표시
           if (!isQueryEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 16, bottom: 8),
@@ -122,19 +149,16 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                 ],
               ),
             ),
-
-          // 검색 결과 영역
           Expanded(
             child: isQueryEmpty
-                ? const SizedBox.shrink() // 아무것도 표시하지 않음
+                ? const SizedBox.shrink()
                 : _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _results.isEmpty
                 ? const Center(child: Text("검색 결과가 없습니다."))
                 : GridView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
@@ -150,9 +174,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isSelected
-                            ? Colors.blue
-                            : Colors.transparent,
+                        color: isSelected ? Colors.blue : Colors.transparent,
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(8),
