@@ -87,7 +87,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     try {
       await usecase(_selectedBooks);
       if (context.mounted) {
-        Navigator.pop(context);
+        Navigator.pushReplacementNamed(context, '/profile');
       }
     } catch (e) {
       print('저장 실패: $e');

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:logue/data/repositories/agreement_repository.dart';
+
 class LoginWithGoogle {
   final SupabaseClient client;
 
@@ -8,7 +8,7 @@ class LoginWithGoogle {
 
   Future<void> call(BuildContext context) async {
     try {
-      await client.auth.signOut();
+      await client.auth.signOut(); // 혹시 이전 세션 꼬였을 경우를 대비
 
       await client.auth.signInWithOAuth(
         Provider.google,

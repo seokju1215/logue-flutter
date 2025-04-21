@@ -9,7 +9,7 @@ import '../screens/notification_screen.dart';
 import '../screens/profile_edit_screen.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
-  '/' : (context) => const SplashScreen(),
+  '/splash' : (context) => const SplashScreen(),
   '/login': (context) => const LoginScreen(),
   '/home' : (context) => const HomeScreen(),
   '/terms': (context) => const TermsScreen(),
