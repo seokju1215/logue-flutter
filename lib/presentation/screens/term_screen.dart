@@ -71,7 +71,7 @@ class _TermsScreenState extends State<TermsScreen> {
           onChanged: (v) => onChanged(v),
         ),
         const SizedBox(width: 12),
-        Expanded(child: Text(text)),
+        Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall,)),
         if (onTap != null)
           IconButton(
             onPressed: onTap,
@@ -93,7 +93,7 @@ class _TermsScreenState extends State<TermsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               Center(
                 child: SvgPicture.asset(
                   'assets/logue_logo_with_text.svg', // SVG 파일 경로
@@ -107,7 +107,8 @@ class _TermsScreenState extends State<TermsScreen> {
                 onChanged: _toggleAll,
                 text: '약관 전체 동의',
               ),
-              const Divider(),
+              const SizedBox(height: 10),
+              const Divider(thickness: 4,),
 
               _buildCheckItem(
                 value: agreedTerms,
@@ -133,7 +134,7 @@ class _TermsScreenState extends State<TermsScreen> {
                     backgroundColor: isConfirmed ? Colors.black : Colors.grey[300],
                     foregroundColor: isConfirmed ? Colors.white : Colors.grey,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(5),
                     ),
                   ),
                   child: isLoading
