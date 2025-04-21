@@ -66,14 +66,31 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       ),
       body: Column(
         children: [
+          Text("당신의 인생 책 3권을 선택해주세요. (프로필에서 수정 가능해요)", style: Theme.of(context).textTheme.bodySmall),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(22, 3, 22, 12),
             child: TextField(
               controller: _searchController,
               onChanged: _search,
-              decoration: const InputDecoration(
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF191A1C),
+                fontWeight: FontWeight.w400,
+              ),
+              decoration: InputDecoration(
                 hintText: "책 이름을 검색해주세요.",
-                border: OutlineInputBorder(),
+                hintStyle: TextStyle(fontSize: 14, color: Color(0xFF858585)),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF858585), width: 1.0), // 기본 테두리 색과 두께
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF858585), width: 1.0), // 기본 테두리 색과 두께
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 9), // 높이 조절
+
+
               ),
             ),
           ),
