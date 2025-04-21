@@ -3,6 +3,7 @@ import '../../../data/datasources/naver_book_api.dart';
 import '../../../data/models/book_model.dart';
 import '../../../domain/usecases/add_book.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:logue/domain/usecases/insert_profile.dart';
 
 class Select3BooksScreen extends StatefulWidget {
   const Select3BooksScreen({super.key});
@@ -53,12 +54,36 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     });
   }
 
+  String generateRandomUsername() {
+    final random = DateTime.now().millisecondsSinceEpoch;
+    return 'log_${random.toString().substring(7)}'; // 예: log_3456712
+  }
+
+  String generateRandomProfileUrl() {
+    final random = DateTime.now().millisecondsSinceEpoch;
+    return 'log-${random.toString().substring(5)}'; // 예: log-23456712
+  }
+
   bool _isSelected(BookModel book) {
     return _selectedBooks.any((b) => b.image == book.image);
   }
 
   Future<void> _submitBooks() async {
     final usecase = AddBookUseCase(Supabase.instance.client);
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      final insertProfile = InsertProfileUseCase(Supabase.instance.client);
+
+      await insertProfile(
+        id: user.id,
+        username: generateRandomUsername(),
+        name: user.userMetadata?['full_name'] ?? '이름 없음',
+        job: '사용자',
+        bio: '',
+        profileUrl: generateRandomProfileUrl(),
+      );
+    }
+
     try {
       await usecase(_selectedBooks);
       if (context.mounted) {

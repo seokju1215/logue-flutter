@@ -16,7 +16,10 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
       authFlowType: AuthFlowType.pkce,
   );
-
+  final session = await Supabase.instance.client.auth.currentSession;
+  if (session == null || session.user == null) {
+    await Supabase.instance.client.auth.signOut();
+  }
 
   runApp(const MyApp());
 }
@@ -26,6 +29,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       title: 'Logue',
       theme: ThemeData(

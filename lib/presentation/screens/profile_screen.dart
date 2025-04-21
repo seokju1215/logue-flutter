@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -13,7 +14,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.notifications_none),
+          icon: SvgPicture.asset('assets/bell_icon.svg'),
           onPressed: () {
             Navigator.pushNamed(context, '/notification');
           },
@@ -28,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: SvgPicture.asset('assets/edit_icon.svg'),
             onPressed: () {
               Navigator.pushNamed(context, '/profile_edit');
             },

@@ -64,3 +64,5 @@ flutter:
     - .env
     - assets/logue_logo_with_text.svg
     - assets/google_logo.svg.png
+    - assets/edit_icon.svg
+    - assets/bell_icon.svg
