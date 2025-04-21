@@ -38,11 +38,9 @@ class LoginWithGoogle {
               .from('user_books')
               .select('id')
               .eq('user_id', user.id);
-          print('현재 로그인 유저 ID: ${user.id}');
 
           if (context.mounted) {
             if (books.length < 3) {
-              print(books.length);
               Navigator.pushReplacementNamed(context, '/select-3books');
             } else {
               Navigator.pushReplacementNamed(context, '/home');

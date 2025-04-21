@@ -16,7 +16,6 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
       authFlowType: AuthFlowType.pkce,
   );
-  print('🌐 Supabase URL: ${dotenv.env['SUPABASE_URL']}');
 
 
   runApp(const MyApp());
