@@ -1,6 +1,5 @@
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/repositories/agreement_repository.dart';
 
 class LoginWithGoogle {
@@ -10,52 +9,45 @@ class LoginWithGoogle {
 
   Future<void> call(BuildContext context) async {
     try {
-      final redirectUri = 'dev.seokju.logue://login-callback';
-      final supabaseUrl = client.supabaseUrl;
-      final authUrl = Uri.parse(
-        '$supabaseUrl/auth/v1/authorize'
-            '?provider=google'
-            '&redirect_to=$redirectUri'
-            '&flow_type=pkce'
-            '&response_type=code',
-      ).toString();
+      // ✅ 기존 세션 무효화 (예전 세션이 꼬인 경우 방지)
+      await client.auth.signOut();
 
-      final result = await FlutterWebAuth2.authenticate(
-        url: authUrl,
-        callbackUrlScheme: 'dev.seokju.logue',
+      // ✅ 로그인 시도
+      await client.auth.signInWithOAuth(
+        Provider.google,
+        redirectTo: 'dev.seokju.logue://login-callback',
       );
 
-      final uri = Uri.parse(result);
+      // ✅ onAuthStateChange로 로그인 후 처리
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+        final event = data.event;
+        final session = data.session;
 
-      Map<String, String> fragmentParams = {};
-      if (uri.fragment.isNotEmpty) {
-        fragmentParams = Uri.splitQueryString(uri.fragment);
-      }
+        if (event == AuthChangeEvent.signedIn && session != null) {
+          final user = session.user;
 
-      final code = uri.queryParameters['code'] ?? fragmentParams['code'];
+          final hasAgreed = await AgreementRepository().hasAgreedTerms(user.id);
+          if (!hasAgreed) {
+            if (context.mounted) {
+              Navigator.pushReplacementNamed(context, '/terms');
+            }
+            return;
+          }
 
-      if (code != null) {
-        await client.auth.exchangeCodeForSession(code);
-      }
+          final books = await client
+              .from('user_books')
+              .select('id')
+              .eq('user_id', user.id);
 
-      final user = client.auth.currentUser;
-
-      if (user != null) {
-        final hasAgreed = await AgreementRepository().hasAgreedTerms(user.id);
-
-        if (context.mounted) {
-          if (hasAgreed) {
-            Navigator.pushReplacementNamed(context, '/home');
-          } else {
-            Navigator.pushReplacementNamed(context, '/terms');
+          if (context.mounted) {
+            if (books.length < 3) {
+              Navigator.pushReplacementNamed(context, '/select-3books');
+            } else {
+              Navigator.pushReplacementNamed(context, '/home');
+            }
           }
         }
-      } else {
-        // 로그인 실패 or 세션 없음
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('로그인 실패')),
-        );
-      }
+      });
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
