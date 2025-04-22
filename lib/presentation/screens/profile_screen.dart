@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:logue/data/datasources/user_book_api.dart';
+import 'package:logue/domain/usecases/get_user_books.dart';
+import 'package:logue/core/widgets/user_book_grid.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -15,13 +18,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final client = Supabase.instance.client;
   Map<String, dynamic>? profile;
   late final RealtimeChannel _channel;
+  late final GetUserBooks _getUserBooks;
   bool _showFullBio = false;
 
   @override
   void initState() {
     super.initState();
+    _getUserBooks = GetUserBooks(UserBookApi(client));
     _fetchProfile();
     _subscribeToProfileUpdates();
+
+    // 로그인 후 상태 반영
+    client.auth.onAuthStateChange.listen((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -70,6 +80,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ..subscribe();
   }
 
+  Future<List<Map<String, dynamic>>> _loadBooks() async {
+    final user = client.auth.currentUser;
+    if (user == null) {
+      debugPrint("❌ 유저 없음");
+      return [];
+    }
+
+    debugPrint("📚 불러올 책 user_id: ${user.id}");
+    final books = await _getUserBooks(user.id);
+    debugPrint("📚 가져온 책 수: ${books.length}");
+    for (var book in books) {
+      debugPrint("📘 책 데이터: $book");
+    }
+
+    return books;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (profile == null) {
@@ -84,6 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: SvgPicture.asset('assets/bell_icon.svg'),
           onPressed: () {
             Navigator.pushNamed(context, '/notification');
+            setState(() => _showFullBio = false);
           },
         ),
         title: Text(
@@ -95,6 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: SvgPicture.asset('assets/edit_icon.svg'),
             onPressed: () {
+              setState(() => _showFullBio = false);
               Navigator.pushNamed(context, '/profile_edit');
             },
           ),
@@ -107,71 +136,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              profile?['name'] ?? '',
-                style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            Text(
-              profile?['job'] ?? '',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text(profile?['name'] ?? '', style: Theme.of(context).textTheme.bodyLarge),
+            Text(profile?['job'] ?? '', style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 10),
-            Builder(
-              builder: (context) {
-                final bio = profile?['bio'] ?? '';
-                final showMore = !_showFullBio && bio.length > 40;
-
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final textSpan = TextSpan(
-                      text: bio,
-                      style: const TextStyle(fontSize: 12, color: AppColors.black900),
-                    );
-
-                    final tp = TextPainter(
-                      text: textSpan,
-                      textDirection: TextDirection.ltr,
-                      maxLines: _showFullBio ? null : 2,
-                      ellipsis: showMore ? '...' : null,
-                    )..layout(maxWidth: constraints.maxWidth);
-
-                    final isOverflowing = tp.didExceedMaxLines;
-
-                    return RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: _showFullBio || !isOverflowing
-                                ? bio
-                                : bio.substring(
-                                    0,
-                                    tp.getPositionForOffset(
-                                      Offset(constraints.maxWidth, 28 * 2),
-                                    ).offset,
-                                  ) + '...',
-                            style: const TextStyle(fontSize: 12, color: AppColors.black900),
-                          ),
-                          if (showMore)
-                            WidgetSpan(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _showFullBio = true;
-                                  });
-                                },
-                                child: const Text(
-                                  ' 더보기',
-                                  style: TextStyle(fontSize: 12, color: AppColors.black900),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            _buildBio(context),
             const SizedBox(height: 20),
             Row(
               children: [
@@ -187,6 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
+                    style: _outlinedStyle(context),
                     onPressed: () {
                       // 책 추가 기능
                     },
@@ -196,6 +165,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton(
+                    style: _outlinedStyle(context),
                     onPressed: () {
                       // 프로필 공유 기능
                     },
@@ -204,9 +174,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _loadBooks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('저장된 책이 없습니다.'));
+                  }
+
+                  // ✅ 여기서 디버깅
+                  for (final book in snapshot.data!) {
+                    print("📚 book: $book");
+                  }
+
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: UserBookGrid(books: snapshot.data!),
+                    ),
+                  );
+                },
+              )
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBio(BuildContext context) {
+    final bio = profile?['bio'] ?? '';
+    final showMore = !_showFullBio && bio.length > 40;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textSpan = TextSpan(
+          text: bio,
+          style: const TextStyle(fontSize: 12, color: AppColors.black900),
+        );
+
+        final tp = TextPainter(
+          text: textSpan,
+          textDirection: TextDirection.ltr,
+          maxLines: _showFullBio ? null : 2,
+          ellipsis: showMore ? '...' : null,
+        )..layout(maxWidth: constraints.maxWidth);
+
+        final isOverflowing = tp.didExceedMaxLines;
+
+        return RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: _showFullBio || !isOverflowing
+                    ? bio
+                    : bio.substring(
+                  0,
+                  tp.getPositionForOffset(
+                    Offset(constraints.maxWidth, 28 * 2),
+                  ).offset,
+                ) + '...',
+                style: const TextStyle(fontSize: 12, color: AppColors.black900),
+              ),
+              if (showMore)
+                WidgetSpan(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _showFullBio = true),
+                    child: const Text(
+                      ' 더보기',
+                      style: TextStyle(fontSize: 12, color: AppColors.black900),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -214,12 +261,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          count.toString(),
-            style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(count.toString(), style: Theme.of(context).textTheme.bodySmall),
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
+    );
+  }
+
+  ButtonStyle _outlinedStyle(BuildContext context) {
+    return OutlinedButton.styleFrom(
+      foregroundColor: AppColors.black500,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(5),
+      ),
+      textStyle: Theme.of(context).textTheme.bodySmall,
     );
   }
 }
