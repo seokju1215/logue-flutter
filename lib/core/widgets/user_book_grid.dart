@@ -34,7 +34,7 @@ class UserBookGrid extends StatelessWidget {
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(0),
                   child: Image.network(
                     imageUrl ?? '',
                     fit: BoxFit.cover,
@@ -46,7 +46,7 @@ class UserBookGrid extends StatelessWidget {
                     },
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
-                      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                      return const Center(child: CircularProgressIndicator(strokeWidth: 0.5));
                     },
                   ),
                 ),

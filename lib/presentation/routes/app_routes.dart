@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import '../screens/signup/login_screen.dart';
 import '../screens/home_screen.dart';
@@ -7,6 +8,7 @@ import '../screens/splah_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/notification_screen.dart';
 import '../screens/profile_edit_screen.dart';
+import '../screens/add_book_screen.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
   '/splash' : (context) => const SplashScreen(),
@@ -17,4 +19,5 @@ Map<String, WidgetBuilder> appRoutes = {
   '/profile' : (context) => const ProfileScreen(),
   '/notification' : (context)=> const NotificationScreen(),
   '/profile_edit' : (context) => const ProfileEditScreen(),
+  '/add_book_screen' : (context) => const AddBookScreen(),
 };

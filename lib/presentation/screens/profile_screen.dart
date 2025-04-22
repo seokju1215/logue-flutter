@@ -157,7 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: OutlinedButton(
                     style: _outlinedStyle(context),
                     onPressed: () {
-                      // 책 추가 기능
+                      Navigator.pushNamed(context, '/add_book_screen');
                     },
                     child: const Text("책 추가 +"),
                   ),
