@@ -56,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (books.length < 3) {
           Navigator.pushReplacementNamed(context, '/select-3books');
         } else {
-          Navigator.pushReplacementNamed(context, '/profile');
+          Navigator.pushReplacementNamed(context, '/main');
         }
       });
     }
