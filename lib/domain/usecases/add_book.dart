@@ -13,7 +13,8 @@ class AddBookUseCase {
       return;
     }
 
-    for (final book in books) {
+    for (int i = 0; i < books.length; i++) {
+      final book = books[i];
       try {
         await client.from('user_books').insert({
           'user_id': user.id,
@@ -21,6 +22,7 @@ class AddBookUseCase {
           'author': book.author,
           'image': book.image,
           'publisher': book.publisher,
+          'order_index': i,
         });
       } catch (e) {
         print('! 개별 책 저장 실패: $e');

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/domain/usecases/get_user_books.dart';
 import 'package:logue/core/widgets/user_book_grid.dart';
+import 'package:logue/core/widgets/book_frame.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -83,20 +84,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<List<Map<String, dynamic>>> _loadBooks() async {
     final user = client.auth.currentUser;
     if (user == null) {
-      debugPrint("❌ 유저 없음");
       return [];
     }
 
-    debugPrint("📚 불러올 책 user_id: ${user.id}");
-    final books = await _getUserBooks(user.id);
-    debugPrint("📚 가져온 책 수: ${books.length}");
-    for (var book in books) {
-      debugPrint("📘 책 데이터: $book");
-    }
 
-    return books;
+    return await _getUserBooks(user.id);
   }
-
   @override
   Widget build(BuildContext context) {
     if (profile == null) {
@@ -106,105 +99,126 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: SvgPicture.asset('assets/bell_icon.svg'),
-          onPressed: () {
-            Navigator.pushNamed(context, '/notification');
-            setState(() => _showFullBio = false);
-          },
-        ),
-        title: Text(
-          profile?['username'] ?? '사용자',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: SvgPicture.asset('assets/edit_icon.svg'),
-            onPressed: () {
-              setState(() => _showFullBio = false);
-              Navigator.pushNamed(context, '/profile_edit');
-            },
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(90), // Adjusted height
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 7), // ✅ 여백 통일
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: SvgPicture.asset('assets/bell_icon.svg'),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/notification');
+                    setState(() => _showFullBio = false);
+                  },
+                ),
+                Text(
+                  profile?['username'] ?? '사용자',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                IconButton(
+                  icon: SvgPicture.asset('assets/edit_icon.svg'),
+                  onPressed: () {
+                    setState(() => _showFullBio = false);
+                    Navigator.pushNamed(context, '/profile_edit');
+                  },
+                ),
+              ],
+            ),
           ),
-        ],
-        backgroundColor: Colors.white,
-        elevation: 0,
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(profile?['name'] ?? '', style: Theme.of(context).textTheme.bodyLarge),
-            Text(profile?['job'] ?? '', style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 10),
-            _buildBio(context),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                _buildCount("팔로워", profile?['followers'] ?? 0),
-                const SizedBox(width: 24),
-                _buildCount("팔로잉", profile?['followings'] ?? 0),
-                const SizedBox(width: 24),
-                _buildCount("방문자", profile?['visitors'] ?? 0),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: _outlinedStyle(context),
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/add_book_screen');
-                    },
-                    child: const Text("책 추가 +"),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    style: _outlinedStyle(context),
-                    onPressed: () {
-                      // 프로필 공유 기능
-                    },
-                    child: const Text("프로필 공유"),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: _loadBooks(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('저장된 책이 없습니다.'));
-                  }
-
-                  // ✅ 여기서 디버깅
-                  for (final book in snapshot.data!) {
-                    print("📚 book: $book");
-                  }
-
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: UserBookGrid(books: snapshot.data!),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 21),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(profile?['name'] ?? '', style: Theme.of(context).textTheme.bodyLarge),
+              Text(profile?['job'] ?? '', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 10),
+              _buildBio(context),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  _buildCount("팔로워", profile?['followers'] ?? 0),
+                  const SizedBox(width: 24),
+                  _buildCount("팔로잉", profile?['followings'] ?? 0),
+                  const SizedBox(width: 24),
+                  _buildCount("방문자", profile?['visitors'] ?? 0),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: _outlinedStyle(context),
+                      onPressed: () => Navigator.pushNamed(context, '/add_book_screen'),
+                      child: const Text("책 추가 +"),
                     ),
-                  );
-                },
-              )
-            ),
-          ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: _outlinedStyle(context),
+                      onPressed: () {},
+                      child: const Text("프로필 공유"),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _loadBooks(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text('저장된 책이 없습니다.'));
+                    }
+
+                    final sortedBooks = List<Map<String, dynamic>>.from(snapshot.data!)
+                      ..sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+
+                    return UserBookGrid(books: sortedBooks);
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: () {}, // 노션 링크
+                      child: const Text(
+                        '개인정보 처리방침',
+                        style: TextStyle(fontSize: 12, color: AppColors.black500),
+                      ),
+                    ),
+                    const Text('|', style: TextStyle(color: AppColors.black500, fontSize: 12, height: 4)),
+                    TextButton(
+                      onPressed: () {}, // 노션 링크
+                      child: const Text(
+                        '이용약관',
+                        style: TextStyle(fontSize: 12, color: AppColors.black500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
 
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';

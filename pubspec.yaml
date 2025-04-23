@@ -66,3 +66,5 @@ flutter:
     - assets/google_logo.svg.png
     - assets/edit_icon.svg
     - assets/bell_icon.svg
+    - assets/home_bottomnavi.svg
+    - assets/profile_bottomnavi.svg

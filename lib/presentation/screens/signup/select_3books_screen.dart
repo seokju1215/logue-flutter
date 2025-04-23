@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../data/datasources/naver_book_api.dart';
+import 'package:logue/core/themes/app_colors.dart';
+import '../../../data/datasources/kakao_book_api.dart'; // ✅ Kakao API
 import '../../../data/models/book_model.dart';
 import '../../../domain/usecases/add_book.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/domain/usecases/insert_profile.dart';
+import 'package:logue/core/widgets/book_frame.dart';
 
 class Select3BooksScreen extends StatefulWidget {
   const Select3BooksScreen({super.key});
@@ -31,7 +33,9 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final results = await NaverBookApi().searchBooks(query);
+      final rawResults = await KakaoBookApi().searchBooks(query);
+
+      final results = rawResults.map((data) => BookModel.fromJson(data)).toList();
       setState(() {
         _results = results;
       });
@@ -56,12 +60,12 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
 
   String generateRandomUsername() {
     final random = DateTime.now().millisecondsSinceEpoch;
-    return 'log_${random.toString().substring(7)}'; // 예: log_3456712
+    return 'log_${random.toString().substring(7)}';
   }
 
   String generateRandomProfileUrl() {
     final random = DateTime.now().millisecondsSinceEpoch;
-    return 'log-${random.toString().substring(5)}'; // 예: log-23456712
+    return 'log-${random.toString().substring(5)}';
   }
 
   bool _isSelected(BookModel book) {
@@ -87,7 +91,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     try {
       await usecase(_selectedBooks);
       if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/profile');
+        Navigator.pushReplacementNamed(context, '/main');
       }
     } catch (e) {
       print('저장 실패: $e');
@@ -116,7 +120,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8), // 오른쪽 여백 약간
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -129,7 +133,8 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
             padding: const EdgeInsets.fromLTRB(22, 3, 22, 12),
             child: TextField(
               controller: _searchController,
-              onChanged: _search,
+              textInputAction: TextInputAction.search,
+              onSubmitted: _search ,
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF191A1C),
@@ -137,13 +142,13 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
               ),
               decoration: InputDecoration(
                 hintText: "책 이름을 검색해주세요.",
-                hintStyle: TextStyle(fontSize: 14, color: Color(0xFF858585)),
+                hintStyle: TextStyle(fontSize: 14, color: AppColors.black500),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF858585), width: 1.0),
+                  borderSide: BorderSide(color: AppColors.black500, width: 1.0),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF858585), width: 1.0),
+                  borderSide: BorderSide(color: AppColors.black500, width: 1.0),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 9),
@@ -151,7 +156,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 16, bottom: 4),
+            padding: const EdgeInsets.only(right: 16, bottom: 4, top: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -164,7 +169,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           ),
           if (!isQueryEmpty)
             Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 8),
+              padding: const EdgeInsets.only(left: 31, bottom: 8),
               child: Row(
                 children: [
                   Text(
@@ -182,7 +187,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                 : _results.isEmpty
                 ? const Center(child: Text("검색 결과가 없습니다."))
                 : GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 21),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 mainAxisSpacing: 12,
@@ -202,14 +207,10 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                         color: isSelected ? Colors.blue : Colors.transparent,
                         width: 2,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(0),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.network(
-                        book.image,
-                        fit: BoxFit.cover,
-                      ),
+                      child: BookFrame(imageUrl: book.image),
                     ),
                   ),
                 );

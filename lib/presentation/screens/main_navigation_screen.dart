@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/presentation/screens/home_screen.dart';
 import 'package:logue/presentation/screens/profile_screen.dart';
 
@@ -27,19 +29,54 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: '홈',
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: AppColors.black900,
+          unselectedItemColor: AppColors.black500,
+          selectedLabelStyle: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.black900, // 실제로는 selectedItemColor로 적용됨
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: '프로필',
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w400,
+            color: AppColors.black500,
           ),
-        ],
+          items: [
+            BottomNavigationBarItem(
+              icon: SvgPicture.asset(
+                'assets/home_bottomnavi.svg',
+                width: 30,
+                height: 30,
+                color: _selectedIndex == 0
+                    ? AppColors.black900
+                    : AppColors.black500,
+              ),
+              label: '홈',
+            ),
+            BottomNavigationBarItem(
+              icon: SvgPicture.asset(
+                'assets/profile_bottomnavi.svg',
+                width: 30,
+                height: 30,
+                color: _selectedIndex == 1
+                    ? AppColors.black900
+                    : AppColors.black500,
+              ),
+              label: '프로필',
+            ),
+          ],
+        ),
       ),
     );
   }
