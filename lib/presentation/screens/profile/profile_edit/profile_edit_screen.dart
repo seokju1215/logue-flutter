@@ -5,6 +5,7 @@ import 'package:logue/core/widgets/profile_edit/edit_avatar_button.dart';
 import 'package:logue/core/widgets/profile_edit/profile_link_tile.dart';
 import 'package:logue/core/widgets/profile_edit/save_button.dart';
 import 'package:logue/core/widgets/profile_edit/profile_edit_button.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final Map<String, dynamic> initialProfile;
@@ -41,9 +42,53 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     setState(() => isEdited = true);
   }
 
-  void onSave() {
-    // TODO: Supabase에 저장
-    Navigator.pop(context);
+  void onSave() async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final oldJob = widget.initialProfile['job'] ?? '';
+
+    try {
+      // 프로필 업데이트
+      await client.from('profiles').update({
+        'username': username,
+        'name': name,
+        'job': job,
+        'bio': bio,
+        'avatar_url': avatarUrl,
+      }).eq('id', userId);
+
+      // job이 변경되었을 경우 job_tags 업데이트
+      if (oldJob != job) {
+        final res = await client.functions.invoke(
+          'quick-endpoint',
+          body: {
+            'oldJob': oldJob,
+            'newJob': job,
+          },
+        );
+        debugPrint('📡 Supabase 함수 호출 결과 status: ${res.status}');
+        debugPrint('📡 Supabase 함수 호출 결과 data: ${res.data}');
+        if (res.status != 200) {
+          throw Exception('직업 태그 업데이트 실패');
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('프로필이 저장되었습니다.')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint('프로필 저장 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('프로필 저장에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
+    }
   }
 
   @override
@@ -100,12 +145,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 final result = await Navigator.pushNamed(
                   context,
                   '/name_edit',
-                  arguments: {'username': name},
+                  arguments: {'currentName': name}, // ✅ 올바른 키
                 );
 
                 if (result != null && result is Map<String, dynamic>) {
                   setState(() {
-                    name = result['username'] ?? name;
+                    name = result['name'] ?? name;
                     isEdited = true;
                   });
                 }
@@ -123,7 +168,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
                 if (result != null && result is Map<String, dynamic>) {
                   setState(() {
-                    job = result['username'] ?? job;
+                    job = result['job'] ?? job;
                     isEdited = true;
                   });
                 }
@@ -136,12 +181,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 final result = await Navigator.pushNamed(
                   context,
                   '/bio_edit',
-                  arguments: {'username': bio},
+                  arguments: {'currentBio': bio},
                 );
 
                 if (result != null && result is Map<String, dynamic>) {
                   setState(() {
-                    bio = result['username'] ?? bio;
+                    bio = result['bio'] ?? bio;
                     isEdited = true;
                   });
                 }

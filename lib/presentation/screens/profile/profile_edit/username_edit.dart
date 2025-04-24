@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserNameEdit extends StatefulWidget {
   final String currentUsername;
@@ -17,12 +16,8 @@ class UserNameEdit extends StatefulWidget {
 class _UserNameEdit extends State<UserNameEdit> {
   late TextEditingController _controller;
   bool isValidFormat = true;
-  bool isAvailable = false;
-  bool isLoading = false;
   bool hasChanged = false;
   String? errorText;
-
-  final client = Supabase.instance.client;
 
   @override
   void initState() {
@@ -39,84 +34,30 @@ class _UserNameEdit extends State<UserNameEdit> {
     setState(() {
       hasChanged = changed;
       isValidFormat = validFormat;
-      isAvailable = false;
       errorText = null;
     });
 
-    if (changed && validFormat) {
-      _checkAvailability(text);
-    } else if (changed && !validFormat) {
-      setState(() {
-        errorText = '사용자 이름 $text은(는) 사용할 수 없습니다.';
-      });
+    if (changed && !validFormat) {
+      errorText = '사용자 이름 $text은(는) 사용할 수 없습니다.';
     }
   }
 
-  Future<void> _checkAvailability(String username) async {
-    setState(() => isLoading = true);
-
-    try {
-      final userId = client.auth.currentUser?.id;
-      final response = await client
-          .from('profiles')
-          .select('id')
-          .eq('username', username)
-          .maybeSingle();
-
-      setState(() {
-        if (response == null || response['id'] == userId) {
-          // 사용 가능하거나 현재 사용자 본인의 이름이면 허용
-          isAvailable = true;
-          errorText = null;
-        } else {
-          isAvailable = false;
-          errorText = '이 사용자 이름은 이미 다른 사람이 사용하고 있습니다.';
-        }
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-      debugPrint('Username check error: $e');
-    }
-  }
-
-  void _onConfirm() async {
-    final userId = client.auth.currentUser?.id;
+  void _onConfirm() {
     final newUsername = _controller.text;
-
-    if (userId == null) return;
-
-    try {
-      await client
-          .from('profiles')
-          .update({'username': newUsername})
-          .eq('id', userId);
-
-      if (mounted) {
-        Navigator.pop(context, {'username': newUsername});
-      }
-    } catch (e) {
-      debugPrint('Username update error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('사용자 이름 변경에 실패했어요. 다시 시도해주세요.')),
-        );
-      }
-    }
+    if (!isValidFormat || !hasChanged) return;
+    Navigator.pop(context, {'username': newUsername});
   }
 
   @override
   Widget build(BuildContext context) {
-    final isConfirmEnabled =
-        hasChanged && isValidFormat && isAvailable && !isLoading;
+    final isConfirmEnabled = hasChanged && isValidFormat;
 
-    // 테두리 색 결정
     Color borderColor = Colors.grey;
-    if (_controller.text.isNotEmpty && !isLoading) {
-      if (!isValidFormat || (hasChanged && !isAvailable)) {
-        borderColor = Colors.red;
-      } else if (isAvailable) {
-        borderColor = Colors.blue;
+    if (_controller.text.isNotEmpty) {
+      if (!isValidFormat) {
+        borderColor = AppColors.red500;
+      } else if (hasChanged) {
+        borderColor = AppColors.blue500;
       }
     }
 
@@ -134,7 +75,9 @@ class _UserNameEdit extends State<UserNameEdit> {
             child: Text(
               '확인',
               style: TextStyle(
-                color: isConfirmEnabled ? Colors.blue : Colors.blue.withOpacity(0.5),
+                color: isConfirmEnabled
+                    ? AppColors.blue500
+                    : AppColors.blue500.withOpacity(0.5),
               ),
             ),
           ),
@@ -150,36 +93,16 @@ class _UserNameEdit extends State<UserNameEdit> {
               child: Text('사용자 이름', style: TextStyle(color: AppColors.black500, fontSize: 12)),
             ),
             const SizedBox(height: 8),
-            Stack(
-              alignment: Alignment.centerRight,
-              children: [
-                TextField(
-                  controller: _controller,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: borderColor),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: borderColor),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: borderColor),
-                    ),
-                    isDense: true,
-                  ),
-                  style: const TextStyle(fontSize: 14, color: AppColors.black900),
-                ),
-                if (isLoading)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 12),
-                    child: SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-              ],
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                border: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                isDense: true,
+              ),
+              style: const TextStyle(fontSize: 14, color: AppColors.black900),
             ),
             const SizedBox(height: 8),
             if (errorText != null)
@@ -189,7 +112,7 @@ class _UserNameEdit extends State<UserNameEdit> {
                   padding: const EdgeInsets.only(right: 9),
                   child: Text(
                     errorText!,
-                    style: const TextStyle(color: Colors.red, fontSize: 10),
+                    style: const TextStyle(color: AppColors.red500, fontSize: 10),
                     textAlign: TextAlign.right,
                   ),
                 ),

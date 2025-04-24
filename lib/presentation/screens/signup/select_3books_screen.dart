@@ -74,10 +74,13 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
 
   Future<void> _submitBooks() async {
     final usecase = AddBookUseCase(Supabase.instance.client);
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      final insertProfile = InsertProfileUseCase(Supabase.instance.client);
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
 
+    if (user != null) {
+      final insertProfile = InsertProfileUseCase(client);
+
+      // Supabase에 프로필 저장
       await insertProfile(
         id: user.id,
         username: generateRandomUsername(),
@@ -87,6 +90,13 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
         profileUrl: generateRandomProfileUrl(),
         avatarUrl: 'basic',
       );
+
+      // job_tags count 증가
+      try {
+        await client.rpc('increment_job_tag_count', params: {'input_job_name': '사용자'});
+      } catch (e) {
+        debugPrint('job_tags 증가 실패: $e');
+      }
     }
 
     try {

@@ -33,9 +33,21 @@ Map<String, WidgetBuilder> appRoutes = {
     final currentUsername = args['username'] ?? '';
     return UserNameEdit(currentUsername: currentUsername);
   },
-  '/name_edit' : (context) => const NameEdit(),
-  '/job_edit' : (context) => const JobEdit(),
-  '/bio_edit' : (context) => const BioEdit(),
+  '/name_edit': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final currentName = args['currentName'] ?? '';
+    return NameEdit(currentName: currentName);
+  },
+  '/job_edit': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final currentJob = args['username'] ?? '';
+    return JobEdit(currentJob: currentJob);
+  },
+  '/bio_edit': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final currentBio = args['currentBio'] ?? '';
+    return BioEdit(currentBio: currentBio);
+  },
 
 
 
