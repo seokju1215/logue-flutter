@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path/path.dart';
 
-class EditAvatarButton extends StatelessWidget {
+class EditAvatarButton extends StatefulWidget {
   final String avatarUrl;
   final void Function(String) onAvatarChanged;
 
@@ -11,8 +15,53 @@ class EditAvatarButton extends StatelessWidget {
   });
 
   @override
+  State<EditAvatarButton> createState() => _EditAvatarButtonState();
+}
+
+class _EditAvatarButtonState extends State<EditAvatarButton> {
+  final ImagePicker _picker = ImagePicker();
+  bool _isUploading = false;
+
+  Future<void> _pickImage() async {
+    final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      final fileBytes = await picked.readAsBytes();
+      final fileName = basename(picked.path);
+
+      try {
+        setState(() => _isUploading = true);
+        final supabase = Supabase.instance.client;
+        final userId = supabase.auth.currentUser?.id;
+        if (userId == null) return;
+
+        final path = 'avatars/$userId/$fileName';
+
+        await supabase.storage.from('avatars').uploadBinary(
+          path,
+          fileBytes,
+          fileOptions: const FileOptions(
+            upsert: true,
+            contentType: 'image/jpeg',
+          ),
+        );
+
+        final publicUrl = supabase.storage.from('avatars').getPublicUrl(path);
+        debugPrint('📸 실제 공개 URL: $publicUrl');
+        widget.onAvatarChanged(publicUrl);
+      } catch (e) {
+        debugPrint('🔥 업로드 실패: $e');
+        if (mounted) {
+          print("에러남");
+        }
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bool isBasic = avatarUrl == 'basic';
+    final isBasic = widget.avatarUrl == 'basic';
 
     return Stack(
       alignment: Alignment.bottomRight,
@@ -27,9 +76,7 @@ class EditAvatarButton extends StatelessWidget {
           child: CircleAvatar(
             radius: 48,
             backgroundColor: Colors.white,
-            backgroundImage: isBasic
-                ? null
-                : NetworkImage(avatarUrl),
+            backgroundImage: isBasic ? null : NetworkImage(widget.avatarUrl),
             child: isBasic
                 ? ClipOval(
               child: Image.asset(
@@ -48,12 +95,15 @@ class EditAvatarButton extends StatelessWidget {
           child: CircleAvatar(
             radius: 14,
             backgroundColor: Colors.white,
-            child: IconButton(
+            child: _isUploading
+                ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+                : IconButton(
               icon: const Icon(Icons.camera_alt, size: 16),
-              onPressed: () {
-                // TODO: 갤러리 열기 + 업로드 후 onAvatarChanged 호출
-                onAvatarChanged('https://example.com/new_avatar.png');
-              },
+              onPressed: _pickImage,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),

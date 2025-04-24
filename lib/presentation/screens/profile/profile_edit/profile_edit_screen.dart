@@ -6,6 +6,7 @@ import 'package:logue/core/widgets/profile_edit/profile_link_tile.dart';
 import 'package:logue/core/widgets/profile_edit/save_button.dart';
 import 'package:logue/core/widgets/profile_edit/profile_edit_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:logue/core/widgets/dialogs/logout_or_delete_dialog.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final Map<String, dynamic> initialProfile;
@@ -230,34 +231,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               child: Text("링크를 공유하여 당신의 책장을 보여주세요.", style: TextStyle(fontSize: 14, color: AppColors.black500),),
             ),
             const SizedBox(height: 45),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  onPressed: () async {
-                    await Supabase.instance.client.auth.signOut();
-                    if (context.mounted) {
-                      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-                    }
-                  },
-                  child: const Text(
-                    '로그아웃',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                const Text(
-                  '|',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                TextButton(
-                  onPressed: _deleteAccount,
-                  child: const Text(
-                    '계정탈퇴',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ],
-            ),
+            TextButton(
+              onPressed: () => showLogoutOrDeleteDialog(context),
+              child: const Text('로그아웃 | 계정탈퇴'),
+            )
           ],
         ),
       ),

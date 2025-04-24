@@ -39,6 +39,10 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       title: 'Logue',
       theme: ThemeData(
+        dialogTheme: DialogTheme(
+          backgroundColor: AppColors.white500,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
         appBarTheme: const AppBarTheme(backgroundColor: AppColors.white500),
         scaffoldBackgroundColor: AppColors.white500,
         textTheme: AppTextTheme.textTheme,
