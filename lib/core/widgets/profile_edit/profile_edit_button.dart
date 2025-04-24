@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logue/core/themes/app_colors.dart';
 
 class ProfileEditButton extends StatelessWidget {
   final String label;       // 위에 표시되는 회색 텍스트
@@ -17,30 +18,31 @@ class ProfileEditButton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
-        ),
-        const SizedBox(height: 4),
+        Padding(
+          padding: EdgeInsets.only(left: 9),
+          child:Text(
+            label,
+            style: TextStyle(fontSize: 12, color: AppColors.black500),
+          ),),
         Stack(
           children: [
             OutlinedButton(
               onPressed: onTap,
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.grey, width: 1),
+                side: const BorderSide(color: AppColors.black500, width: 1),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 16,
+                  vertical: 9,
+                  horizontal: 9,
                 ),
               ),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   username,
-                  style: const TextStyle(color: Colors.black),
+                  style: const TextStyle(color: AppColors.black900, fontSize: 14),
                 ),
               ),
             ),

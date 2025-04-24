@@ -90,6 +90,34 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       }
     }
   }
+  void _deleteAccount() async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+
+    if (userId == null) return;
+
+    final res = await client.functions.invoke('delete_account', body: {
+      'userId': userId,
+    });
+
+    debugPrint('📡 계정 삭제 결과: ${res.status}, ${res.data}');
+
+    if (res.status == 200 && res.data['success'] == true) {
+      try {
+        await client.auth.signOut();
+      } catch (e) {
+        debugPrint('🔴 로그아웃 실패 (이미 계정 삭제된 상태일 수 있음): $e');
+      }
+
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('계정 삭제에 실패했습니다.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +166,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 }
               },
             ),
+            const SizedBox(height: 25),
             ProfileEditButton(
               label: '이름',
               username: name,
@@ -156,6 +185,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 }
               },
             ),
+            const SizedBox(height: 25),
             ProfileEditButton(
               label: '직업',
               username: job,
@@ -174,6 +204,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 }
               },
             ),
+            const SizedBox(height: 25),
             ProfileEditButton(
               label: '소개',
               username: bio,
@@ -192,16 +223,40 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 }
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 27),
             ProfileLinkTile(link: profileLink),
-            const SizedBox(height: 24),
-            TextButton(
-              onPressed: () {}, // TODO: 로그아웃
-              child: const Text('로그아웃'),
+            const SizedBox(height: 30),
+            Center(
+              child: Text("링크를 공유하여 당신의 책장을 보여주세요.", style: TextStyle(fontSize: 14, color: AppColors.black500),),
             ),
-            TextButton(
-              onPressed: () {}, // TODO: 계정탈퇴
-              child: const Text('계정탈퇴'),
+            const SizedBox(height: 45),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () async {
+                    await Supabase.instance.client.auth.signOut();
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                    }
+                  },
+                  child: const Text(
+                    '로그아웃',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                const Text(
+                  '|',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                TextButton(
+                  onPressed: _deleteAccount,
+                  child: const Text(
+                    '계정탈퇴',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
