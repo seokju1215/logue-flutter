@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import '../screens/signup/login_screen.dart';
-import '../screens/home_screen.dart';
+import '../screens/home/home_screen.dart';
 import '../screens/signup/term_screen.dart';
 import '../screens/signup/select_3books_screen.dart';
 import '../screens/splah_screen.dart';
-import '../screens/profile_screen.dart';
-import '../screens/notification_screen.dart';
-import '../screens/profile_edit_screen.dart';
-import '../screens/add_book_screen.dart';
+import '../screens/profile/profile_screen.dart';
+import '../screens/profile/notification_screen.dart';
+import '../screens/profile/profile_edit/profile_edit_screen.dart';
+import '../screens/profile/add_book_screen.dart';
 import '../screens/main_navigation_screen.dart';
+import '../screens/profile/profile_edit/bio_edit.dart';
+import '../screens/profile/profile_edit/job_edit.dart';
+import '../screens/profile/profile_edit/name_edit.dart';
+import '../screens/profile/profile_edit/username_edit.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
   '/main' : (context) => const MainNavigationScreen(),
@@ -19,4 +23,15 @@ Map<String, WidgetBuilder> appRoutes = {
   '/notification' : (context)=> const NotificationScreen(),
   '/profile_edit' : (context) => const ProfileEditScreen(),
   '/add_book_screen' : (context) => const AddBookScreen(),
+
+  //profile_edit
+  '/profile_edit' : (context) => const ProfileEditScreen(),
+  '/username_edit' : (context) => const UserNameEdit(),
+  '/name_edit' : (context) => const NameEdit(),
+  '/job_edit' : (context) => const JobEdit(),
+  '/bio_edit' : (context) => const BioEdit(),
+
+
+
+
 };

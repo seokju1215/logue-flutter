@@ -5,8 +5,8 @@ import 'package:logue/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/domain/usecases/get_user_books.dart';
-import 'package:logue/core/widgets/user_book_grid.dart';
-import 'package:logue/core/widgets/book_frame.dart';
+import 'package:logue/core/widgets/book/user_book_grid.dart';
+import 'package:logue/core/widgets/book/book_frame.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -90,6 +90,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return await _getUserBooks(user.id);
   }
+
+
   @override
   Widget build(BuildContext context) {
     if (profile == null) {
@@ -97,7 +99,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-
+    final avatarUrl = profile?['avatar_url'] ?? 'basic';
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(90), // Adjusted height
@@ -136,11 +138,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(profile?['name'] ?? '', style: Theme.of(context).textTheme.bodyLarge),
-              Text(profile?['job'] ?? '', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 10),
-              _buildBio(context),
-              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(profile?['name'] ?? '', style: Theme.of(context).textTheme.bodyLarge),
+                        Text(profile?['job'] ?? '', style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(height: 10),
+                        _buildBio(context),
+                        const SizedBox(height: 20),
+                      ],
+
+                    ),
+                  ),
+                  Container(
+                    width: 71, // 원하는 크기
+                    height: 71,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.black100, // 테두리 색상
+                        width: 1, // 테두리 두께
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 70,
+                      backgroundImage: avatarUrl == 'basic'
+                          ? null
+                          : NetworkImage(avatarUrl),
+                      child: avatarUrl == 'basic'
+                          ? Image.asset(
+                        'assets/basic_avatar.png',
+                        width: 70,
+                        height: 70,)
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
               Row(
                 children: [
                   _buildCount("팔로워", profile?['followers'] ?? 0),

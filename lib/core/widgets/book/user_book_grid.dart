@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:logue/core/widgets/book_frame.dart';
+import 'package:logue/core/widgets/book/book_frame.dart';
 
 class UserBookGrid extends StatelessWidget {
   final List<Map<String, dynamic>> books;

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
-import '../../../data/datasources/kakao_book_api.dart'; // ✅ Kakao API
+import '../../../data/datasources/kakao_book_api.dart';
 import '../../../data/models/book_model.dart';
 import '../../../domain/usecases/add_book.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/domain/usecases/insert_profile.dart';
-import 'package:logue/core/widgets/book_frame.dart';
+import 'package:logue/core/widgets/book/book_frame.dart';
 
 class Select3BooksScreen extends StatefulWidget {
   const Select3BooksScreen({super.key});
@@ -85,6 +85,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
         job: '사용자',
         bio: '',
         profileUrl: generateRandomProfileUrl(),
+        avatarUrl: 'basic',
       );
     }
 

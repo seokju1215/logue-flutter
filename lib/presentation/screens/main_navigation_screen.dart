@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
-import 'package:logue/presentation/screens/home_screen.dart';
-import 'package:logue/presentation/screens/profile_screen.dart';
+import 'package:logue/presentation/screens/home/home_screen.dart';
+import 'package:logue/presentation/screens/profile/profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
