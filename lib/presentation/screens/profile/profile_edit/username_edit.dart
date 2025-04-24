@@ -77,7 +77,7 @@ class _UserNameEdit extends State<UserNameEdit> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('사용자 이름'),
+        title: const Text('사용자 이름', style: TextStyle(color: AppColors.black900, fontSize: 18),),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -96,11 +96,17 @@ class _UserNameEdit extends State<UserNameEdit> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('사용자 이름'),
+            Padding(
+              padding: const EdgeInsets.only(left: 9), // 위쪽 마진만 16
+              child: Text(
+                '사용자 이름',
+                style: TextStyle(color: AppColors.black500, fontSize: 12),
+              ),
+            ),
             const SizedBox(height: 8),
             Stack(
               alignment: Alignment.centerRight,
@@ -108,9 +114,11 @@ class _UserNameEdit extends State<UserNameEdit> {
                 TextField(
                   controller: _controller,
                   decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(vertical: 9, horizontal: 9),
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
+                  style: const TextStyle(fontSize: 14, color : AppColors.black900),
                 ),
                 if (isLoading)
                   const Padding(
@@ -124,11 +132,11 @@ class _UserNameEdit extends State<UserNameEdit> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              '사용자 이름은 영어와 특수문자(_ .)만 가능해요.',
-              style: TextStyle(
-                fontSize: 10,
-                color: AppColors.black500,
+            Padding(
+              padding: const EdgeInsets.only(left: 9), // 위쪽 마진만 16
+              child: Text(
+                '사용자 이름은 영어와 특수문자(_ .)만 가능해요.',
+                style: TextStyle(color: AppColors.black500, fontSize: 10),
               ),
             ),
           ],
