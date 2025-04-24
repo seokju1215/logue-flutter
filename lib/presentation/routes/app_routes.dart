@@ -21,11 +21,13 @@ Map<String, WidgetBuilder> appRoutes = {
   '/terms': (context) => const TermsScreen(),
   '/select-3books' : (context) => const Select3BooksScreen(),
   '/notification' : (context)=> const NotificationScreen(),
-  '/profile_edit' : (context) => const ProfileEditScreen(),
   '/add_book_screen' : (context) => const AddBookScreen(),
 
   //profile_edit
-  '/profile_edit' : (context) => const ProfileEditScreen(),
+  '/profile_edit': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    return ProfileEditScreen(initialProfile: args);
+  },
   '/username_edit' : (context) => const UserNameEdit(),
   '/name_edit' : (context) => const NameEdit(),
   '/job_edit' : (context) => const JobEdit(),

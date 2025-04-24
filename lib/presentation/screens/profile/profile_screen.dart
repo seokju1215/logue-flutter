@@ -7,6 +7,8 @@ import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/domain/usecases/get_user_books.dart';
 import 'package:logue/core/widgets/book/user_book_grid.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
+import 'package:logue/data/utils/fetch_profile.dart';
+import 'package:logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -28,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _getUserBooks = GetUserBooks(UserBookApi(client));
     _fetchProfile();
     _subscribeToProfileUpdates();
-
     // 로그인 후 상태 반영
     client.auth.onAuthStateChange.listen((_) {
       if (mounted) setState(() {});
@@ -42,14 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _fetchProfile() async {
-    final user = client.auth.currentUser;
-    if (user == null) return;
-
-    final data = await client
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .maybeSingle();
+    final data = await fetchCurrentUserProfile();
 
     setState(() {
       profile = data;
@@ -122,10 +116,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 IconButton(
                   icon: SvgPicture.asset('assets/edit_icon.svg'),
-                  onPressed: () {
-                    setState(() => _showFullBio = false);
-                    Navigator.pushNamed(context, '/profile_edit');
-                  },
+                    onPressed: () {
+                      setState(() => _showFullBio = false);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileEditScreen(
+                            initialProfile: profile!, // null 체크했으므로 ! 사용 가능
+                          ),
+                        ),
+                      );
+                    }
                 ),
               ],
             ),

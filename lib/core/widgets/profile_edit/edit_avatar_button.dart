@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class EditAvatarButton extends StatelessWidget {
   final String avatarUrl;
@@ -13,25 +12,51 @@ class EditAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBasic = avatarUrl == 'basic';
+
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
-        CircleAvatar(
-          radius: 48,
-          backgroundImage: avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
-          child: avatarUrl == 'basic'
-              ? SvgPicture.asset('assets/basic_avatar.svg', width: 48, height: 48)
-              : null,
+        Container(
+          width: 96,
+          height: 96,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: CircleAvatar(
+            radius: 48,
+            backgroundColor: Colors.white,
+            backgroundImage: isBasic
+                ? null
+                : NetworkImage(avatarUrl),
+            child: isBasic
+                ? ClipOval(
+              child: Image.asset(
+                'assets/basic_avatar.png',
+                width: 96,
+                height: 96,
+                fit: BoxFit.cover,
+              ),
+            )
+                : null,
+          ),
         ),
-        CircleAvatar(
-          radius: 14,
-          backgroundColor: Colors.white,
-          child: IconButton(
-            icon: const Icon(Icons.camera_alt, size: 16),
-            onPressed: () {
-              // TODO: 갤러리 열기 + 업로드 후 onAvatarChanged 호출
-              onAvatarChanged('https://example.com/new_avatar.png');
-            },
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: CircleAvatar(
+            radius: 14,
+            backgroundColor: Colors.white,
+            child: IconButton(
+              icon: const Icon(Icons.camera_alt, size: 16),
+              onPressed: () {
+                // TODO: 갤러리 열기 + 업로드 후 onAvatarChanged 호출
+                onAvatarChanged('https://example.com/new_avatar.png');
+              },
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
           ),
         ),
       ],

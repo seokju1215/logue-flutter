@@ -2,29 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/core/widgets/profile_edit/edit_avatar_button.dart';
-import 'package:logue/core/widgets/profile_edit/profile_text_field.dart';
 import 'package:logue/core/widgets/profile_edit/profile_link_tile.dart';
 import 'package:logue/core/widgets/profile_edit/save_button.dart';
+import 'package:logue/core/widgets/profile_edit/profile_edit_button.dart';
 
 class ProfileEditScreen extends StatefulWidget {
-  const ProfileEditScreen({super.key});
+  final Map<String, dynamic> initialProfile;
+  const ProfileEditScreen({
+    super.key,
+    required this.initialProfile,
+  });
 
   @override
   State<ProfileEditScreen> createState() => _ProfileEditScreenState();
 }
 
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
-  final TextEditingController usernameController = TextEditingController();
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController jobController = TextEditingController();
-  final TextEditingController bioController = TextEditingController();
-  String avatarUrl = 'basic';
+  late String username;
+  late String avatarUrl;
   bool isEdited = false;
 
   @override
   void initState() {
     super.initState();
-    // TODO: 초기 데이터 불러오기
+    final profile = widget.initialProfile;
+
+    username = profile['username'] ?? '';
+    avatarUrl = profile['avatar_url'] ?? 'basic';
   }
 
   void onValueChanged() {
@@ -38,7 +42,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final profileLink = 'https://www.logue.it.kr_${usernameController.text}';
+    final profileLink = 'https://www.logue.it.kr_${username}';
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -65,26 +69,18 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               },
             ),
             const SizedBox(height: 24),
-            ProfileTextField(
+            ProfileEditButton(
               label: '사용자 이름',
-              controller: usernameController,
-              onChanged: (_) => onValueChanged(),
-            ),
-            ProfileTextField(
-              label: '이름',
-              controller: nameController,
-              onChanged: (_) => onValueChanged(),
-            ),
-            ProfileTextField(
-              label: '직업',
-              controller: jobController,
-              onChanged: (_) => onValueChanged(),
-            ),
-            ProfileTextField(
-              label: '소개',
-              controller: bioController,
-              onChanged: (_) => onValueChanged(),
-              maxLines: 1,
+              username: username,
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  '/username_edit',
+                  arguments: {
+                    'username': username,
+                  },
+                );
+              },
             ),
             const SizedBox(height: 12),
             ProfileLinkTile(link: profileLink),
