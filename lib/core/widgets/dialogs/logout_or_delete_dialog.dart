@@ -112,15 +112,17 @@ Future<void> showConfirmDeleteDialog(BuildContext context) async {
                     const SizedBox(height: 20),
                     OutlinedButton(
                       onPressed: () async {
-                        final userId = Supabase.instance.client.auth.currentUser?.id;
+                        final user = Supabase.instance.client.auth.currentUser;
+                        final userId = user?.id;
+                        final email = user?.email;
                         if (userId == null) return;
 
                         final res = await Supabase.instance.client.functions.invoke('delete_account', body: {
                           'userId': userId,
+                          'email': email,
                         });
 
                         if (res.status == 200 && res.data['success'] == true) {
-                          await Supabase.instance.client.auth.signOut();
                           if (context.mounted) {
                             Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
                           }

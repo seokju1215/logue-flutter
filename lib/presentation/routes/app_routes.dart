@@ -22,6 +22,7 @@ Map<String, WidgetBuilder> appRoutes = {
   '/select-3books' : (context) => const Select3BooksScreen(),
   '/notification' : (context)=> const NotificationScreen(),
   '/add_book_screen' : (context) => const AddBookScreen(),
+  '/login_blocked': (context) => const LoginScreen(blocked: true),
 
   //profile_edit
   '/profile_edit': (context) {
