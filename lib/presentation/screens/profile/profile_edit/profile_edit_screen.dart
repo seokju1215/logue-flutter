@@ -20,6 +20,9 @@ class ProfileEditScreen extends StatefulWidget {
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late String username;
   late String avatarUrl;
+  late String name;
+  late String job;
+  late String bio;
   bool isEdited = false;
 
   @override
@@ -29,6 +32,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
     username = profile['username'] ?? '';
     avatarUrl = profile['avatar_url'] ?? 'basic';
+    name = profile['name'] ?? '';
+    job = profile['job'] ?? '';
+    bio = profile['bio'] ?? '';
   }
 
   void onValueChanged() {
@@ -78,6 +84,45 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   '/username_edit',
                   arguments: {
                     'username': username,
+                  },
+                );
+              },
+            ),
+            ProfileEditButton(
+              label: '이름',
+              username: name,
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  '/name_edit',
+                  arguments: {
+                    'username': name,
+                  },
+                );
+              },
+            ),
+            ProfileEditButton(
+              label: '직업',
+              username: job,
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  '/job_edit',
+                  arguments: {
+                    'username': job,
+                  },
+                );
+              },
+            ),
+            ProfileEditButton(
+              label: '소개',
+              username: bio,
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  '/bio_edit',
+                  arguments: {
+                    'username': bio,
                   },
                 );
               },
