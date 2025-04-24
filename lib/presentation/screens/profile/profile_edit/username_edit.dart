@@ -20,6 +20,9 @@ class _UserNameEdit extends State<UserNameEdit> {
   bool isAvailable = false;
   bool isLoading = false;
   bool hasChanged = false;
+  String? errorText;
+
+  final client = Supabase.instance.client;
 
   @override
   void initState() {
@@ -37,10 +40,15 @@ class _UserNameEdit extends State<UserNameEdit> {
       hasChanged = changed;
       isValidFormat = validFormat;
       isAvailable = false;
+      errorText = null;
     });
 
     if (changed && validFormat) {
       _checkAvailability(text);
+    } else if (changed && !validFormat) {
+      setState(() {
+        errorText = '사용자 이름 $text은(는) 사용할 수 없습니다.';
+      });
     }
   }
 
@@ -48,26 +56,53 @@ class _UserNameEdit extends State<UserNameEdit> {
     setState(() => isLoading = true);
 
     try {
-      final response = await Supabase.instance.client
+      final userId = client.auth.currentUser?.id;
+      final response = await client
           .from('profiles')
           .select('id')
           .eq('username', username)
           .maybeSingle();
 
       setState(() {
-        isAvailable = response == null; // 중복이 없다면 사용 가능
+        if (response == null || response['id'] == userId) {
+          // 사용 가능하거나 현재 사용자 본인의 이름이면 허용
+          isAvailable = true;
+          errorText = null;
+        } else {
+          isAvailable = false;
+          errorText = '이 사용자 이름은 이미 다른 사람이 사용하고 있습니다.';
+        }
         isLoading = false;
       });
     } catch (e) {
       setState(() => isLoading = false);
       debugPrint('Username check error: $e');
-      // 에러 상황에 따라 사용자에게 알림을 줄 수도 있음
     }
   }
 
-  void _onConfirm() {
-    // TODO: '사용자 이름 변경 1-4' 화면으로 이동
-    Navigator.pop(context, _controller.text);
+  void _onConfirm() async {
+    final userId = client.auth.currentUser?.id;
+    final newUsername = _controller.text;
+
+    if (userId == null) return;
+
+    try {
+      await client
+          .from('profiles')
+          .update({'username': newUsername})
+          .eq('id', userId);
+
+      if (mounted) {
+        Navigator.pop(context, {'username': newUsername});
+      }
+    } catch (e) {
+      debugPrint('Username update error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사용자 이름 변경에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
+    }
   }
 
   @override
@@ -75,9 +110,19 @@ class _UserNameEdit extends State<UserNameEdit> {
     final isConfirmEnabled =
         hasChanged && isValidFormat && isAvailable && !isLoading;
 
+    // 테두리 색 결정
+    Color borderColor = Colors.grey;
+    if (_controller.text.isNotEmpty && !isLoading) {
+      if (!isValidFormat || (hasChanged && !isAvailable)) {
+        borderColor = Colors.red;
+      } else if (isAvailable) {
+        borderColor = Colors.blue;
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('사용자 이름', style: TextStyle(color: AppColors.black900, fontSize: 18),),
+        title: const Text('사용자 이름', style: TextStyle(color: AppColors.black900, fontSize: 18)),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -100,12 +145,9 @@ class _UserNameEdit extends State<UserNameEdit> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 9), // 위쪽 마진만 16
-              child: Text(
-                '사용자 이름',
-                style: TextStyle(color: AppColors.black500, fontSize: 12),
-              ),
+            const Padding(
+              padding: EdgeInsets.only(left: 9),
+              child: Text('사용자 이름', style: TextStyle(color: AppColors.black500, fontSize: 12)),
             ),
             const SizedBox(height: 8),
             Stack(
@@ -113,12 +155,20 @@ class _UserNameEdit extends State<UserNameEdit> {
               children: [
                 TextField(
                   controller: _controller,
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(vertical: 9, horizontal: 9),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: borderColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: borderColor),
+                    ),
                     isDense: true,
                   ),
-                  style: const TextStyle(fontSize: 14, color : AppColors.black900),
+                  style: const TextStyle(fontSize: 14, color: AppColors.black900),
                 ),
                 if (isLoading)
                   const Padding(
@@ -128,12 +178,24 @@ class _UserNameEdit extends State<UserNameEdit> {
                       width: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                  )
+                  ),
               ],
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.only(left: 9), // 위쪽 마진만 16
+            const SizedBox(height: 8),
+            if (errorText != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 9),
+                  child: Text(
+                    errorText!,
+                    style: const TextStyle(color: Colors.red, fontSize: 10),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ),
+            const Padding(
+              padding: EdgeInsets.only(left: 9, top: 4),
               child: Text(
                 '사용자 이름은 영어와 특수문자(_ .)만 가능해요.',
                 style: TextStyle(color: AppColors.black500, fontSize: 10),

@@ -78,53 +78,73 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             ProfileEditButton(
               label: '사용자 이름',
               username: username,
-              onTap: () {
-                Navigator.pushNamed(
+              onTap: () async {
+                final result = await Navigator.pushNamed(
                   context,
                   '/username_edit',
-                  arguments: {
-                    'username': username,
-                  },
+                  arguments: {'username': username},
                 );
+
+                if (result != null && result is Map<String, dynamic>) {
+                  setState(() {
+                    username = result['username'] ?? username;
+                    isEdited = true;
+                  });
+                }
               },
             ),
             ProfileEditButton(
               label: '이름',
               username: name,
-              onTap: () {
-                Navigator.pushNamed(
+              onTap: () async {
+                final result = await Navigator.pushNamed(
                   context,
                   '/name_edit',
-                  arguments: {
-                    'username': name,
-                  },
+                  arguments: {'username': name},
                 );
+
+                if (result != null && result is Map<String, dynamic>) {
+                  setState(() {
+                    name = result['username'] ?? name;
+                    isEdited = true;
+                  });
+                }
               },
             ),
             ProfileEditButton(
               label: '직업',
               username: job,
-              onTap: () {
-                Navigator.pushNamed(
+              onTap: () async {
+                final result = await Navigator.pushNamed(
                   context,
                   '/job_edit',
-                  arguments: {
-                    'username': job,
-                  },
+                  arguments: {'username': job},
                 );
+
+                if (result != null && result is Map<String, dynamic>) {
+                  setState(() {
+                    job = result['username'] ?? job;
+                    isEdited = true;
+                  });
+                }
               },
             ),
             ProfileEditButton(
               label: '소개',
               username: bio,
-              onTap: () {
-                Navigator.pushNamed(
+              onTap: () async {
+                final result = await Navigator.pushNamed(
                   context,
                   '/bio_edit',
-                  arguments: {
-                    'username': bio,
-                  },
+                  arguments: {'username': bio},
                 );
+
+                if (result != null && result is Map<String, dynamic>) {
+                  setState(() {
+                    bio = result['username'] ?? bio;
+                    isEdited = true;
+                  });
+                }
               },
             ),
             const SizedBox(height: 12),
