@@ -69,7 +69,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('후기 작성'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('후기 작성', style: TextStyle(fontSize: 18, color: AppColors.black900),),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveReview,
@@ -77,7 +81,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               '확인',
               style: TextStyle(
                 color: _isSaving ? Colors.grey : const Color(0xFF0055FF),
-                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -89,28 +92,63 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: BookFrame(imageUrl: widget.book.image),
+              child: SizedBox(
+                width: 235,  // 원하는 너비
+                height: 349, // 원하는 높이
+                child: BookFrame(imageUrl: widget.book.image),
+              ),
             ),
             const SizedBox(height: 24),
-            const Text('후기 제목 (최대 50자)', style: TextStyle(fontSize: 14)),
+            Padding(
+              padding: EdgeInsets.fromLTRB(13, 0, 0, 0),
+              child: Text('후기 제목', style: TextStyle(fontSize: 12, color: AppColors.black500)),
+            ),
             TextField(
               controller: _titleController,
               maxLength: 50,
-              decoration: const InputDecoration(
-                hintText: '이 책을 한 줄로 요약해본다면?',
+              minLines: 2,
+              maxLines: null,
+              style: const TextStyle(fontSize: 14, color:AppColors.black900),
+              decoration:  InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(5),
+                  borderSide: const BorderSide(color: Colors.grey, width: 1),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(5),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(5),
+                  borderSide: const BorderSide(color: Colors.grey), // ✅ hover나 focus에도 변화 없게
+                ),
+
               ),
             ),
             const SizedBox(height: 16),
-            const Text('후기 내용 (최대 1,000자)', style: TextStyle(fontSize: 14)),
+            const Text('후기 내용', style: TextStyle(fontSize: 12, color: AppColors.black500)),
             Expanded(
               child: TextField(
                 controller: _contentController,
                 maxLength: 1000,
+                minLines: 3,
                 maxLines: null,
-                expands: true,
-                decoration: const InputDecoration(
-                  hintText: '이 책에 대한 솔직한 감상을 적어주세요.',
-                  border: OutlineInputBorder(),
+                style: const TextStyle(fontSize: 14, color:AppColors.black900),
+                decoration:  InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(5),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(5),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(5),
+                    borderSide: const BorderSide(color: Colors.grey), // ✅ hover나 focus에도 변화 없게
+                  ),
                 ),
               ),
             ),

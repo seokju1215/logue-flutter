@@ -88,7 +88,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('내 책장'),
+        title: const Text('내 책장', style: TextStyle(fontSize: 18, color: AppColors.black900),),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -99,8 +99,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
             child: Text(
               '확인',
               style: TextStyle(
-                color: isEdited ? AppColors.black900 : AppColors.black300,
-                fontWeight: FontWeight.w600,
+                color: isEdited ? AppColors.blue500 : AppColors.black300,
+                fontSize: 14
               ),
             ),
           ),
@@ -155,15 +155,15 @@ class _AddBookScreenState extends State<AddBookScreen> {
                               key: ValueKey(book['id']),
                               width: itemWidth,
                               child: AspectRatio(
-                                aspectRatio: 0.7,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: Image.network(
-                                    book['image'],
-                                    fit: BoxFit.cover,
-                                  ),
+                              aspectRatio: 0.7,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(0),
+                                child: Image.network(
+                                  book['image'],
+                                  fit: BoxFit.cover,
                                 ),
                               ),
+                            ),
                             );
                           }).toList(),
                         ),

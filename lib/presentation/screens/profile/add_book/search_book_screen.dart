@@ -56,16 +56,23 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
         centerTitle: true,
-        title: const Text("책 검색"),
+        title: const Text("책 추가", style: TextStyle(fontSize: 18, color: AppColors.black900),),
       ),
       body: Column(
         children: [
           const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Text(
-              "추가할 책을 선택해주세요",
-              style: TextStyle(fontSize: 14),
+            padding: const EdgeInsets.fromLTRB(31, 20, 0, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "책 이름",
+                style: const TextStyle(fontSize: 14, color: AppColors.black500),
+              ),
             ),
           ),
           Padding(
