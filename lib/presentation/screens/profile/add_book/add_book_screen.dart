@@ -111,7 +111,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
         child: Column(
           children: [
             GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/book_search'),
+              onTap: () => Navigator.pushNamed(context, '/search_book'),
               child: SvgPicture.asset(
                 'assets/add_book_button.svg',
                 height: 153,

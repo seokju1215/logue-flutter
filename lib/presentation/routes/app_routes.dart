@@ -13,6 +13,7 @@ import '../screens/profile/profile_edit/bio_edit.dart';
 import '../screens/profile/profile_edit/job_edit.dart';
 import '../screens/profile/profile_edit/name_edit.dart';
 import '../screens/profile/profile_edit/username_edit.dart';
+import '../screens/profile/add_book/search_book_screen.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
   '/main' : (context) => const MainNavigationScreen(),
@@ -23,6 +24,7 @@ Map<String, WidgetBuilder> appRoutes = {
   '/notification' : (context)=> const NotificationScreen(),
   '/add_book_screen' : (context) => const AddBookScreen(),
   '/login_blocked': (context) => const LoginScreen(blocked: true),
+  '/search_book' : (context) => const SearchBookScreen(),
 
   //profile_edit
   '/profile_edit': (context) {
@@ -49,6 +51,7 @@ Map<String, WidgetBuilder> appRoutes = {
     final currentBio = args['currentBio'] ?? '';
     return BioEdit(currentBio: currentBio);
   },
+
 
 
 
