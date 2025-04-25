@@ -23,6 +23,8 @@ class AddBookUseCase {
           'image': book.image,
           'publisher': book.publisher,
           'order_index': i,
+          'review_title': '',
+          'review_content': '',
         });
       } catch (e) {
         print('! 개별 책 저장 실패: $e');

@@ -3,6 +3,7 @@ import 'package:logue/core/themes/app_colors.dart';
 import '../../../../data/datasources/kakao_book_api.dart';
 import '../../../../data/models/book_model.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
+import 'package:logue/presentation/screens/profile/add_book/write_review_screen.dart';
 
 class SearchBookScreen extends StatefulWidget {
   const SearchBookScreen({super.key});
@@ -57,22 +58,6 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
       appBar: AppBar(
         centerTitle: true,
         title: const Text("책 검색"),
-        actions: [
-          TextButton(
-            onPressed: _selectedBook != null
-                ? () {
-              Navigator.pop(context, _selectedBook);
-            }
-                : null,
-            child: Text(
-              "확인",
-              style: TextStyle(
-                color: _selectedBook != null ? Color(0xFF0055FF) : Colors.grey,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Column(
         children: [
@@ -142,7 +127,14 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                 final isSelected = _selectedBook == book;
 
                 return GestureDetector(
-                  onTap: () => _selectBook(book),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WriteReviewScreen(book: book),
+                      ),
+                    );
+                  },
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(

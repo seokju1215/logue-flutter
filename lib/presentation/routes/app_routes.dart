@@ -14,6 +14,7 @@ import '../screens/profile/profile_edit/job_edit.dart';
 import '../screens/profile/profile_edit/name_edit.dart';
 import '../screens/profile/profile_edit/username_edit.dart';
 import '../screens/profile/add_book/search_book_screen.dart';
+import '../screens/profile/profile_screen.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
   '/main' : (context) => const MainNavigationScreen(),
@@ -25,6 +26,7 @@ Map<String, WidgetBuilder> appRoutes = {
   '/add_book_screen' : (context) => const AddBookScreen(),
   '/login_blocked': (context) => const LoginScreen(blocked: true),
   '/search_book' : (context) => const SearchBookScreen(),
+  '/profile' : (context) => const ProfileScreen(),
 
   //profile_edit
   '/profile_edit': (context) {
