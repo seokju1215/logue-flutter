@@ -36,6 +36,7 @@ dependencies:
   flutter_svg: ^1.0.0
   google_sign_in: ^5.0.7
   flutter_web_auth_2: ^2.0.3
+  image_picker: ^1.0.4
 
 
 
@@ -64,3 +65,10 @@ flutter:
     - .env
     - assets/logue_logo_with_text.svg
     - assets/google_logo.svg.png
+    - assets/edit_icon.svg
+    - assets/bell_icon.svg
+    - assets/home_bottomnavi.svg
+    - assets/profile_bottomnavi.svg
+    - assets/basic_avatar.png
+    - assets/hashtag_icon.svg
+    - assets/share_button.svg

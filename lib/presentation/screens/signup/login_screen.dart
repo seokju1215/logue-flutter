@@ -5,7 +5,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 
 class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+  final bool blocked;
+  const LoginScreen({super.key, this.blocked = false});
 
   void _login(BuildContext context) async {
     final loginUseCase = LoginWithGoogle(Supabase.instance.client);
@@ -24,6 +25,22 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
+          if (blocked)
+            Positioned(
+              top: 90,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Text(
+                  "계정 탈퇴 이후 30일 동안 해당\n구글 계정으로 회원가입이 불가해요.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.black500,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
           // 로고: 화면의 높이 1/2 지점에 위치
           Align(
             alignment: Alignment(0, 0.0), // y = -0.5 (화면 세로의 1/2 위치)

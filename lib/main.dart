@@ -4,19 +4,28 @@ import 'core/themes/app_colors.dart';
 import 'core/themes/text_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/routes/app_routes.dart';
-import 'package:logue/presentation/screens/signup/login_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await dotenv.load(fileName: ".env");
 
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-      authFlowType: AuthFlowType.pkce,
+    authFlowType: AuthFlowType.pkce,
   );
 
+  // ✅ onAuthStateChange: 앱 전체에서 단 한 번만 등록
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    final event = data.event;
+    final session = data.session;
+
+    if (event == AuthChangeEvent.signedIn && session != null) {
+      navigatorKey.currentState?.pushReplacementNamed('/splash');
+    }
+  });
 
   runApp(const MyApp());
 }
@@ -27,13 +36,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Logue',
       theme: ThemeData(
+        dialogTheme: DialogTheme(
+          backgroundColor: AppColors.white500,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        appBarTheme: const AppBarTheme(backgroundColor: AppColors.white500),
         scaffoldBackgroundColor: AppColors.white500,
         textTheme: AppTextTheme.textTheme,
         useMaterial3: true,
       ),
-      initialRoute: '/',  // ✅ 요거 추가해줘야 해!
+      initialRoute: '/splash',
       routes: appRoutes,
     );
   }

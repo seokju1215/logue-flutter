@@ -7,15 +7,10 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: // TODO:  약관 동의 화면 접근용 텍스트 버튼 지우기
-          TextButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/terms');
-            },
-            child: const Text(
-              '🛠 약관 동의 화면 보기 (개발용)',
+        child:
+           Text(
+              '홈화면임',
               style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
           ),
       ),
     );

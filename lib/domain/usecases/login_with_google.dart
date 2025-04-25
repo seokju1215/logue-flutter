@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:logue/data/repositories/agreement_repository.dart';
 
 class LoginWithGoogle {
   final SupabaseClient client;
@@ -9,45 +8,36 @@ class LoginWithGoogle {
 
   Future<void> call(BuildContext context) async {
     try {
-      // ✅ 기존 세션 무효화 (예전 세션이 꼬인 경우 방지)
-      await client.auth.signOut();
+      await client.auth.signOut(); // 혹시 이전 세션 꼬였을 경우를 대비
 
-      // ✅ 로그인 시도
       await client.auth.signInWithOAuth(
         Provider.google,
         redirectTo: 'dev.seokju.logue://login-callback',
       );
 
-      // ✅ onAuthStateChange로 로그인 후 처리
-      Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
-        final event = data.event;
-        final session = data.session;
+      final session = client.auth.currentSession;
+      final email = session?.user.email;
 
-        if (event == AuthChangeEvent.signedIn && session != null) {
-          final user = session.user;
+      if (email != null) {
+        final response = await client.functions.invoke(
+          'check_deleted_user',
+          body: {'email': email},
+        );
 
-          final hasAgreed = await AgreementRepository().hasAgreedTerms(user.id);
-          if (!hasAgreed) {
-            if (context.mounted) {
-              Navigator.pushReplacementNamed(context, '/terms');
-            }
-            return;
-          }
-
-          final books = await client
-              .from('user_books')
-              .select('id')
-              .eq('user_id', user.id);
-
+        final data = response.data as Map<String, dynamic>;
+        if (data['blocked'] == true) {
+          await client.auth.signOut(); // 차단된 유저는 다시 로그아웃
           if (context.mounted) {
-            if (books.length < 3) {
-              Navigator.pushReplacementNamed(context, '/select-3books');
-            } else {
-              Navigator.pushReplacementNamed(context, '/home');
-            }
+            Navigator.pushReplacementNamed(context, '/login_blocked'); // 차단 안내 화면으로 이동
           }
+          return;
         }
-      });
+      }
+
+      // 통과한 사용자만 splash로 이동
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, '/splash');
+      }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
