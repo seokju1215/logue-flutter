@@ -20,9 +20,11 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final client = Supabase.instance.client;
   Map<String, dynamic>? profile;
-  late final RealtimeChannel _channel;
+  late final RealtimeChannel _profileChannel;
+  late final RealtimeChannel _bookChannel;
   late final GetUserBooks _getUserBooks;
   bool _showFullBio = false;
+  List<Map<String, dynamic>> books = [];
 
   @override
   void initState() {
@@ -30,6 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _getUserBooks = GetUserBooks(UserBookApi(client));
     _fetchProfile();
     _subscribeToProfileUpdates();
+    _subscribeToBookUpdates();
     // 로그인 후 상태 반영
     client.auth.onAuthStateChange.listen((_) {
       if (mounted) setState(() {});
@@ -38,7 +41,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
-    _channel.unsubscribe();
+    _profileChannel.unsubscribe();
+    _bookChannel.unsubscribe();
     super.dispose();
   }
 
@@ -50,11 +54,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  //수퍼베이스 realtime 함수
+  void _subscribeToBookUpdates() {
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    _bookChannel = client.channel('public:user_books')
+      ..on(
+        RealtimeListenTypes.postgresChanges,
+        ChannelFilter(
+          event: '*',
+          schema: 'public',
+          table: 'user_books',
+          filter: 'user_id=eq.${user.id}',
+        ),
+            (payload, [ref]) async {
+          if (!mounted) return;
+          final data = await _getUserBooks(user.id);
+          data.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+          setState(() => books = data); // ✅ 이 부분이 빠졌던 거야
+        },
+      )
+      ..subscribe();
+  }
   void _subscribeToProfileUpdates() {
     final user = client.auth.currentUser;
     if (user == null) return;
 
-    _channel = client.channel('public:profiles')
+    _profileChannel = client.channel('public:profiles')
       ..on(
         RealtimeListenTypes.postgresChanges,
         ChannelFilter(
@@ -134,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 21),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,29 +178,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildBio(context),
                         const SizedBox(height: 20),
                       ],
-
                     ),
                   ),
                   Container(
-                    width: 71, // 원하는 크기
+                    width: 71,
                     height: 71,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.black100, // 테두리 색상
-                        width: 1, // 테두리 두께
+                        color: AppColors.black100,
+                        width: 1,
                       ),
                     ),
                     child: CircleAvatar(
                       radius: 70,
-                      backgroundImage: avatarUrl == 'basic'
+                      backgroundImage: (profile?['avatar_url'] ?? 'basic') == 'basic'
                           ? null
-                          : NetworkImage(avatarUrl),
-                      child: avatarUrl == 'basic'
-                          ? Image.asset(
-                        'assets/basic_avatar.png',
-                        width: 70,
-                        height: 70,)
+                          : NetworkImage(profile!['avatar_url']),
+                      child: (profile?['avatar_url'] ?? 'basic') == 'basic'
+                          ? Image.asset('assets/basic_avatar.png', width: 70, height: 70)
                           : null,
                     ),
                   ),
@@ -194,7 +217,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: OutlinedButton(
                       style: _outlinedStyle(context),
-                      onPressed: () => Navigator.pushNamed(context, '/add_book_screen'),
+                      onPressed: () async {
+                        setState(() => _showFullBio = false);
+                        await Navigator.pushNamed(context, '/add_book_screen');
+                        // 돌아오고 나서 다시 불러오기
+                        final user = client.auth.currentUser;
+                        if (user == null) return;
+                        final updatedBooks = await _getUserBooks(user.id);
+                        updatedBooks.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+                        setState(() => books = updatedBooks);
+                      },
                       child: const Text("책 추가 +"),
                     ),
                   ),
@@ -209,23 +241,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              Expanded(
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _loadBooks(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Center(child: Text('저장된 책이 없습니다.'));
-                    }
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: _loadBooks(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('저장된 책이 없습니다.'));
+                  }
 
-                    final sortedBooks = List<Map<String, dynamic>>.from(snapshot.data!)
-                      ..sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+                  final sortedBooks = List<Map<String, dynamic>>.from(snapshot.data!)
+                    ..sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
 
-                    return UserBookGrid(books: sortedBooks);
-                  },
-                ),
+                  return UserBookGrid(books: sortedBooks);
+                },
               ),
               const SizedBox(height: 16),
               Center(
@@ -233,7 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   spacing: 8,
                   children: [
                     TextButton(
-                      onPressed: () {}, // 노션 링크
+                      onPressed: () {}, // 개인정보 처리방침 링크
                       child: const Text(
                         '개인정보 처리방침',
                         style: TextStyle(fontSize: 12, color: AppColors.black500),
@@ -241,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const Text('|', style: TextStyle(color: AppColors.black500, fontSize: 12, height: 4)),
                     TextButton(
-                      onPressed: () {}, // 노션 링크
+                      onPressed: () {}, // 이용약관 링크
                       child: const Text(
                         '이용약관',
                         style: TextStyle(fontSize: 12, color: AppColors.black500),
@@ -250,6 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
             ],
           ),
         ),

@@ -14,11 +14,11 @@ class UserBookGrid extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 340, // ✅ 고정 높이 줘야 GridView가 제대로 렌더링돼요
       child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         itemCount: books.length,
         padding: const EdgeInsets.symmetric(horizontal: 0),
-        physics: const NeverScrollableScrollPhysics(), // 스크롤은 부모에게 맡김
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           crossAxisSpacing: 8,
