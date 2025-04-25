@@ -14,7 +14,7 @@ class AddBookScreen extends StatefulWidget {
 class _AddBookScreenState extends State<AddBookScreen> {
   final client = Supabase.instance.client;
   List<Map<String, dynamic>> books = [];
-  List<Map<String, dynamic>> originalBooks = [];
+  List<String> originalOrder = [];
   bool isEdited = false;
 
   @override
@@ -27,23 +27,27 @@ class _AddBookScreenState extends State<AddBookScreen> {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
 
-    final data = await client
-        .from('user_books')
-        .select()
-        .eq('user_id', userId)
-        .order('order_index')
-        .then((value) => value as List);
+    try {
+      final data = await client
+          .from('user_books')
+          .select()
+          .eq('user_id', userId)
+          .order('order_index', ascending: true);
 
-    setState(() {
-      books = List<Map<String, dynamic>>.from(data);
-      originalBooks = List<Map<String, dynamic>>.from(data);
-    });
+      final fetched = List<Map<String, dynamic>>.from(data);
+      setState(() {
+        books = fetched;
+        originalOrder = fetched.map((book) => book['id'] as String).toList();
+        isEdited = false;
+      });
+    } catch (e) {
+      debugPrint('❌ 책 불러오기 실패: $e');
+    }
   }
 
   Future<void> _updateBookOrder() async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
-
     for (int i = 0; i < books.length; i++) {
       final bookId = books[i]['id'];
       await client
@@ -52,7 +56,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
           .eq('id', bookId);
     }
 
-    setState(() => isEdited = false);
+    setState(() {
+      originalOrder = books.map((b) => b['id'] as String).toList();
+      isEdited = false;
+    });
+
     if (context.mounted) Navigator.pop(context);
   }
 
@@ -60,16 +68,18 @@ class _AddBookScreenState extends State<AddBookScreen> {
     setState(() {
       final item = books.removeAt(oldIndex);
       books.insert(newIndex, item);
-      isEdited = !_listEquals(books, originalBooks);
+
+      final currentOrder = books.map((b) => b['id'] as String).toList();
+      isEdited = !_areListsEqual(currentOrder, originalOrder);
     });
   }
 
-  bool _listEquals(List<Map<String, dynamic>> a, List<Map<String, dynamic>> b) {
-    if (a.length != b.length) return true;
+  bool _areListsEqual(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
-      if (a[i]['id'] != b[i]['id']) return true;
+      if (a[i] != b[i]) return false;
     }
-    return false;
+    return true;
   }
 
   @override
@@ -126,41 +136,41 @@ class _AddBookScreenState extends State<AddBookScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(21),
                 child: SingleChildScrollView(
-                    controller: scrollController,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        const spacing = 8.0;
-                        const crossAxisCount = 3;
-                        final totalSpacing = spacing * (crossAxisCount - 1);
-                        final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                  controller: scrollController,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const spacing = 8.0;
+                      const crossAxisCount = 3;
+                      final totalSpacing = spacing * (crossAxisCount - 1);
+                      final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
 
-                        return Center(
-                          child: ReorderableWrap(
-                            spacing: spacing,
-                            runSpacing: spacing,
-                            needsLongPressDraggable: false,
-                            onReorder: _onReorder,
-                            children: books.map((book) {
-                              return Container(
-                                key: ValueKey(book['id']),
-                                width: itemWidth,
-                                child: AspectRatio(
-                                  aspectRatio: 0.7,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Image.network(
-                                      book['image'],
-                                      fit: BoxFit.cover,
-                                    ),
+                      return Center(
+                        child: ReorderableWrap(
+                          spacing: spacing,
+                          runSpacing: spacing,
+                          needsLongPressDraggable: false,
+                          onReorder: _onReorder,
+                          children: books.map((book) {
+                            return Container(
+                              key: ValueKey(book['id']),
+                              width: itemWidth,
+                              child: AspectRatio(
+                                aspectRatio: 0.7,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Image.network(
+                                    book['image'],
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      },
-                    ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
                   ),
+                ),
               ),
             ),
           ],
