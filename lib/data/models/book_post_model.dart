@@ -30,7 +30,7 @@ class BookPostModel {
       image: map['image'] as String?,
       reviewTitle: map['review_title'] as String?,
       reviewContent: map['review_content'] as String?,
-      userName: map['profiles'] != null ? map['profiles']['username'] as String? : null,
+      userName: map['username'] as String?,
       orderIndex: map['order_index'] as int?, // ✅ 여기
     );
   }

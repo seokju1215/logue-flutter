@@ -72,9 +72,12 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final String appBarTitle = (posts.isNotEmpty && posts[initialIndex].userName != null)
+        ? posts[initialIndex].userName!
+        : '사용자';
     return Scaffold(
       appBar: AppBar(
-        title: const Text('게시글'),
+        title: Text(appBarTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
