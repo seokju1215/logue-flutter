@@ -254,7 +254,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   final sortedBooks = List<Map<String, dynamic>>.from(snapshot.data!)
                     ..sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
 
-                  return UserBookGrid(books: sortedBooks);
+                  return UserBookGrid(
+                    books: sortedBooks,
+                    onTap: (book) {
+                      final bookId = book['id'] as String;
+                      Navigator.pushNamed(
+                        context,
+                        '/my_post_screen',
+                        arguments: {'bookId': bookId},
+                      );
+                    },
+                  );
                 },
               ),
               const SizedBox(height: 16),

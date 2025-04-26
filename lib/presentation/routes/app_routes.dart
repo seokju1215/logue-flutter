@@ -15,6 +15,7 @@ import '../screens/profile/profile_edit/name_edit.dart';
 import '../screens/profile/profile_edit/username_edit.dart';
 import '../screens/profile/add_book/search_book_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../screens/post/my_post_screen.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
   '/main' : (context) => const MainNavigationScreen(),
@@ -52,6 +53,12 @@ Map<String, WidgetBuilder> appRoutes = {
     final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     final currentBio = args['currentBio'] ?? '';
     return BioEdit(currentBio: currentBio);
+
+  },
+  '/my_post_screen': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final bookId = args['bookId'] as String;
+    return MyBookPostScreen(bookId: bookId);
   },
 
 
