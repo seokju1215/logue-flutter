@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/core/widgets/post/post_item.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -77,7 +78,10 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         : '사용자';
     return Scaffold(
       appBar: AppBar(
-        title: Text(appBarTitle),
+        backgroundColor: Colors.white, // 배경 흰색
+        elevation: 0,                  // 그림자 제거
+        surfaceTintColor: Colors.white,
+        title: Text(appBarTitle, style: TextStyle(fontSize: 18, color: AppColors.black900),),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),

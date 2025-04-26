@@ -7,7 +7,8 @@ class BookPostModel {
   final String? reviewTitle;
   final String? reviewContent;
   final String? userName;
-  final int? orderIndex; // ✅ 추가
+  final String? avatarUrl; // ✅ 추가
+  final int? orderIndex;
 
   BookPostModel({
     required this.id,
@@ -18,10 +19,13 @@ class BookPostModel {
     this.reviewTitle,
     this.reviewContent,
     this.userName,
-    this.orderIndex, // ✅ 추가
+    this.avatarUrl, // ✅ 추가
+    this.orderIndex,
   });
 
   factory BookPostModel.fromMap(Map<String, dynamic> map) {
+    final profiles = map['profiles'] as Map<String, dynamic>?;
+
     return BookPostModel(
       id: map['id'] as String,
       userId: map['user_id'] as String,
@@ -30,8 +34,9 @@ class BookPostModel {
       image: map['image'] as String?,
       reviewTitle: map['review_title'] as String?,
       reviewContent: map['review_content'] as String?,
-      userName: map['username'] as String?,
-      orderIndex: map['order_index'] as int?, // ✅ 여기
+      userName: map['username'] as String?,    // ✅ profiles.username 가져와야 해
+      avatarUrl: map['avatar_url'] as String?,// ✅ 추가
+      orderIndex: map['order_index'] as int?,
     );
   }
 }

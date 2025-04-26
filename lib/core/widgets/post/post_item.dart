@@ -11,6 +11,7 @@ class PostItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasLongContent = (post.reviewContent ?? '').length > 100;
     final imageUrl = post.image ?? '';
+    final avatarUrl = post.avatarUrl ?? '';
     final userName = post.userName ?? '사용자';
     final reviewTitle = post.reviewTitle ?? '';
     final reviewContent = post.reviewContent ?? '';
@@ -39,9 +40,16 @@ class PostItem extends StatelessWidget {
         // 프로필 영역
         Row(
           children: [
-            const CircleAvatar(
+            (post.avatarUrl == null || post.avatarUrl!.isEmpty || post.avatarUrl == 'basic')
+                ? CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.grey,
+              backgroundColor: Colors.grey[300],
+              child: Image.asset('assets/basic_avatar.png', width: 32, height: 32, fit: BoxFit.cover),
+            )
+                : CircleAvatar(
+              radius: 16,
+              backgroundImage: NetworkImage(post.avatarUrl!),
+              backgroundColor: Colors.grey[300],
             ),
             const SizedBox(width: 8),
             Text(
@@ -66,8 +74,9 @@ class PostItem extends StatelessWidget {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
 
-        // 리뷰 본문
         const SizedBox(height: 8),
+
+        // 리뷰 본문
         Text(
           hasLongContent ? '${reviewContent.substring(0, 100)}...' : reviewContent,
           style: const TextStyle(fontSize: 14, color: Colors.black87),
