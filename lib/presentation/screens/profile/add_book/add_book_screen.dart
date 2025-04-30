@@ -88,7 +88,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('내 책장', style: TextStyle(fontSize: 18, color: AppColors.black900),),
+        title: const Text('내 책장'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),

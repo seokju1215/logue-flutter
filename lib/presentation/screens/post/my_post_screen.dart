@@ -96,7 +96,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         itemBuilder: (context, index) {
           final post = posts[index];
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
             child: PostItem(
               post: post,
               onTapComment: () {
