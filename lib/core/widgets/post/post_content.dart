@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../themes/app_colors.dart';
+import 'package:logue/core/themes/app_colors.dart';
+import 'package:logue/data/models/book_post_model.dart';
+import 'package:logue/presentation/screens/post/post_detail_screen.dart'; // 상세화면 import
 
 class PostContent extends StatefulWidget {
-  final String reviewContent;
+  final BookPostModel post;
 
-  const PostContent({super.key, required this.reviewContent});
+  const PostContent({super.key, required this.post});
 
   @override
   State<PostContent> createState() => _PostContentState();
@@ -23,7 +25,7 @@ class _PostContentState extends State<PostContent> {
   }
 
   void _truncateToFitWithButton() {
-    final fullText = widget.reviewContent;
+    final fullText = widget.post.reviewContent ?? '';
     final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500);
 
     final span = TextSpan(text: fullText, style: textStyle);
@@ -33,7 +35,7 @@ class _PostContentState extends State<PostContent> {
       textDirection: TextDirection.ltr,
     );
 
-    tp.layout(maxWidth: MediaQuery.of(context).size.width - 44); // 좌우 22 padding
+    tp.layout(maxWidth: MediaQuery.of(context).size.width - 44);
     if (!tp.didExceedMaxLines) {
       setState(() {
         truncatedText = fullText;
@@ -42,7 +44,6 @@ class _PostContentState extends State<PostContent> {
       return;
     }
 
-    // 글자를 줄여가며 몇 글자까지 넣을 수 있는지 계산
     int endIndex = fullText.length;
     while (endIndex > 0) {
       final testSpan = TextSpan(
@@ -79,7 +80,12 @@ class _PostContentState extends State<PostContent> {
             alignment: PlaceholderAlignment.middle,
             child: GestureDetector(
               onTap: () {
-                // 👉 상세 페이지 이동
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PostDetailScreen(post: widget.post),
+                  ),
+                );
               },
               child: const Text(
                 '더보기',
@@ -94,7 +100,7 @@ class _PostContentState extends State<PostContent> {
       ),
     )
         : Text(
-      widget.reviewContent,
+      widget.post.reviewContent ?? '',
       style: textStyle,
     );
   }

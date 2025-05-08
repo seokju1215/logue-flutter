@@ -83,18 +83,23 @@ class PostItem extends StatelessWidget {
         const SizedBox(height: 8),
 
         // 리뷰 본문
-        PostContent(reviewContent: reviewContent),
+        PostContent(post: post),
 
         // 댓글 버튼
         Row(
           children: [
             IconButton(
               onPressed: onTapComment,
-              icon: SvgPicture.asset(
-                'assets/comment_btn.svg',
-                width: 24,
-                height: 24,
-              ),
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              icon: Transform.translate(
+                offset: Offset(-13, 0), // 왼쪽으로 당김
+                child: SvgPicture.asset(
+                  'assets/comment_btn.svg',
+                  width: 24,
+                  height: 24,
+                ),
+              )
             ),
             const Text('120', style: TextStyle(fontSize: 12, color: AppColors.black900),), // 나중에 댓글 수 연동할 자리
           ],
