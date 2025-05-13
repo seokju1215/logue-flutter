@@ -19,6 +19,7 @@ import '../screens/post/my_post_screen.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
   '/main' : (context) => const MainNavigationScreen(),
+  '/main/profile': (context) => const MainNavigationScreen(initialIndex: 1),
   '/splash' : (context) => const SplashScreen(),
   '/login': (context) => const LoginScreen(),
   '/terms': (context) => const TermsScreen(),

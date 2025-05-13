@@ -7,9 +7,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class PostItem extends StatelessWidget {
   final BookPostModel post;
+  final bool isMyPost;
   final VoidCallback? onTapComment; // 댓글 버튼 누르면
 
-  const PostItem({Key? key, required this.post, this.onTapComment})
+  const PostItem({Key? key, required this.isMyPost, required this.post, this.onTapComment})
       : super(key: key);
 
   @override
@@ -63,10 +64,17 @@ class PostItem extends StatelessWidget {
               style: const TextStyle(color: AppColors.black900, fontSize: 16),
             ),
             const Spacer(),
-            IconButton(
+            isMyPost
+                ? IconButton(
               icon: const Icon(Icons.more_horiz),
               onPressed: () {
-                // 👉 더보기 옵션 (편집, 삭제 등) 나중에 추가할 자리
+                // 더보기 메뉴 (편집, 삭제)
+              },
+            )
+                : IconButton(
+              icon: const Icon(Icons.bookmark_border),
+              onPressed: () {
+                // 저장 기능
               },
             ),
           ],

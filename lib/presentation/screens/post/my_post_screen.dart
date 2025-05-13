@@ -3,7 +3,7 @@ import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/core/widgets/post/post_item.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:logue/presentation/screens/post/comment_screen.dart';
 class MyBookPostScreen extends StatefulWidget {
   final String bookId;
 
@@ -95,12 +95,19 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         itemCount: posts.length,
         itemBuilder: (context, index) {
           final post = posts[index];
+          final isMyPost = post.userId == client.auth.currentUser?.id;
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
             child: PostItem(
+              isMyPost: isMyPost,
               post: post,
               onTapComment: () {
-                // 댓글 화면 이동 예정
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CommentScreen(post: post),
+                  ),
+                );
               },
             ),
           );

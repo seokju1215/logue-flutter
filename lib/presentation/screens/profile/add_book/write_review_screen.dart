@@ -3,6 +3,7 @@ import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/data/models/book_model.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:logue/presentation/screens/main_navigation_screen.dart';
 
 class WriteReviewScreen extends StatefulWidget {
   final BookModel book;
@@ -47,9 +48,9 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       });
 
       if (context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(
+        Navigator.pushAndRemoveUntil(
           context,
-          '/profile',
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen(initialIndex: 1)),
               (route) => false,
         );
       }

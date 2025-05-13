@@ -25,6 +25,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     _currentQuery = query;
     if (query.isEmpty) {
       setState(() {
+
         _results = [];
       });
       return;
@@ -118,7 +119,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: Text(
-          "책 추가",
+          "인생 책 3권을 선택해주세요",
           style: Theme.of(context).textTheme.titleMedium,
         ),
         actions: [
@@ -136,10 +137,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       ),
       body: Column(
         children: [
-          Text(
-            "당신의 인생 책 3권을 선택해주세요. (프로필에서 수정 가능해요)",
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 3, 22, 12),
             child: TextField(
