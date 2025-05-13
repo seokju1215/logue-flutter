@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/repositories/agreement_repository.dart';
 import 'package:logue/presentation/screens/signup/login_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,7 +15,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkSession();
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      _checkSession();
+    });
   }
 
   Future<void> _checkSession() async {
@@ -89,8 +92,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return Scaffold(
+      body: Center(child: SvgPicture.asset('assets/logue_logo_with_title.svg')),
     );
   }
 }
