@@ -13,7 +13,8 @@ class UserBookApi {
       final response = await client
           .from('user_books')
           .select('*') // 명시적으로 * 선택
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .order('order_index', ascending: true);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e, stack) {

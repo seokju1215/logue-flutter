@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
-import '../../../data/datasources/kakao_book_api.dart';
-import '../../../data/models/book_model.dart';
-import '../../../domain/usecases/add_book.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:logue/domain/usecases/insert_profile.dart';
+import '../../../../data/datasources/kakao_book_api.dart';
+import '../../../../data/models/book_model.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
+import 'package:logue/presentation/screens/profile/add_book/write_review_screen.dart';
 
-class Select3BooksScreen extends StatefulWidget {
-  const Select3BooksScreen({super.key});
+class SearchBookScreen extends StatefulWidget {
+  const SearchBookScreen({super.key});
 
   @override
-  State<Select3BooksScreen> createState() => _Select3BooksScreenState();
+  State<SearchBookScreen> createState() => _SearchBookScreenState();
 }
 
-class _Select3BooksScreenState extends State<Select3BooksScreen> {
+class _SearchBookScreenState extends State<SearchBookScreen> {
   final _searchController = TextEditingController();
   List<BookModel> _results = [];
-  List<BookModel> _selectedBooks = [];
+  BookModel? _selectedBook;
   bool _isLoading = false;
   String _currentQuery = '';
 
@@ -25,7 +23,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     _currentQuery = query;
     if (query.isEmpty) {
       setState(() {
-
         _results = [];
       });
       return;
@@ -35,8 +32,8 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
 
     try {
       final rawResults = await KakaoBookApi().searchBooks(query);
-
       final results = rawResults.map((data) => BookModel.fromJson(data)).toList();
+
       setState(() {
         _results = results;
       });
@@ -47,67 +44,10 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     }
   }
 
-  void _toggleSelection(BookModel book) {
+  void _selectBook(BookModel book) {
     setState(() {
-      if (_selectedBooks.contains(book)) {
-        _selectedBooks.remove(book);
-      } else {
-        if (_selectedBooks.length < 3) {
-          _selectedBooks.add(book);
-        }
-      }
+      _selectedBook = _selectedBook == book ? null : book;
     });
-  }
-
-  String generateRandomUsername() {
-    final random = DateTime.now().millisecondsSinceEpoch;
-    return 'log_${random.toString().substring(7)}';
-  }
-
-  String generateRandomProfileUrl() {
-    final random = DateTime.now().millisecondsSinceEpoch;
-    return 'log-${random.toString().substring(5)}';
-  }
-
-  bool _isSelected(BookModel book) {
-    return _selectedBooks.any((b) => b.image == book.image);
-  }
-
-  Future<void> _submitBooks() async {
-    final usecase = AddBookUseCase(Supabase.instance.client);
-    final client = Supabase.instance.client;
-    final user = client.auth.currentUser;
-
-    if (user != null) {
-      final insertProfile = InsertProfileUseCase(client);
-
-      // Supabase에 프로필 저장
-      await insertProfile(
-        id: user.id,
-        username: generateRandomUsername(),
-        name: user.userMetadata?['full_name'] ?? '이름 없음',
-        job: '사용자',
-        bio: '',
-        profileUrl: generateRandomProfileUrl(),
-        avatarUrl: 'basic',
-      );
-
-      // job_tags count 증가
-      try {
-        await client.rpc('increment_job_tag_count', params: {'input_job_name': '사용자'});
-      } catch (e) {
-        debugPrint('job_tags 증가 실패: $e');
-      }
-    }
-
-    try {
-      await usecase(_selectedBooks);
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/main');
-      }
-    } catch (e) {
-      print('저장 실패: $e');
-    }
   }
 
   @override
@@ -116,33 +56,31 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: Text(
-          "인생 책 3권을 선택해주세요",
-          style: Theme.of(context).textTheme.titleMedium,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          TextButton(
-            onPressed: _selectedBooks.length == 3 ? _submitBooks : null,
-            child: Text(
-              "확인",
-              style: TextStyle(
-                color: _selectedBooks.length == 3 ? Color(0xFF0055FF) : Colors.grey,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
+        centerTitle: true,
+        title: const Text("책 추가", style: TextStyle(fontSize: 18, color: AppColors.black900),),
       ),
       body: Column(
         children: [
+          const Padding(
+            padding: const EdgeInsets.fromLTRB(31, 20, 0, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "책 이름",
+                style: const TextStyle(fontSize: 14, color: AppColors.black500),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(22, 3, 22, 12),
             child: TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onSubmitted: _search ,
+              onSubmitted: _search,
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF191A1C),
@@ -161,18 +99,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                 ),
                 contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 9),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16, bottom: 4, top: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  '${_selectedBooks.length}/3',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
             ),
           ),
           if (!isQueryEmpty)
@@ -205,10 +131,17 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
               itemCount: _results.length,
               itemBuilder: (context, index) {
                 final book = _results[index];
-                final isSelected = _isSelected(book);
+                final isSelected = _selectedBook == book;
 
                 return GestureDetector(
-                  onTap: () => _toggleSelection(book),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WriteReviewScreen(book: book),
+                      ),
+                    );
+                  },
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(

@@ -37,6 +37,7 @@ dependencies:
   google_sign_in: ^5.0.7
   flutter_web_auth_2: ^2.0.3
   image_picker: ^1.0.4
+  reorderables: ^0.4.2
 
 
 
@@ -72,3 +73,5 @@ flutter:
     - assets/basic_avatar.png
     - assets/hashtag_icon.svg
     - assets/share_button.svg
+    - assets/add_book_button.svg
+    - assets/comment_btn.svg

@@ -1,0 +1,107 @@
+import 'package:flutter/material.dart';
+import 'package:logue/core/themes/app_colors.dart';
+import 'package:logue/data/models/book_post_model.dart';
+import 'package:logue/presentation/screens/post/post_detail_screen.dart'; // 상세화면 import
+
+class PostContent extends StatefulWidget {
+  final BookPostModel post;
+
+  const PostContent({super.key, required this.post});
+
+  @override
+  State<PostContent> createState() => _PostContentState();
+}
+
+class _PostContentState extends State<PostContent> {
+  late String truncatedText;
+  bool shouldShowMoreButton = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _truncateToFitWithButton();
+    });
+  }
+
+  void _truncateToFitWithButton() {
+    final fullText = widget.post.reviewContent ?? '';
+    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500);
+
+    final span = TextSpan(text: fullText, style: textStyle);
+    final tp = TextPainter(
+      text: span,
+      maxLines: 3,
+      textDirection: TextDirection.ltr,
+    );
+
+    tp.layout(maxWidth: MediaQuery.of(context).size.width - 44);
+    if (!tp.didExceedMaxLines) {
+      setState(() {
+        truncatedText = fullText;
+        shouldShowMoreButton = false;
+      });
+      return;
+    }
+
+    int endIndex = fullText.length;
+    while (endIndex > 0) {
+      final testSpan = TextSpan(
+        text: fullText.substring(0, endIndex) + '... 더보기',
+        style: textStyle,
+      );
+      final testTp = TextPainter(
+        text: testSpan,
+        maxLines: 3,
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: MediaQuery.of(context).size.width - 44);
+
+      if (!testTp.didExceedMaxLines) break;
+      endIndex--;
+    }
+
+    setState(() {
+      truncatedText = fullText.substring(0, endIndex) + '... ';
+      shouldShowMoreButton = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500);
+
+    return shouldShowMoreButton
+        ? RichText(
+      text: TextSpan(
+        style: textStyle,
+        children: [
+          TextSpan(text: truncatedText),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PostDetailScreen(post: widget.post),
+                  ),
+                );
+              },
+              child: const Text(
+                '더보기',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.black500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    )
+        : Text(
+      widget.post.reviewContent ?? '',
+      style: textStyle,
+    );
+  }
+}
