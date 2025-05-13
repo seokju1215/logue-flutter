@@ -352,10 +352,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildCount(String label, int count) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(count.toString(), style: Theme.of(context).textTheme.bodySmall),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(label, style: TextStyle(fontSize: 12, color: AppColors.black500)),
+        Text(count.toString(), style: TextStyle(fontSize: 12, color: AppColors.black500)),
       ],
     );
   }
