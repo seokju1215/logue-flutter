@@ -157,10 +157,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 24),
                     _buildActionButtons(),
                     const SizedBox(height: 24),
-                    if (books.isNotEmpty) _buildBookGrid(),
-                    if (books.isNotEmpty) const SizedBox(height: 16),
-                    if (books.isNotEmpty) _buildPolicyLinks(),
-                    const SizedBox(height: 16),
+                    if (books.isNotEmpty) ...[
+                      _buildBookGrid(),
+                      const SizedBox(height: 16),
+                      _buildPolicyLinks(),
+                    ] else ...[
+                      const SizedBox(height: 95),
+                      Center(
+                        child: Column(
+                          children: [
+                            const Text(
+                              '인생 책을 소개해보세요.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 12, color: AppColors.black500),
+                            ),
+                            const SizedBox(height: 5),
+                            TextButton(
+                              onPressed: () => Navigator.pushNamed(context, '/add_book_screen'),
+                              child: const Text("책 추가 +", style: TextStyle(fontSize: 12, color : AppColors.black900),),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 90), // 하단 여백 확보
+                    ]
                   ],
                 ),
               ),
@@ -238,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               await Navigator.pushNamed(context, '/add_book_screen');
               _loadBooks();
             },
-            child: const Text("책 추가 +"),
+            child: const Text("책 추가 +", style: TextStyle(color: AppColors.black900, fontSize: 12),),
           ),
         ),
         const SizedBox(width: 12),
@@ -246,7 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: OutlinedButton(
             style: _outlinedStyle(context),
             onPressed: () {},
-            child: const Text("프로필 공유"),
+            child: const Text("프로필 공유", style: TextStyle(color: AppColors.black900, fontSize: 12),),
           ),
         ),
       ],
