@@ -18,6 +18,9 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final client = Supabase.instance.client;
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrollable = false;
+
   Map<String, dynamic>? profile;
   late final RealtimeChannel _profileChannel;
   late final RealtimeChannel _bookChannel;
@@ -33,13 +36,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadBooks();
     _subscribeToProfileUpdates();
     _subscribeToBookUpdates();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkIfScrollable();
+    });
+
     client.auth.onAuthStateChange.listen((_) {
       if (mounted) setState(() {});
     });
   }
 
+  void _checkIfScrollable() {
+    if (!_scrollController.hasClients) return;
+    final isNowScrollable = _scrollController.position.maxScrollExtent > 0;
+    if (mounted && isNowScrollable != _isScrollable) {
+      setState(() => _isScrollable = isNowScrollable);
+    }
+  }
+
   @override
   void dispose() {
+    _scrollController.dispose();
     _profileChannel.unsubscribe();
     _bookChannel.unsubscribe();
     super.dispose();
@@ -56,6 +73,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final result = await _getUserBooks(user.id);
     result.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
     setState(() => books = result);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkIfScrollable();
+    });
   }
 
   void _subscribeToBookUpdates() {
@@ -76,6 +96,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final data = await _getUserBooks(user.id);
           data.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
           setState(() => books = data);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _checkIfScrollable();
+          });
         },
       )
       ..subscribe();
@@ -148,49 +171,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Stack(
           children: [
             Positioned.fill(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 21),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildProfileHeader(),
-                    const SizedBox(height: 24),
-                    _buildActionButtons(),
-                    const SizedBox(height: 24),
-                    if (books.isNotEmpty) ...[
-                      _buildBookGrid(),
-                      const SizedBox(height: 16),
-                      _buildPolicyLinks(),
-                    ] else ...[
-                      const SizedBox(height: 95),
-                      Center(
-                        child: Column(
-                          children: [
-                            const Text(
-                              '인생 책을 소개해보세요.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 12, color: AppColors.black500),
-                            ),
-                            const SizedBox(height: 5),
-                            TextButton(
-                              onPressed: () => Navigator.pushNamed(context, '/add_book_screen'),
-                              child: const Text("책 추가 +", style: TextStyle(fontSize: 12, color : AppColors.black900),),
-                            ),
-                          ],
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (_) {
+                  _checkIfScrollable();
+                  return false;
+                },
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildProfileHeader(),
+                      const SizedBox(height: 24),
+                      _buildActionButtons(),
+                      const SizedBox(height: 24),
+                      if (books.isNotEmpty) ...[
+                        _buildBookGrid(),
+                        const SizedBox(height: 32),
+                        if (_isScrollable)
+                          Center(child: _buildPolicyLinks()), // 스크롤 있음
+                      ] else ...[
+                        const SizedBox(height: 95),
+                        Center(
+                          child: Column(
+                            children: [
+                              const Text(
+                                '인생 책을 소개해보세요.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 12, color: AppColors.black500),
+                              ),
+                              const SizedBox(height: 5),
+                              TextButton(
+                                onPressed: () => Navigator.pushNamed(context, '/add_book_screen'),
+                                child: const Text("책 추가 +", style: TextStyle(fontSize: 12, color: AppColors.black900)),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 90), // 하단 여백 확보
-                    ]
-                  ],
+                        const SizedBox(height: 90),
+                      ]
+                    ],
+                  ),
                 ),
               ),
             ),
-            if (books.isEmpty)
+            if (!_isScrollable)
               Positioned(
                 bottom: 16,
                 left: 0,
                 right: 0,
-                child: Center(child: _buildPolicyLinks()),
+                child: Center(child: _buildPolicyLinks()), // 스크롤 없음
               ),
           ],
         ),
@@ -258,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               await Navigator.pushNamed(context, '/add_book_screen');
               _loadBooks();
             },
-            child: const Text("책 추가 +", style: TextStyle(color: AppColors.black900, fontSize: 12),),
+            child: const Text("책 추가 +", style: TextStyle(color: AppColors.black900, fontSize: 12)),
           ),
         ),
         const SizedBox(width: 12),
@@ -266,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: OutlinedButton(
             style: _outlinedStyle(context),
             onPressed: () {},
-            child: const Text("프로필 공유", style: TextStyle(color: AppColors.black900, fontSize: 12),),
+            child: const Text("프로필 공유", style: TextStyle(color: AppColors.black900, fontSize: 12)),
           ),
         ),
       ],
