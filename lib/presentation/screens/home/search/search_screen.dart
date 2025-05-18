@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/core/widgets/search/search_user_item.dart';
+import 'package:logue/core/widgets/book/book_frame.dart';
+import 'package:logue/data/models/book_model.dart';
 import 'package:logue/data/models/user_profile.dart';
 import 'package:logue/domain/usecases/search_users.dart';
+import 'package:logue/data/datasources/kakao_book_api.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -16,6 +19,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   List<UserProfile> _userResults = [];
+  List<BookModel> _bookResults = [];
   bool _isLoading = false;
   String _query = '';
 
@@ -38,8 +42,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       _query = query;
     });
     try {
-      final results = await SearchUsers().call(query);
-      setState(() => _userResults = results);
+      final users = await SearchUsers().call(query);
+      final booksRaw = await KakaoBookApi().searchBooks(query);
+      final books = booksRaw.map((data) => BookModel.fromJson(data)).toList();
+      setState(() {
+        _userResults = users;
+        _bookResults = books;
+      });
     } catch (e) {
       print('검색 오류: $e');
     } finally {
@@ -147,29 +156,66 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               ? const Center(child: CircularProgressIndicator())
               : _query.isEmpty
               ? const SizedBox.shrink()
-              : ListView.builder(
-            padding: const EdgeInsets.only(top: 20),
-            itemCount: _userResults.length.clamp(0, 6),
-            itemBuilder: (context, index) {
-              return SearchUserItem(
-                user: _userResults[index],
-                isFollowing: _userResults[index].isFollowing,
-                onTapFollow: () {
-                  // TODO: follow/unfollow 로직 연결
-                },
-              );
-            },
+              : SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            child: Column(
+              children: [
+                ..._userResults.take(6).map((e) => SearchUserItem(
+                  user: e,
+                  isFollowing: e.isFollowing,
+                  onTapFollow: () {},
+                )),
+                const SizedBox(height: 20),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.7,
+                  ),
+                  itemCount: _bookResults.length,
+                  itemBuilder: (context, index) {
+                    final book = _bookResults[index];
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.network(book.image, fit: BoxFit.cover),
+                    );
+                  },
+                )
+              ],
+            ),
           ),
           ListView(
+            padding: const EdgeInsets.all(20),
             children: _userResults.map((e) => SearchUserItem(
               user: e,
               isFollowing: e.isFollowing,
-              onTapFollow: () {
-                // TODO: follow/unfollow 로직 연결
-              },
+              onTapFollow: () {},
             )).toList(),
           ),
-          const Center(child: Text('책 결과는 나중에 연결')),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.7,
+              ),
+              itemCount: _bookResults.length,
+              itemBuilder: (context, index) {
+                final book = _bookResults[index];
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(book.image, fit: BoxFit.cover),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
