@@ -77,8 +77,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     },
                     child: Padding(
                       padding: EdgeInsets.only(
-                        left: index == 0 ? 20 : 0,
-                        right: 24,
+                        left: index == 0 ? 11 : 0,
+                        right: 0,
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
