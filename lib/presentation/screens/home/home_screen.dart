@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
+import 'package:logue/presentation/screens/home/home_recommand_tab.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,9 +37,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         titleSpacing: 0,
         title: Padding(
           padding: const EdgeInsets.only(left: 20),
-          child: SvgPicture.asset(
-            'assets/logue_logo.svg',
-            height: 24,
+          child: GestureDetector(
+            onTap: () async {
+              // 로그아웃 처리
+              await Supabase.instance.client.auth.signOut();
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, '/splash'); // 네 로그인 경로로 이동
+              }
+            },
+            child: SvgPicture.asset(
+              'assets/logue_logo.svg',
+              height: 24,
+            ),
           ),
         ),
         centerTitle: false,
@@ -50,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
+          preferredSize: const Size.fromHeight(40),
           child: Stack(
             children: [
               // ⚫ 얇은 전체 구분선
@@ -114,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         controller: _tabController,
         physics: const NeverScrollableScrollPhysics(),
         children: const [
-          Center(child: Text('추천 탭')),
+          HomeRecommendTab(),
           Center(child: Text('팔로잉 탭')),
           Center(child: Text('인기 탭')),
         ],

@@ -42,10 +42,8 @@ class _SplashScreenState extends State<SplashScreen> {
         .maybeSingle();
 
     if (profile == null || profile.isEmpty) {
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-      return;
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/login');
     }
 
     // 약관 동의 여부 확인
