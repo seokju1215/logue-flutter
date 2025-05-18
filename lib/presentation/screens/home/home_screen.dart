@@ -1,69 +1,123 @@
 import 'package:flutter/material.dart';
-import 'package:logue/core/themes/app_colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:logue/core/themes/app_colors.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          automaticallyImplyLeading: false,
-          titleSpacing: 0, // 👈 로고가 왼쪽에 딱 붙게
-          title: Padding(
-            padding: const EdgeInsets.only(left: 20), // ← 로고 왼쪽 여백
-            child: SvgPicture.asset(
-              'assets/logue_logo.svg',
-              height: 24,
-            ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.only(left: 20),
+          child: SvgPicture.asset(
+            'assets/logue_logo.svg',
+            height: 24,
           ),
-          centerTitle: false,
-          actions: [
-            IconButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/search');
-              },
-              icon: const Icon(Icons.search, color: Colors.black, size: 28),
-            ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: Container(
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 20), // 👈 탭바 전체 왼쪽 여백
-              child: TabBar(
-                isScrollable: true,
-                labelPadding: const EdgeInsets.only(right: 24), // 👈 탭 간 간격
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.black,
-                indicatorWeight: 2.0,
-                indicatorSize: TabBarIndicatorSize.label,
-                overlayColor: const MaterialStatePropertyAll(Colors.transparent),
-                splashFactory: NoSplash.splashFactory,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                tabs: const [
-                  Tab(text: '추천'),
-                  Tab(text: '팔로잉'),
-                  Tab(text: '인기'),
-                ],
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/search');
+            },
+            icon: const Icon(Icons.search, color: Colors.black, size: 28),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: Stack(
+            children: [
+              // ⚫ 얇은 전체 구분선
+              const Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColors.black500
+                ),
               ),
-            ),
+              // ⚫ 커스텀 탭바
+              Row(
+                children: List.generate(3, (index) {
+                  final labels = ['추천', '팔로잉', '인기'];
+                  final isSelected = _tabController.index == index;
+
+                  return GestureDetector(
+                    onTap: () {
+                      _tabController.animateTo(index);
+                      setState(() {});
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: index == 0 ? 20 : 0,
+                        right: 24,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 19), // 여유 공간 위에 줌
+                          Text(
+                            labels[index],
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? AppColors.black900 : AppColors.black500,
+                              fontSize: 14
+                            ),
+                          ),
+                          const SizedBox(height: 6), // 텍스트와 밑줄 간격
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            height: 2,
+                            width: 56,
+                            color: isSelected ? AppColors.black900 : Colors.transparent,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
           ),
         ),
-        body: const TabBarView(
-          physics: NeverScrollableScrollPhysics(), // 👉 옆으로 넘기는 제스처 제거
-          children: [
-            Center(child: Text('추천 탭')),
-            Center(child: Text('팔로잉 탭')),
-            Center(child: Text('인기 탭')),
-          ],
-        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: const [
+          Center(child: Text('추천 탭')),
+          Center(child: Text('팔로잉 탭')),
+          Center(child: Text('인기 탭')),
+        ],
       ),
     );
   }
