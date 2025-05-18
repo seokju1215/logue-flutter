@@ -10,7 +10,8 @@ class PostItem extends StatelessWidget {
   final bool isMyPost;
   final VoidCallback? onTapComment; // 댓글 버튼 누르면
 
-  const PostItem({Key? key, required this.isMyPost, required this.post, this.onTapComment})
+  const PostItem(
+      {Key? key, required this.isMyPost, required this.post, this.onTapComment})
       : super(key: key);
 
   @override
@@ -65,18 +66,56 @@ class PostItem extends StatelessWidget {
             ),
             const Spacer(),
             isMyPost
-                ? IconButton(
-              icon: const Icon(Icons.more_horiz),
-              onPressed: () {
-                // 더보기 메뉴 (편집, 삭제)
-              },
-            )
-                : IconButton(
-              icon: const Icon(Icons.bookmark_border),
-              onPressed: () {
-                // 저장 기능
-              },
-            ),
+                ? Row(
+                    children: [
+                      OutlinedButton(
+                        onPressed: () {
+                          // 버튼 눌렀을 때 동작
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.black300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5), // 필요 시 둥글게
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 19, vertical: 8),
+                        ),
+                        child: const Text(
+                          '책 둘러보기 →',
+                          style: TextStyle(
+                            color: AppColors.black500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert),
+                        onPressed: () {
+                          // 더보기 메뉴 (편집, 삭제)
+                        },
+                      ),
+                    ],
+                  )
+                : OutlinedButton(
+                    onPressed: () {
+                      // 버튼 눌렀을 때 동작
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.black300),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5), // 필요 시 둥글게
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 19, vertical: 8),
+                    ),
+                    child: const Text(
+                      '책 둘러보기 →',
+                      style: TextStyle(
+                        color: AppColors.black500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
           ],
         ),
         const SizedBox(height: 8),
@@ -92,28 +131,6 @@ class PostItem extends StatelessWidget {
 
         // 리뷰 본문
         PostContent(post: post),
-
-        // 댓글 버튼
-        Row(
-          children: [
-            IconButton(
-              onPressed: onTapComment,
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(),
-              icon: Transform.translate(
-                offset: Offset(-13, 0), // 왼쪽으로 당김
-                child: SvgPicture.asset(
-                  'assets/comment_btn.svg',
-                  width: 24,
-                  height: 24,
-                ),
-              )
-            ),
-            const Text('120', style: TextStyle(fontSize: 12, color: AppColors.black900),), // 나중에 댓글 수 연동할 자리
-          ],
-        ),
-
-        const Divider(thickness: 1),
       ],
     );
   }
