@@ -80,30 +80,6 @@ class PostDetailScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 24),
-
-              // 댓글 버튼 및 수
-              Row(
-                children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
-                      // TODO: 댓글 창으로 이동
-                    },
-                    icon: SvgPicture.asset(
-                      'assets/comment_btn.svg',
-                      width: 24,
-                      height: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    '120',
-                    style: TextStyle(fontSize: 12, color: AppColors.black900),
-                  ),
-                ],
-              ),
-              SizedBox(height: 30,)
             ],
           ),
         ),

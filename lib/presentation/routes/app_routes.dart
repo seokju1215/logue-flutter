@@ -17,6 +17,7 @@ import '../screens/profile/add_book/search_book_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/post/my_post_screen.dart';
 import '../screens/home/search/search_screen.dart';
+import 'package:logue/presentation/screens/profile/other_profile_screen.dart';
 
 Map<String, WidgetBuilder> appRoutes = {
   '/main' : (context) => const MainNavigationScreen(),

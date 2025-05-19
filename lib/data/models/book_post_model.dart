@@ -34,9 +34,11 @@ class BookPostModel {
       image: map['image'] as String?,
       reviewTitle: map['review_title'] as String?,
       reviewContent: map['review_content'] as String?,
-      userName: profiles?['username'] as String?,     // ✅ 수정
-      avatarUrl: profiles?['avatar_url'] as String?, // ✅ 추가
+      userName: map['username'] as String?,     // ✅ 수정
+      avatarUrl: map['avatar_url'] as String?,
       orderIndex: map['order_index'] as int?,
     );
+
+
   }
 }

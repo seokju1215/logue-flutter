@@ -8,6 +8,8 @@ import 'package:logue/data/models/user_profile.dart';
 import 'package:logue/domain/usecases/search_users.dart';
 import 'package:logue/data/datasources/kakao_book_api.dart';
 
+import '../../profile/other_profile_screen.dart';
+
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -167,6 +169,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   user: e,
                   isFollowing: e.isFollowing,
                   onTapFollow: () {},
+                  onTapProfile: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => OtherProfileScreen(userId: e.id),
+                      ),
+                    );
+                  },
                 )),
                 const SizedBox(height: 26),
                 Text("책", style: TextStyle(fontSize: 16, color: AppColors.black900),),
@@ -206,6 +216,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                     user: e,
                     isFollowing: e.isFollowing,
                     onTapFollow: () {},
+                    onTapProfile: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OtherProfileScreen(userId: e.id),
+                        ),
+                      );
+                    },
                   )).toList(),
                 ),
               ),
