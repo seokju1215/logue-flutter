@@ -21,7 +21,7 @@ class SearchUserItem extends StatelessWidget {
       children: [
         // 프로필 이미지
         CircleAvatar(
-          radius: 18,
+          radius: 27,
           backgroundImage: (user.avatarUrl == null || user.avatarUrl == 'basic')
               ? const AssetImage('assets/basic_avatar.png')
               : NetworkImage(user.avatarUrl!) as ImageProvider,
@@ -32,7 +32,7 @@ class SearchUserItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(user.username, style: const TextStyle(color: AppColors.black900, fontSize: 14)),
               Text(user.name, style: const TextStyle(color: AppColors.black500, fontSize: 12)),
             ],
           ),
@@ -43,10 +43,12 @@ class SearchUserItem extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: isFollowing ? AppColors.black300 : AppColors.black900),
             foregroundColor: isFollowing ? AppColors.black500 : AppColors.black900,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+            ),
           ),
-          child: Text(isFollowing ? '팔로잉' : '팔로우'),
+          child: isFollowing ? Text( '팔로잉', style: TextStyle(fontSize: 12, color: AppColors.black500),) : Text('팔로우', style: TextStyle(fontSize: 12, color: AppColors.black900)),
         )
       ],
     );

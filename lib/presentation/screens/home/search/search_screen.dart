@@ -159,13 +159,18 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               : SingleChildScrollView(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text("계정", style: TextStyle(fontSize: 16, color: AppColors.black900),),
+                const SizedBox(height: 6),
                 ..._userResults.take(6).map((e) => SearchUserItem(
                   user: e,
                   isFollowing: e.isFollowing,
                   onTapFollow: () {},
                 )),
-                const SizedBox(height: 20),
+                const SizedBox(height: 26),
+                Text("책", style: TextStyle(fontSize: 16, color: AppColors.black900),),
+                const SizedBox(height: 4),
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -187,35 +192,56 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               ],
             ),
           ),
-          ListView(
-            padding: const EdgeInsets.all(20),
-            children: _userResults.map((e) => SearchUserItem(
-              user: e,
-              isFollowing: e.isFollowing,
-              onTapFollow: () {},
-            )).toList(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+                child: Text("계정", style: TextStyle(fontSize: 16, color: AppColors.black900)),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  children: _userResults.map((e) => SearchUserItem(
+                    user: e,
+                    isFollowing: e.isFollowing,
+                    onTapFollow: () {},
+                  )).toList(),
+                ),
+              ),
+            ],
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.7,
-              ),
-              itemCount: _bookResults.length,
-              itemBuilder: (context, index) {
-                final book = _bookResults[index];
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(book.image, fit: BoxFit.cover),
-                );
-              },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '책',
+                  style: TextStyle(fontSize: 16, color: AppColors.black900),
+                ),
+                const SizedBox(height: 8),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.7,
+                  ),
+                  itemCount: _bookResults.length,
+                  itemBuilder: (context, index) {
+                    final book = _bookResults[index];
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.network(book.image, fit: BoxFit.cover),
+                    );
+                  },
+                ),
+              ],
             ),
-          ),
+          )
         ],
       ),
     );

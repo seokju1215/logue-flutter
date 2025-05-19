@@ -113,6 +113,7 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                 ],
               ),
             ),
+
           Expanded(
             child: isQueryEmpty
                 ? const SizedBox.shrink()
@@ -121,7 +122,7 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                 : _results.isEmpty
                 ? const Center(child: Text("검색 결과가 없습니다."))
                 : GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 21),
+              padding: const EdgeInsets.symmetric(horizontal: 22),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 mainAxisSpacing: 12,

@@ -11,7 +11,7 @@ class SearchUsers {
     // username 검색
     final response = await client
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username,name, avatar_url')
         .ilike('username', '%$keyword%')
         .neq('id', currentUserId) // 자기 자신 제외
         .limit(6);
