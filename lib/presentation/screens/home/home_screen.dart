@@ -28,107 +28,105 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        title: Padding(
-          padding: const EdgeInsets.only(left: 20),
-          child: GestureDetector(
-            onTap: () async {
-              // 로그아웃 처리
-              await Supabase.instance.client.auth.signOut();
-              if (context.mounted) {
-                Navigator.pushReplacementNamed(context, '/splash'); // 네 로그인 경로로 이동
-              }
-            },
-            child: SvgPicture.asset(
-              'assets/logue_logo.svg',
-              height: 24,
-            ),
-          ),
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/search');
-            },
-            icon: const Icon(Icons.search, color: Colors.black, size: 28),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(40),
-          child: Stack(
-            children: [
-              // ⚫ 얇은 전체 구분선
-              const Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: AppColors.black500
+        body: NestedScrollView(
+          floatHeaderSlivers: true,
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverAppBar(
+              surfaceTintColor: Colors.white,
+              backgroundColor: Colors.white,
+              floating: true,
+              snap: true,
+              pinned: false,
+              elevation: 0,
+              titleSpacing: 0,
+              leading: const SizedBox(),
+              title: Padding(
+                padding: const EdgeInsets.only(left: 20),
+                child: GestureDetector(
+                  onTap: () async {
+                    await Supabase.instance.client.auth.signOut();
+                    if (context.mounted) {
+                      Navigator.pushReplacementNamed(context, '/splash');
+                    }
+                  },
+                  child: SvgPicture.asset('assets/logue_logo.svg', height: 24),
                 ),
               ),
-              // ⚫ 커스텀 탭바
-              Row(
-                children: List.generate(3, (index) {
-                  final labels = ['추천', '팔로잉', '인기'];
-                  final isSelected = _tabController.index == index;
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/search');
+                  },
+                  icon: const Icon(Icons.search, color: Colors.black, size: 28),
+                ),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(40),
+                child: Stack(
+                  children: [
+                    const Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Divider(height: 1, thickness: 1, color: AppColors.black500),
+                    ),
+                    Row(
+                      children: List.generate(3, (index) {
+                        final labels = ['추천', '팔로잉', '인기'];
+                        final isSelected = _tabController.index == index;
 
-                  return GestureDetector(
-                    onTap: () {
-                      _tabController.animateTo(index);
-                      setState(() {});
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: index == 0 ? 11 : 0,
-                        right: 0,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 19), // 여유 공간 위에 줌
-                          Text(
-                            labels[index],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? AppColors.black900 : AppColors.black500,
-                              fontSize: 14
+                        return GestureDetector(
+                          onTap: () {
+                            _tabController.animateTo(index);
+                            setState(() {});
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.only(left: index == 0 ? 11 : 0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 19),
+                                Text(
+                                  labels[index],
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected ? AppColors.black900 : AppColors.black500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  height: 2,
+                                  width: 56,
+                                  color: isSelected ? AppColors.black900 : Colors.transparent,
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 6), // 텍스트와 밑줄 간격
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            height: 2,
-                            width: 56,
-                            color: isSelected ? AppColors.black900 : Colors.transparent,
-                          ),
-                        ],
-                      ),
+                        );
+                      }),
                     ),
-                  );
-                }),
+                  ],
+                ),
               ),
+            )
+          ],
+          body: TabBarView(
+            controller: _tabController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: const [
+              HomeRecommendTab(),
+              Center(child: Text('팔로잉 탭')),
+              Center(child: Text('인기 탭')),
             ],
           ),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: const [
-          HomeRecommendTab(),
-          Center(child: Text('팔로잉 탭')),
-          Center(child: Text('인기 탭')),
-        ],
       ),
     );
   }
