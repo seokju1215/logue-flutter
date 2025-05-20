@@ -62,7 +62,11 @@ Map<String, WidgetBuilder> appRoutes = {
   '/my_post_screen': (context) {
     final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     final bookId = args['bookId'] as String;
-    return MyBookPostScreen(bookId: bookId);
+    final userId = args['userId'] as String?;
+    return MyBookPostScreen(
+      bookId: bookId,
+      userId: userId, // ✅ 전달!
+    );
   },
 
 

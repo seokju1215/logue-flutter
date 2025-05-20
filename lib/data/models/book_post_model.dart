@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 class BookPostModel {
   final String id;
   final String userId;
@@ -24,9 +25,16 @@ class BookPostModel {
   });
 
   factory BookPostModel.fromMap(Map<String, dynamic> map) {
-    final profiles = map['profiles'] as Map<String, dynamic>?;
+    debugPrint('🧪 map keys: ${map.keys}');
+    debugPrint('🧪 raw profiles value: ${map['profiles']}');
 
-    return BookPostModel(
+    // profiles 파싱 안전하게 처리
+    final profilesRaw = map['profiles'];
+    final profiles = (profilesRaw is Map)
+        ? Map<String, dynamic>.from(profilesRaw as Map)
+        : null;
+
+    final model = BookPostModel(
       id: map['id'] as String,
       userId: map['user_id'] as String,
       title: map['title'] as String?,
@@ -34,11 +42,17 @@ class BookPostModel {
       image: map['image'] as String?,
       reviewTitle: map['review_title'] as String?,
       reviewContent: map['review_content'] as String?,
-      userName: map['username'] as String?,     // ✅ 수정
+      userName: map['username'] as String?, // ✅ 수정된 부분
       avatarUrl: map['avatar_url'] as String?,
       orderIndex: map['order_index'] as int?,
     );
 
+    debugPrint('✅ BookPostModel created: '
+        'id=${model.id}, '
+        'userName=${model.userName}, '
+        'avatarUrl=${model.avatarUrl}, '
+        'title=${model.title}');
 
+    return model;
   }
 }

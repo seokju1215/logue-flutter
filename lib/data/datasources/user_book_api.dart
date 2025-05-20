@@ -12,7 +12,7 @@ class UserBookApi {
     try {
       final response = await client
           .from('user_books')
-          .select('*') // 명시적으로 * 선택
+          .select('*, profiles!fk_user_profile(username, avatar_url)')
           .eq('user_id', userId)
           .order('order_index', ascending: true);
 

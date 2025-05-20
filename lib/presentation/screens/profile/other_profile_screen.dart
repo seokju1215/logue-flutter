@@ -168,7 +168,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
       books: books,
       onTap: (book) {
         final bookId = book['id'] as String;
-        Navigator.pushNamed(context, '/my_post_screen', arguments: {'bookId': bookId});
+        Navigator.pushNamed(context, '/my_post_screen', arguments: {'bookId': bookId,'userId': widget.userId,});
       },
     );
   }

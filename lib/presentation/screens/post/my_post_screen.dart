@@ -34,7 +34,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
     try {
       final response = await client
-          .rpc('get_user_books_with_profiles')
+          .rpc('get_user_books_with_profiles', params: {'target_user_id': userId})
           .execute();
 
       if (response.data == null) {
