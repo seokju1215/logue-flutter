@@ -6,6 +6,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/domain/usecases/get_user_books.dart';
 import 'package:logue/core/widgets/book/user_book_grid.dart';
+import 'package:logue/data/repositories/follow_repository.dart';
+import 'package:logue/domain/usecases/follows/follow_user.dart';
+import 'package:logue/domain/usecases/follows/unfollow_user.dart';
+import 'package:logue/domain/usecases/follows/is_following.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OtherProfileScreen extends StatefulWidget {
   final String userId;
@@ -18,6 +23,10 @@ class OtherProfileScreen extends StatefulWidget {
 class _OtherProfileScreenState extends State<OtherProfileScreen> {
   final client = Supabase.instance.client;
   final ScrollController _scrollController = ScrollController();
+  late final FollowRepository _followRepo;
+  late final FollowUser _followUser;
+  late final UnfollowUser _unfollowUser;
+  late final IsFollowing _isFollowing;
   bool _isScrollable = false;
 
   Map<String, dynamic>? profile;
@@ -27,6 +36,14 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _followRepo = FollowRepository(
+      client: client,
+      functionBaseUrl: dotenv.env['FUNCTION_BASE_URL']!,
+    );
+    _followUser = FollowUser(_followRepo);
+    _unfollowUser = UnfollowUser(_followRepo);
+    _isFollowing = IsFollowing(_followRepo);
+
     _getUserBooks = GetUserBooks(UserBookApi(client));
     _fetchProfile();
     _loadBooks();
@@ -45,8 +62,37 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   }
 
   Future<void> _fetchProfile() async {
-    final data = await client.from('profiles').select().eq('id', widget.userId).single();
-    setState(() => profile = data);
+    final data = await client
+        .from('profiles')
+        .select()
+        .eq('id', widget.userId)
+        .maybeSingle();
+
+    final following = await _isFollowing(widget.userId);
+
+    setState(() {
+      profile = {
+        ...?data,
+        'isFollowing': following,
+      };
+    });
+  }
+
+  Future<void> _toggleFollow() async {
+    if (client.auth.currentUser?.id == widget.userId) return;
+
+    final isFollowing = profile?['isFollowing'] == true;
+
+    try {
+      if (isFollowing) {
+        await _unfollowUser(widget.userId);
+      } else {
+        await _followUser(widget.userId);
+      }
+      await _fetchProfile();
+    } catch (e) {
+      debugPrint('❌ 팔로우 변경 실패: $e');
+    }
   }
 
   Future<void> _loadBooks() async {
@@ -77,7 +123,8 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                   icon: const Icon(Icons.arrow_back, color: Colors.black),
                   onPressed: () => Navigator.pop(context),
                 ),
-                Text(profile?['username'] ?? '사용자', style: Theme.of(context).textTheme.titleMedium),
+                Text(profile?['username'] ?? '사용자',
+                    style: Theme.of(context).textTheme.titleMedium),
                 IconButton(
                   icon: SvgPicture.asset('assets/share_icon.svg'),
                   onPressed: () {},
@@ -118,45 +165,72 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
 
   Widget _buildProfileHeader() {
     final avatarUrl = profile?['avatar_url'] ?? 'basic';
+    final isFollowing = profile?['isFollowing'] == true;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(profile?['name'] ?? '', style: Theme.of(context).textTheme.bodyLarge),
-                  Text(profile?['job'] ?? '', style: Theme.of(context).textTheme.bodySmall),
+                  Text(profile?['name'] ?? '',
+                      style: Theme.of(context).textTheme.bodyLarge),
+                  Text(profile?['job'] ?? '',
+                      style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 10),
-                  Text(profile?['bio'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.black900)),
-                  const SizedBox(height: 20),
+                  Text(profile?['bio'] ?? '',
+                      style: const TextStyle(fontSize: 12, color: AppColors.black900)),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _buildCount("팔로워", profile?['followers'] ?? 0),
+                      const SizedBox(width: 24),
+                      _buildCount("팔로잉", profile?['followings'] ?? 0),
+                    ],
+                  ),
                 ],
               ),
             ),
-            Container(
-              width: 71,
-              height: 71,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.black100, width: 1),
-              ),
-              child: CircleAvatar(
-                radius: 70,
-                backgroundImage: avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
-                child: avatarUrl == 'basic'
-                    ? Image.asset('assets/basic_avatar.png', width: 70, height: 70)
-                    : null,
-              ),
+            Column(
+              children: [
+                Container(
+                  width: 71,
+                  height: 71,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.black100, width: 1),
+                  ),
+                  child: CircleAvatar(
+                    radius: 70,
+                    backgroundImage: avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
+                    child: avatarUrl == 'basic'
+                        ? Image.asset('assets/basic_avatar.png', width: 70, height: 70)
+                        : null,
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: _toggleFollow,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                    side: BorderSide(
+                      color: isFollowing ? AppColors.black300 : AppColors.black900,
+                    ),
+                  ),
+                  child: Text(
+                    isFollowing ? '팔로잉' : '팔로우',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isFollowing ? AppColors.black500 : AppColors.black900,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        Row(
-          children: [
-            _buildCount("팔로워", profile?['followers'] ?? 0),
-            const SizedBox(width: 24),
-            _buildCount("팔로잉", profile?['followings'] ?? 0),
           ],
         ),
       ],
@@ -168,7 +242,11 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
       books: books,
       onTap: (book) {
         final bookId = book['id'] as String;
-        Navigator.pushNamed(context, '/my_post_screen', arguments: {'bookId': bookId,'userId': widget.userId,});
+        Navigator.pushNamed(
+          context,
+          '/my_post_screen',
+          arguments: {'bookId': bookId, 'userId': widget.userId},
+        );
       },
     );
   }

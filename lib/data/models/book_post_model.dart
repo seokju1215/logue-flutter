@@ -47,12 +47,6 @@ class BookPostModel {
       orderIndex: map['order_index'] as int?,
     );
 
-    debugPrint('✅ BookPostModel created: '
-        'id=${model.id}, '
-        'userName=${model.userName}, '
-        'avatarUrl=${model.avatarUrl}, '
-        'title=${model.title}');
-
     return model;
   }
 }
