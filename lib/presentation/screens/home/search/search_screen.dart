@@ -7,8 +7,13 @@ import 'package:logue/data/models/book_model.dart';
 import 'package:logue/data/models/user_profile.dart';
 import 'package:logue/domain/usecases/search_users.dart';
 import 'package:logue/data/datasources/kakao_book_api.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:logue/data/repositories/follow_repository.dart';
+import 'package:logue/domain/usecases/follows/follow_user.dart';
+import 'package:logue/domain/usecases/follows/unfollow_user.dart';
+import 'package:logue/domain/usecases/follows/is_following.dart';
 import '../../profile/other_profile_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -20,6 +25,10 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  late final FollowRepository _followRepo;
+  late final FollowUser _followUser;
+  late final UnfollowUser _unfollowUser;
+  late final IsFollowing _isFollowing;
   List<UserProfile> _userResults = [];
   List<BookModel> _bookResults = [];
   bool _isLoading = false;
@@ -29,6 +38,14 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    _followRepo = FollowRepository(
+      client: Supabase.instance.client,
+      functionBaseUrl: dotenv.env['FUNCTION_BASE_URL']!,
+    );
+    _followUser = FollowUser(_followRepo);
+    _unfollowUser = UnfollowUser(_followRepo);
+    _isFollowing = IsFollowing(_followRepo);
   }
 
   @override
@@ -168,7 +185,24 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 ..._userResults.take(6).map((e) => SearchUserItem(
                   user: e,
                   isFollowing: e.isFollowing,
-                  onTapFollow: () {},
+                  onTapFollow: () async {
+                    try {
+                      if (e.isFollowing) {
+                        await _unfollowUser(e.id);
+                      } else {
+                        await _followUser(e.id);
+                      }
+
+                      final updatedFollow = await _isFollowing(e.id);
+                      setState(() {
+                        _userResults = _userResults.map((u) {
+                          return u.id == e.id ? u.copyWith(isFollowing: updatedFollow) : u;
+                        }).toList();
+                      });
+                    } catch (err) {
+                      debugPrint('❌ 팔로우 실패: $err');
+                    }
+                  },
                   onTapProfile: () {
                     Navigator.push(
                       context,
@@ -177,7 +211,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       ),
                     );
                   },
-                )),
+                ),),
                 const SizedBox(height: 26),
                 Text("책", style: TextStyle(fontSize: 16, color: AppColors.black900),),
                 const SizedBox(height: 4),

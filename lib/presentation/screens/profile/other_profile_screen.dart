@@ -196,11 +196,12 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
               ),
             ),
             Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
                   width: 71,
                   height: 71,
-                  margin: const EdgeInsets.only(bottom: 8),
+                  margin: const EdgeInsets.only(bottom :8),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.black100, width: 1),
@@ -213,18 +214,22 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                         : null,
                   ),
                 ),
+
                 OutlinedButton(
                   onPressed: _toggleFollow,
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 43, vertical: 9),
                     side: BorderSide(
                       color: isFollowing ? AppColors.black300 : AppColors.black900,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5), // ✅ 여기가 border-radius
                     ),
                   ),
                   child: Text(
                     isFollowing ? '팔로잉' : '팔로우',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: isFollowing ? AppColors.black500 : AppColors.black900,
                     ),
                   ),

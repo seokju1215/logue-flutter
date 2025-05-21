@@ -38,7 +38,6 @@ class FollowRepository {
       },
       body: jsonEncode({'target_user_id': targetUserId}),
     );
-    print('📦 호출 URL: ${Uri.parse('$functionBaseUrl/follow-user')}');
 
     if (response.statusCode != 200) {
       throw Exception('Edge Function 오류: ${response.body}');

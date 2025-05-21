@@ -22,4 +22,13 @@ class UserProfile {
       isFollowing: isFollowing,
     );
   }
+  UserProfile copyWith({bool? isFollowing}) {
+    return UserProfile(
+      id: id,
+      username: username,
+      name: name,
+      avatarUrl: avatarUrl,
+      isFollowing: isFollowing ?? this.isFollowing,
+    );
+  }
 }
