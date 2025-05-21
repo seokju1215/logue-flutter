@@ -22,7 +22,8 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMixin {
+class _SearchScreenState extends State<SearchScreen>
+    with TickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   late final FollowRepository _followRepo;
@@ -95,9 +96,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             style: const TextStyle(color: AppColors.black900, fontSize: 14),
             decoration: InputDecoration(
               hintText: '사용자 이름 또는 책 이름을 검색해주세요.',
-              hintStyle: const TextStyle(color: AppColors.black500, fontSize: 14),
+              hintStyle:
+                  const TextStyle(color: AppColors.black500, fontSize: 14),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               filled: true,
               fillColor: const Color(0xFFF3F3F3),
               enabledBorder: OutlineInputBorder(
@@ -120,7 +123,8 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: Divider(height: 1, thickness: 1, color: AppColors.black500),
+                child:
+                    Divider(height: 1, thickness: 1, color: AppColors.black500),
               ),
               Row(
                 children: List.generate(3, (index) {
@@ -146,7 +150,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             labels[index],
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? AppColors.black900 : AppColors.black500,
+                              color: isSelected
+                                  ? AppColors.black900
+                                  : AppColors.black500,
                               fontSize: 14,
                             ),
                           ),
@@ -155,7 +161,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                             duration: const Duration(milliseconds: 200),
                             height: 2,
                             width: 56,
-                            color: isSelected ? AppColors.black900 : Colors.transparent,
+                            color: isSelected
+                                ? AppColors.black900
+                                : Colors.transparent,
                           ),
                         ],
                       ),
@@ -174,126 +182,182 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _query.isEmpty
-              ? const SizedBox.shrink()
-              : SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("계정", style: TextStyle(fontSize: 16, color: AppColors.black900),),
-                const SizedBox(height: 6),
-                ..._userResults.take(6).map((e) => SearchUserItem(
-                  user: e,
-                  isFollowing: e.isFollowing,
-                  onTapFollow: () async {
-                    try {
-                      if (e.isFollowing) {
-                        await _unfollowUser(e.id);
-                      } else {
-                        await _followUser(e.id);
-                      }
+                  ? const SizedBox.shrink()
+                  : _userResults.isEmpty && _bookResults.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 60),
+                            child: Text(
+                              '검색 결과가 없어요.',
+                              style: TextStyle(
+                                  fontSize: 14, color: AppColors.black500),
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 20, horizontal: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "계정",
+                                style: TextStyle(
+                                    fontSize: 16, color: AppColors.black900),
+                              ),
+                              const SizedBox(height: 6),
+                              ..._userResults.take(6).map(
+                                    (e) => SearchUserItem(
+                                      user: e,
+                                      isFollowing: e.isFollowing,
+                                      onTapFollow: () async {
+                                        try {
+                                          if (e.isFollowing) {
+                                            await _unfollowUser(e.id);
+                                          } else {
+                                            await _followUser(e.id);
+                                          }
 
-                      final updatedFollow = await _isFollowing(e.id);
-                      setState(() {
-                        _userResults = _userResults.map((u) {
-                          return u.id == e.id ? u.copyWith(isFollowing: updatedFollow) : u;
-                        }).toList();
-                      });
-                    } catch (err) {
-                      debugPrint('❌ 팔로우 실패: $err');
-                    }
-                  },
-                  onTapProfile: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => OtherProfileScreen(userId: e.id),
-                      ),
-                    );
-                  },
-                ),),
-                const SizedBox(height: 26),
-                Text("책", style: TextStyle(fontSize: 16, color: AppColors.black900),),
-                const SizedBox(height: 4),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.7,
-                  ),
-                  itemCount: _bookResults.length,
-                  itemBuilder: (context, index) {
-                    final book = _bookResults[index];
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(book.image, fit: BoxFit.cover),
-                    );
-                  },
-                )
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
-                child: Text("계정", style: TextStyle(fontSize: 16, color: AppColors.black900)),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: _userResults.map((e) => SearchUserItem(
-                    user: e,
-                    isFollowing: e.isFollowing,
-                    onTapFollow: () {},
-                    onTapProfile: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => OtherProfileScreen(userId: e.id),
+                                          final updatedFollow =
+                                              await _isFollowing(e.id);
+                                          setState(() {
+                                            _userResults =
+                                                _userResults.map((u) {
+                                              return u.id == e.id
+                                                  ? u.copyWith(
+                                                      isFollowing:
+                                                          updatedFollow)
+                                                  : u;
+                                            }).toList();
+                                          });
+                                        } catch (err) {
+                                          debugPrint('❌ 팔로우 실패: $err');
+                                        }
+                                      },
+                                      onTapProfile: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => OtherProfileScreen(
+                                                userId: e.id),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                              const SizedBox(height: 26),
+                              Text(
+                                "책",
+                                style: TextStyle(
+                                    fontSize: 16, color: AppColors.black900),
+                              ),
+                              const SizedBox(height: 4),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 0.7,
+                                ),
+                                itemCount: _bookResults.length,
+                                itemBuilder: (context, index) {
+                                  final book = _bookResults[index];
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Image.network(book.image,
+                                        fit: BoxFit.cover),
+                                  );
+                                },
+                              )
+                            ],
+                          ),
                         ),
-                      );
-                    },
-                  )).toList(),
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '책',
-                  style: TextStyle(fontSize: 16, color: AppColors.black900),
-                ),
-                const SizedBox(height: 8),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.7,
+          _userResults.isEmpty
+              ? const Expanded(
+                  child: Center(
+                    child: Text(
+                      '검색 결과가 없어요.',
+                      style: TextStyle(fontSize: 14, color: AppColors.black500),
+                    ),
                   ),
-                  itemCount: _bookResults.length,
-                  itemBuilder: (context, index) {
-                    final book = _bookResults[index];
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(book.image, fit: BoxFit.cover),
-                    );
-                  },
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+                      child: Text("계정",
+                          style: TextStyle(
+                              fontSize: 16, color: AppColors.black900)),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        children: _userResults
+                            .map((e) => SearchUserItem(
+                                  user: e,
+                                  isFollowing: e.isFollowing,
+                                  onTapFollow: () {},
+                                  onTapProfile: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            OtherProfileScreen(userId: e.id),
+                                      ),
+                                    );
+                                  },
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )
+          _bookResults.isEmpty
+              ? const Expanded(
+                  child: Center(
+                    child: Text('검색 결과가 없어요.',
+                        style:
+                            TextStyle(fontSize: 14, color: AppColors.black500)),
+                  ),
+                )
+              : Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '책',
+                        style:
+                            TextStyle(fontSize: 16, color: AppColors.black900),
+                      ),
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.7,
+                        ),
+                        itemCount: _bookResults.length,
+                        itemBuilder: (context, index) {
+                          final book = _bookResults[index];
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.network(book.image, fit: BoxFit.cover),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                )
         ],
       ),
     );
