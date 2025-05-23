@@ -94,7 +94,8 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         itemCount: posts.length,
         itemBuilder: (context, index) {
           final post = posts[index];
-          final isMyPost = false; // ✅ 항상 false
+          final currentUserId = client.auth.currentUser?.id;
+          final isMyPost = currentUserId != null && currentUserId == post.userId;
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
             child: PostItem(

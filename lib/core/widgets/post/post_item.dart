@@ -4,6 +4,7 @@ import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:logue/core/widgets/post/post_content.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:logue/core/widgets/post/post_action_dialog.dart';
 
 class PostItem extends StatelessWidget {
   final BookPostModel post;
@@ -91,7 +92,23 @@ class PostItem extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.more_vert),
                         onPressed: () {
-                          // 더보기 메뉴 (편집, 삭제)
+                          showDialog(
+                            context: context,
+                            barrierDismissible: true,
+                            barrierColor: Colors.transparent,
+                            builder: (_) => PostActionDialog(
+                              onEdit: () {
+                                Navigator.pop(context);
+                                print('✏️ 수정');
+                                // Navigator.pushNamed(context, '/edit_post_screen', arguments: post.id);
+                              },
+                              onDelete: () {
+                                Navigator.pop(context);
+                                print('🗑️ 삭제');
+                                // 삭제 확인 로직
+                              },
+                            ),
+                          );
                         },
                       ),
                     ],
