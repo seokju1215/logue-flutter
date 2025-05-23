@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/presentation/screens/home/home_recommand_tab.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:logue/presentation/screens/home/home_following_tab.dart';
+import 'package:logue/presentation/screens/home/home_popular_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -122,8 +124,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             physics: const NeverScrollableScrollPhysics(),
             children: const [
               HomeRecommendTab(),
-              Center(child: Text('팔로잉 탭')),
-              Center(child: Text('인기 탭')),
+              HomeFollowingTab(),
+              HomePopularTab(),
             ],
           ),
         ),

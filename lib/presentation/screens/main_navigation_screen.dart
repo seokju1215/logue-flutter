@@ -23,7 +23,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.initialIndex; // ✅ 여기에 초기화 추가
+    _selectedIndex = widget.initialIndex;
   }
 
   void _onItemTapped(int index) {
