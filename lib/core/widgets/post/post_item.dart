@@ -5,14 +5,18 @@ import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:logue/core/widgets/post/post_content.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/widgets/post/post_action_dialog.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../data/datasources/user_book_api.dart';
 
 class PostItem extends StatelessWidget {
   final BookPostModel post;
   final bool isMyPost;
-  final VoidCallback? onTapComment; // 댓글 버튼 누르면
+  final VoidCallback? onDeleteSuccess;
+
 
   const PostItem(
-      {Key? key, required this.isMyPost, required this.post, this.onTapComment})
+      {Key? key, required this.isMyPost, required this.post,  this.onDeleteSuccess,})
       : super(key: key);
 
   @override
@@ -22,7 +26,6 @@ class PostItem extends StatelessWidget {
     final avatarUrl = post.avatarUrl ?? '';
     final userName = post.userName ?? '';
     final reviewTitle = post.reviewTitle ?? '';
-    final reviewContent = post.reviewContent ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,10 +105,17 @@ class PostItem extends StatelessWidget {
                                 print('✏️ 수정');
                                 // Navigator.pushNamed(context, '/edit_post_screen', arguments: post.id);
                               },
-                              onDelete: () {
-                                Navigator.pop(context);
-                                print('🗑️ 삭제');
-                                // 삭제 확인 로직
+                              onDelete: () async {
+                                Navigator.pop(context); // 먼저 다이얼로그 닫고
+                                final userBookApi = UserBookApi(Supabase.instance.client);
+                                try {
+                                  await userBookApi.deleteBook(post.id);
+                                  onDeleteSuccess?.call();
+                                } catch (_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
+                                  );
+                                }
                               },
                             ),
                           );
@@ -141,7 +151,7 @@ class PostItem extends StatelessWidget {
         if (reviewTitle.isNotEmpty)
           Text(
             reviewTitle,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 16, color: AppColors.black900),
           ),
 
         const SizedBox(height: 8),

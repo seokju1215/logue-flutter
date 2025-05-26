@@ -4,6 +4,7 @@ import 'core/themes/app_colors.dart';
 import 'core/themes/text_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/routes/app_routes.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -45,7 +46,10 @@ class MyApp extends StatelessWidget {
         ),
         appBarTheme: const AppBarTheme(backgroundColor: AppColors.white500),
         scaffoldBackgroundColor: AppColors.white500,
-        textTheme: AppTextTheme.textTheme,
+        textTheme: GoogleFonts.interTextTheme().apply(
+          bodyColor: AppColors.black900,
+          displayColor: AppColors.black900,
+        ),
         useMaterial3: true,
       ),
       initialRoute: '/splash',

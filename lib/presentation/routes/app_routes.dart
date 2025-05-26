@@ -65,7 +65,7 @@ Map<String, WidgetBuilder> appRoutes = {
     final userId = args['userId'] as String?;
     return MyBookPostScreen(
       bookId: bookId,
-      userId: userId, // ✅ 전달!
+      userId: userId,
     );
   },
 

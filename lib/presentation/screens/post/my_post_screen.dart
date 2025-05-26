@@ -16,6 +16,7 @@ class MyBookPostScreen extends StatefulWidget {
 }
 
 class _MyBookPostScreenState extends State<MyBookPostScreen> {
+  bool _hasDeleted = false; // ✅ 추가
   final client = Supabase.instance.client;
   List<BookPostModel> posts = [];
   bool isLoading = true;
@@ -83,7 +84,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         title: Text(appBarTitle, style: const TextStyle(fontSize: 18, color: AppColors.black900)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _hasDeleted),
         ),
       ),
       body: isLoading
@@ -101,13 +102,14 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
             child: PostItem(
               isMyPost: isMyPost,
               post: post,
-              onTapComment: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CommentScreen(post: post),
-                  ),
-                );
+              onDeleteSuccess: () {
+                setState(() {
+                  posts.removeAt(index);
+                  _hasDeleted = true;
+                });
+                if (posts.isEmpty) {
+                  Navigator.pop(context, true);
+                }
               },
             ),
           );

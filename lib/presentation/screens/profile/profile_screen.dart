@@ -307,9 +307,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildBookGrid() {
     return UserBookGrid(
       books: books,
-      onTap: (book) {
+      onTap: (book) async {
         final bookId = book['id'] as String;
-        Navigator.pushNamed(context, '/my_post_screen', arguments: {'bookId': bookId});
+        final result = await Navigator.pushNamed(context, '/my_post_screen', arguments: {'bookId': bookId});
+        if (result == true) {
+          _loadBooks();
+        }
       },
     );
   }
