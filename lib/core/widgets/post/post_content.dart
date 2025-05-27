@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/data/models/book_post_model.dart';
-import 'package:logue/presentation/screens/post/post_detail_screen.dart'; // 상세화면 import
+import 'package:logue/presentation/screens/post/post_detail_screen.dart';
 
 class PostContent extends StatefulWidget {
   final BookPostModel post;
+  final VoidCallback? onTapMore; // ✅ 상세 화면에서 삭제 후 반영할 콜백
 
-  const PostContent({super.key, required this.post});
+  const PostContent({super.key, required this.post, this.onTapMore});
 
   @override
   State<PostContent> createState() => _PostContentState();
@@ -79,13 +80,17 @@ class _PostContentState extends State<PostContent> {
           WidgetSpan(
             alignment: PlaceholderAlignment.middle,
             child: GestureDetector(
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => PostDetailScreen(post: widget.post),
                   ),
                 );
+
+                if (result == true && widget.onTapMore != null) {
+                  widget.onTapMore!(); // ✅ 삭제 후 목록 갱신
+                }
               },
               child: const Text(
                 '더보기',

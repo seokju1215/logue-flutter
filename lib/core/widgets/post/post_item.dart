@@ -4,7 +4,7 @@ import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:logue/core/widgets/post/post_content.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:logue/core/widgets/post/post_action_dialog.dart';
+import 'package:logue/core/widgets/dialogs/post_action_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../data/datasources/user_book_api.dart';
@@ -14,11 +14,16 @@ class PostItem extends StatelessWidget {
   final bool isMyPost;
   final VoidCallback? onDeleteSuccess;
   final VoidCallback? onEditSuccess;
+  final VoidCallback? onTap;
 
-
-  const PostItem(
-      {Key? key, required this.isMyPost, required this.post,  this.onDeleteSuccess,this.onEditSuccess,})
-      : super(key: key);
+  const PostItem({
+    Key? key,
+    required this.isMyPost,
+    required this.post,
+    this.onDeleteSuccess,
+    this.onEditSuccess,
+    this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -50,24 +55,31 @@ class PostItem extends StatelessWidget {
         // 프로필 영역
         Row(
           children: [
-            (post.avatarUrl == null ||
-                    post.avatarUrl!.isEmpty ||
-                    post.avatarUrl == 'basic')
-                ? CircleAvatar(
+            GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/other_profile', arguments: post.userId);
+              },
+              child: Row(
+                children: [
+                  (avatarUrl.isEmpty || avatarUrl == 'basic')
+                      ? CircleAvatar(
                     radius: 16,
                     backgroundColor: Colors.grey[300],
                     child: Image.asset('assets/basic_avatar.png',
                         width: 32, height: 32, fit: BoxFit.cover),
                   )
-                : CircleAvatar(
+                      : CircleAvatar(
                     radius: 16,
-                    backgroundImage: NetworkImage(post.avatarUrl!),
+                    backgroundImage: NetworkImage(avatarUrl),
                     backgroundColor: Colors.grey[300],
                   ),
-            const SizedBox(width: 8),
-            Text(
-              userName,
-              style: const TextStyle(color: AppColors.black900, fontSize: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    userName,
+                    style: const TextStyle(color: AppColors.black900, fontSize: 16),
+                  ),
+                ],
+              ),
             ),
             const Spacer(),
             isMyPost
@@ -110,18 +122,20 @@ class PostItem extends StatelessWidget {
                                 );
 
                                 if (result == true) {
-                                  onEditSuccess?.call();// 수정된 경우 다시 불러오기
+                                  onEditSuccess?.call(); // 수정된 경우 다시 불러오기
                                 }
                               },
                               onDelete: () async {
                                 Navigator.pop(context); // 먼저 다이얼로그 닫고
-                                final userBookApi = UserBookApi(Supabase.instance.client);
+                                final userBookApi =
+                                    UserBookApi(Supabase.instance.client);
                                 try {
                                   await userBookApi.deleteBook(post.id);
                                   onDeleteSuccess?.call();
                                 } catch (_) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
+                                    const SnackBar(
+                                        content: Text('책 삭제 중 오류가 발생했어요')),
                                   );
                                 }
                               },
@@ -165,7 +179,10 @@ class PostItem extends StatelessWidget {
         const SizedBox(height: 8),
 
         // 리뷰 본문
-        PostContent(post: post),
+        PostContent(
+          post: post,
+          onTapMore: onEditSuccess,
+        ),
       ],
     );
   }

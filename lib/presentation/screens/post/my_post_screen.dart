@@ -112,6 +112,18 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                 }
               },
               onEditSuccess: _fetchPosts,
+              onTap: () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  '/post_detail',
+                  arguments: post,
+                );
+
+                if (result == true) {
+                  await _fetchPosts();
+                  setState(() => _hasDeleted = true);
+                }
+              },
             ),
           );
         },

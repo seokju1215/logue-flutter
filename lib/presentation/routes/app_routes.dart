@@ -35,6 +35,10 @@ Map<String, WidgetBuilder> appRoutes = {
   '/search_book' : (context) => const SearchBookScreen(),
   '/profile' : (context) => const ProfileScreen(),
   '/search' : (context) => const SearchScreen(),
+  '/other_profile': (context) {
+    final userId = ModalRoute.of(context)!.settings.arguments as String;
+    return OtherProfileScreen(userId: userId);
+  },
 
   //profile_edit
   '/profile_edit': (context) {
