@@ -75,7 +75,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = client.auth.currentUser;
     if (user == null) return;
     final result = await _getUserBooks(user.id);
-    result.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+    result.sort(
+        (a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
     setState(() => books = result);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkIfScrollable();
@@ -95,10 +96,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           table: 'user_books',
           filter: 'user_id=eq.${user.id}',
         ),
-            (payload, [ref]) async {
+        (payload, [ref]) async {
           if (!mounted) return;
           final data = await _getUserBooks(user.id);
-          data.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+          data.sort((a, b) =>
+              (a['order_index'] as int).compareTo(b['order_index'] as int));
           setState(() => books = data);
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _checkIfScrollable();
@@ -121,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           table: 'profiles',
           filter: 'id=eq.${user.id}',
         ),
-            (payload, [ref]) {
+        (payload, [ref]) {
           final newProfile = payload['new'];
           if (mounted && newProfile != null) {
             setState(() => profile = newProfile as Map<String, dynamic>);
@@ -153,7 +155,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     setState(() => _showFullBio = false);
                   },
                 ),
-                Text(profile?['username'] ?? '사용자', style: Theme.of(context).textTheme.titleMedium),
+                Text(profile?['username'] ?? '사용자',
+                    style: Theme.of(context).textTheme.titleMedium),
                 IconButton(
                   icon: SvgPicture.asset('assets/edit_icon.svg'),
                   onPressed: () {
@@ -161,7 +164,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ProfileEditScreen(initialProfile: profile!),
+                        builder: (_) =>
+                            ProfileEditScreen(initialProfile: profile!),
                       ),
                     );
                   },
@@ -182,7 +186,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 21, vertical: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -203,12 +208,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const Text(
                                 '인생 책을 소개해보세요.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 12, color: AppColors.black500),
+                                style: TextStyle(
+                                    fontSize: 12, color: AppColors.black500),
                               ),
                               const SizedBox(height: 5),
                               TextButton(
-                                onPressed: () => Navigator.pushNamed(context, '/add_book_screen'),
-                                child: const Text("책 추가 +", style: TextStyle(fontSize: 12, color: AppColors.black900)),
+                                onPressed: () => Navigator.pushNamed(
+                                    context, '/add_book_screen'),
+                                child: const Text("책 추가 +",
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.black900)),
                               ),
                             ],
                           ),
@@ -244,8 +254,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(profile?['name'] ?? '', style: Theme.of(context).textTheme.bodyLarge),
-                  Text(profile?['job'] ?? '', style: Theme.of(context).textTheme.bodySmall),
+                  Text(profile?['name'] ?? '',
+                      style: Theme.of(context).textTheme.bodyLarge),
+                  Text(profile?['job'] ?? '',
+                      style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 10),
                   _buildBio(context),
                   const SizedBox(height: 20),
@@ -261,9 +273,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: CircleAvatar(
                 radius: 70,
-                backgroundImage: avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
+                backgroundImage:
+                    avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                 child: avatarUrl == 'basic'
-                    ? Image.asset('assets/basic_avatar.png', width: 70, height: 70)
+                    ? Image.asset('assets/basic_avatar.png',
+                        width: 70, height: 70)
                     : null,
               ),
             ),
@@ -277,11 +291,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final username = profile?['username'];
                 final followerCount = profile?['followers'] ?? 0;
                 final followingCount = profile?['following'] ?? 0;
+                final currentUserId =
+                    Supabase.instance.client.auth.currentUser?.id;
+                final isMyProfile = currentUserId == userId;
                 if (userId != null) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => FollowTabScreen(userId: userId, initialTabIndex: 0, username: username, followerCount: followerCount,followingCount: followingCount,), // 팔로워 탭
+                      builder: (_) => FollowTabScreen(
+                        userId: userId,
+                        initialTabIndex: 0,
+                        username: username,
+                        followerCount: followerCount,
+                        followingCount: followingCount,
+                        isMyProfile: isMyProfile,
+                      ), // 팔로워 탭
                     ),
                   );
                 }
@@ -295,17 +319,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final username = profile?['username'];
                 final followerCount = profile?['followers'] ?? 0;
                 final followingCount = profile?['following'] ?? 0;
+                final currentUserId =
+                    Supabase.instance.client.auth.currentUser?.id;
+                final isMyProfile = currentUserId == userId;
                 if (userId != null) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => FollowTabScreen(
                         userId: userId,
-                        initialTabIndex: 1, // or 1
+                        initialTabIndex: 1,
+                        // or 1
                         username: username,
                         followerCount: followerCount,
                         followingCount: followingCount,
-                      ),// 팔로잉 탭
+                        isMyProfile: isMyProfile,
+                      ), // 팔로잉 탭
                     ),
                   );
                 }
@@ -331,7 +360,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               await Navigator.pushNamed(context, '/add_book_screen');
               _loadBooks();
             },
-            child: const Text("책 추가 +", style: TextStyle(color: AppColors.black900, fontSize: 12)),
+            child: const Text("책 추가 +",
+                style: TextStyle(color: AppColors.black900, fontSize: 12)),
           ),
         ),
         const SizedBox(width: 12),
@@ -339,7 +369,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: OutlinedButton(
             style: _outlinedStyle(context),
             onPressed: () {},
-            child: const Text("프로필 공유", style: TextStyle(color: AppColors.black900, fontSize: 12)),
+            child: const Text("프로필 공유",
+                style: TextStyle(color: AppColors.black900, fontSize: 12)),
           ),
         ),
       ],
@@ -351,7 +382,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       books: books,
       onTap: (book) async {
         final bookId = book['id'] as String;
-        final result = await Navigator.pushNamed(context, '/my_post_screen', arguments: {'bookId': bookId});
+        final result = await Navigator.pushNamed(context, '/my_post_screen',
+            arguments: {'bookId': bookId});
         if (result == true) {
           _loadBooks();
         }
@@ -366,12 +398,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         TextButton(
           onPressed: () {},
-          child: const Text('개인정보 처리방침', style: TextStyle(fontSize: 12, color: AppColors.black500)),
+          child: const Text('개인정보 처리방침',
+              style: TextStyle(fontSize: 12, color: AppColors.black500)),
         ),
-        const Text('|', style: TextStyle(color: AppColors.black500, fontSize: 12, height: 4)),
+        const Text('|',
+            style:
+                TextStyle(color: AppColors.black500, fontSize: 12, height: 4)),
         TextButton(
           onPressed: () {},
-          child: const Text('이용약관', style: TextStyle(fontSize: 12, color: AppColors.black500)),
+          child: const Text('이용약관',
+              style: TextStyle(fontSize: 12, color: AppColors.black500)),
         ),
       ],
     );
@@ -404,16 +440,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 text: _showFullBio || !isOverflowing
                     ? bio
                     : bio.substring(
-                  0,
-                  tp.getPositionForOffset(Offset(constraints.maxWidth, 28 * 2)).offset,
-                ) + '...',
+                          0,
+                          tp
+                              .getPositionForOffset(
+                                  Offset(constraints.maxWidth, 28 * 2))
+                              .offset,
+                        ) +
+                        '...',
                 style: const TextStyle(fontSize: 12, color: AppColors.black900),
               ),
               if (showMore)
                 WidgetSpan(
                   child: GestureDetector(
                     onTap: () => setState(() => _showFullBio = true),
-                    child: const Text(' 더보기', style: TextStyle(fontSize: 12, color: AppColors.black900)),
+                    child: const Text(' 더보기',
+                        style:
+                            TextStyle(fontSize: 12, color: AppColors.black900)),
                   ),
                 ),
             ],
@@ -426,8 +468,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildCount(String label, int count) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.black500)),
-        Text('$count', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+        Text('$count',
+            style: const TextStyle(fontSize: 12, color: AppColors.black500)),
       ],
     );
   }

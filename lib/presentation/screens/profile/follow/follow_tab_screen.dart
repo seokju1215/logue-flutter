@@ -9,6 +9,7 @@ class FollowTabScreen extends StatefulWidget {
   final int initialTabIndex;
   final int followerCount;
   final int followingCount;
+  final bool isMyProfile;
 
   const FollowTabScreen({
     super.key,
@@ -17,6 +18,7 @@ class FollowTabScreen extends StatefulWidget {
     required this.initialTabIndex,
     required this.followerCount,
     required this.followingCount,
+    required this.isMyProfile,
   });
 
   @override
@@ -69,8 +71,16 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
           });
         },
         children: [
-          FollowListTab(type: FollowListType.followers, userId: widget.userId),
-          FollowListTab(type: FollowListType.followings, userId: widget.userId),
+          FollowListTab(
+            type: FollowListType.followers,
+            userId: widget.userId,
+            isMyProfile: widget.isMyProfile,
+          ),
+          FollowListTab(
+            type: FollowListType.followings,
+            userId: widget.userId,
+            isMyProfile: widget.isMyProfile,
+          ),
         ],
       ),
     );
@@ -96,7 +106,7 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
               alignment: Alignment.center,
               decoration: const BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: AppColors.black500, width: 1), // 기본 밑줄
+                  bottom: BorderSide(color: AppColors.black500, width: 1),
                 ),
               ),
               child: Text(
