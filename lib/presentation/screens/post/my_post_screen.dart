@@ -111,6 +111,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                   Navigator.pop(context, true);
                 }
               },
+              onEditSuccess: _fetchPosts,
             ),
           );
         },

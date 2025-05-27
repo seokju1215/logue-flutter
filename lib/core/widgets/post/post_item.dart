@@ -13,10 +13,11 @@ class PostItem extends StatelessWidget {
   final BookPostModel post;
   final bool isMyPost;
   final VoidCallback? onDeleteSuccess;
+  final VoidCallback? onEditSuccess;
 
 
   const PostItem(
-      {Key? key, required this.isMyPost, required this.post,  this.onDeleteSuccess,})
+      {Key? key, required this.isMyPost, required this.post,  this.onDeleteSuccess,this.onEditSuccess,})
       : super(key: key);
 
   @override
@@ -100,10 +101,17 @@ class PostItem extends StatelessWidget {
                             barrierDismissible: true,
                             barrierColor: Colors.transparent,
                             builder: (_) => PostActionDialog(
-                              onEdit: () {
-                                Navigator.pop(context);
-                                print('✏️ 수정');
-                                // Navigator.pushNamed(context, '/edit_post_screen', arguments: post.id);
+                              onEdit: () async {
+                                Navigator.pop(context); // 먼저 dialog 닫고
+                                final result = await Navigator.pushNamed(
+                                  context,
+                                  '/edit_post_screen',
+                                  arguments: post,
+                                );
+
+                                if (result == true) {
+                                  onEditSuccess?.call();// 수정된 경우 다시 불러오기
+                                }
                               },
                               onDelete: () async {
                                 Navigator.pop(context); // 먼저 다이얼로그 닫고

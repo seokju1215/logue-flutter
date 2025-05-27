@@ -77,10 +77,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('프로필이 저장되었습니다.')),
-        );
-        Navigator.pop(context);
+
+        Navigator.pop(context, true);
       }
     } catch (e) {
       debugPrint('프로필 저장 오류: $e');

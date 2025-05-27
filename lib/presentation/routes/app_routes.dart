@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../data/models/book_post_model.dart';
+import '../screens/post/edit_review_screen.dart';
 import '../screens/signup/login_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/signup/term_screen.dart';
@@ -18,6 +20,7 @@ import '../screens/profile/profile_screen.dart';
 import '../screens/post/my_post_screen.dart';
 import '../screens/home/search/search_screen.dart';
 import 'package:logue/presentation/screens/profile/other_profile_screen.dart';
+
 
 Map<String, WidgetBuilder> appRoutes = {
   '/main' : (context) => const MainNavigationScreen(),
@@ -67,6 +70,11 @@ Map<String, WidgetBuilder> appRoutes = {
       bookId: bookId,
       userId: userId,
     );
+  },
+
+  '/edit_post_screen': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as BookPostModel;
+    return EditReviewScreen(post: args);
   },
 
 
