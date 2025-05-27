@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/domain/entities/follow_list_type.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'follow_list_tab.dart';
 
 class FollowTabScreen extends StatefulWidget {
@@ -10,6 +11,7 @@ class FollowTabScreen extends StatefulWidget {
   final int followerCount;
   final int followingCount;
   final bool isMyProfile;
+
 
   const FollowTabScreen({
     super.key,
@@ -28,12 +30,15 @@ class FollowTabScreen extends StatefulWidget {
 class _FollowTabScreenState extends State<FollowTabScreen> {
   late int currentIndex;
   late PageController _pageController;
-
+  int _followerCount = 0;
+  int _followingCount = 0;
   @override
   void initState() {
     super.initState();
     currentIndex = widget.initialTabIndex;
     _pageController = PageController(initialPage: currentIndex);
+    _followerCount = widget.followerCount;
+    _followingCount = widget.followingCount;
   }
 
   @override
@@ -75,15 +80,31 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
             type: FollowListType.followers,
             userId: widget.userId,
             isMyProfile: widget.isMyProfile,
+            onChangedCount: _refreshCounts,
           ),
           FollowListTab(
             type: FollowListType.followings,
             userId: widget.userId,
             isMyProfile: widget.isMyProfile,
+            onChangedCount: _refreshCounts,
           ),
         ],
       ),
     );
+  }
+  Future<void> _refreshCounts() async {
+    final res = await Supabase.instance.client
+        .from('profiles')
+        .select('followers, following')
+        .eq('id', widget.userId)
+        .maybeSingle();
+
+    if (res != null) {
+      setState(() {
+        _followerCount = res['followers'] ?? 0;
+        _followingCount = res['following'] ?? 0;
+      });
+    }
   }
 
   Widget _buildTab(String label, int count, int index) {

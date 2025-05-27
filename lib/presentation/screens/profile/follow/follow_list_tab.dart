@@ -6,16 +6,20 @@ import 'package:logue/data/repositories/follow_repository.dart';
 import 'package:logue/domain/usecases/follows/follow_user.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../../../../core/widgets/follow/follow_user_tile.dart';
+
 class FollowListTab extends StatefulWidget {
   final FollowListType type;
   final String userId;
   final bool isMyProfile;
+  final void Function()? onChangedCount;
 
   const FollowListTab({
     super.key,
     required this.type,
     required this.userId,
     required this.isMyProfile,
+    this.onChangedCount,
   });
 
   @override
@@ -29,6 +33,7 @@ class _FollowListTabState extends State<FollowListTab> {
 
   List<Map<String, dynamic>> users = [];
   String? currentUserId;
+
   bool get isMyProfile => currentUserId == widget.userId;
 
   @override
@@ -41,6 +46,16 @@ class _FollowListTabState extends State<FollowListTab> {
     _followUser = FollowUser(_followRepo);
     currentUserId = client.auth.currentUser?.id;
     _fetchFollowList();
+  }
+
+  @override
+  void didUpdateWidget(covariant FollowListTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // userId가 바뀌었거나, 화면이 다시 보여질 때 다시 불러오기
+    if (oldWidget.userId != widget.userId || oldWidget.type != widget.type) {
+      _fetchFollowList();
+    }
   }
 
   Future<void> _fetchFollowList() async {
@@ -56,7 +71,7 @@ class _FollowListTabState extends State<FollowListTab> {
     final res = await client.from(table).select().eq(column, widget.userId);
 
     final List<Map<String, dynamic>> rawList =
-    List<Map<String, dynamic>>.from(res);
+        List<Map<String, dynamic>>.from(res);
 
     if (widget.type == FollowListType.followers) {
       final idList = rawList.map((e) => e['id']).toList();
@@ -67,7 +82,7 @@ class _FollowListTabState extends State<FollowListTab> {
           .in_('following_id', idList);
 
       final followingIds =
-      (followRes as List).map((e) => e['following_id']).toSet();
+          (followRes as List).map((e) => e['following_id']).toSet();
 
       setState(() {
         users = rawList.map((user) {
@@ -75,7 +90,12 @@ class _FollowListTabState extends State<FollowListTab> {
             ...user,
             'isFollowing': followingIds.contains(user['id']),
           };
-        }).toList();
+        }).toList()
+          ..sort((a, b) {
+            final aFollowing = a['isFollowing'] == true ? 0 : 1;
+            final bFollowing = b['isFollowing'] == true ? 0 : 1;
+            return aFollowing.compareTo(bFollowing);
+          });
       });
     } else {
       setState(() => users = rawList);
@@ -84,6 +104,7 @@ class _FollowListTabState extends State<FollowListTab> {
 
   Future<void> _handleFollow(String targetUserId) async {
     await _followUser(targetUserId);
+    widget.onChangedCount?.call();
     await _fetchFollowList();
   }
 
@@ -91,13 +112,14 @@ class _FollowListTabState extends State<FollowListTab> {
     await client.rpc('remove_follower', params: {
       'target_user_id': targetUserId,
     });
+    widget.onChangedCount?.call();
     await _fetchFollowList();
   }
 
   @override
   Widget build(BuildContext context) {
     if (users.isEmpty) {
-      return const Center(child: Text('사용자가 없습니다.'));
+      return const Center(child: Text('친구를 추가해 서로의 인생 책을 공유해보세요.', style: TextStyle(color: AppColors.black500, fontSize: 12),));
     }
 
     return ListView.builder(
@@ -109,53 +131,27 @@ class _FollowListTabState extends State<FollowListTab> {
         final name = user['name'] ?? '';
         final isFollowing = user['isFollowing'] == true;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/other_profile', arguments: user['id']),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundImage:
-                      avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
-                      child: avatarUrl == 'basic'
-                          ? Image.asset('assets/basic_avatar.png')
-                          : null,
-                    ),
-                    const SizedBox(width: 22),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(username, style: const TextStyle(fontSize: 14, color: AppColors.black900)),
-                        Text(name, style: const TextStyle(fontSize: 12, color: AppColors.black500)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              if (widget.type == FollowListType.followers && isMyProfile) ...[
-                if (!isFollowing)
-                  OutlinedButton(
-                    onPressed: () => _handleFollow(user['id']),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.black900),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      minimumSize: const Size(0, 0),
-                    ),
-                    child: const Text("팔로우", style: TextStyle(fontSize: 12, color: AppColors.black900)),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () => _handleRemoveFollower(user['id']),
-                ),
-              ],
-            ],
-          ),
+        return FollowUserTile(
+          userId: user['id'],
+          username: user['username'] ?? '사용자',
+          name: user['name'] ?? '',
+          avatarUrl: user['avatar_url'] ?? 'basic',
+          isFollowing: user['isFollowing'] == true,
+          showActions: widget.type == FollowListType.followers && isMyProfile,
+          onTapFollow: () => _handleFollow(user['id']),
+          onTapRemove: () => _handleRemoveFollower(user['id']),
+          onTapProfile: () {
+            Navigator.pushNamed(
+              context,
+              '/other_profile',
+              arguments: user['id'],
+            ).then((result) {
+              if (result == true) {
+                widget.onChangedCount?.call();
+                _fetchFollowList();
+              }
+            });
+          },
         );
       },
     );

@@ -12,8 +12,11 @@ import 'package:logue/domain/usecases/follows/unfollow_user.dart';
 import 'package:logue/domain/usecases/follows/is_following.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'follow/follow_tab_screen.dart';
+
 class OtherProfileScreen extends StatefulWidget {
   final String userId;
+
   const OtherProfileScreen({Key? key, required this.userId}) : super(key: key);
 
   @override
@@ -61,6 +64,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
       setState(() => _isScrollable = isNowScrollable);
     }
   }
+
   Future<void> _increaseVisitors() async {
     final currentUserId = client.auth.currentUser?.id;
     if (currentUserId == null || currentUserId == widget.userId) return;
@@ -110,7 +114,8 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
 
   Future<void> _loadBooks() async {
     final result = await _getUserBooks(widget.userId);
-    result.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+    result.sort((a, b) =>
+        (a['order_index'] as int).compareTo(b['order_index'] as int));
     setState(() => books = result);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkIfScrollable();
@@ -137,7 +142,10 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 Text(profile?['username'] ?? '사용자',
-                    style: Theme.of(context).textTheme.titleMedium),
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .titleMedium),
                 IconButton(
                   icon: SvgPicture.asset('assets/share_icon.svg'),
                   onPressed: () {},
@@ -158,17 +166,18 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
               const SizedBox(height: 24),
               if (books.isNotEmpty)
                 _buildBookGrid()
-              else ...[
-                const SizedBox(height: 95),
-                const Center(
-                  child: Text(
-                    '책이 아직 없습니다.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: AppColors.black500),
+              else
+                ...[
+                  const SizedBox(height: 95),
+                  const Center(
+                    child: Text(
+                      '책이 아직 없습니다.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: AppColors.black500),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 90),
-              ]
+                  const SizedBox(height: 90),
+                ]
             ],
           ),
         ),
@@ -178,77 +187,162 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
 
   Widget _buildProfileHeader() {
     final avatarUrl = profile?['avatar_url'] ?? 'basic';
-    final isFollowing = profile?['isFollowing'] == true;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final profileUserId = profile?['id'];
+    final isMyProfile = currentUserId == profileUserId;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(profile?['name'] ?? '',
-                      style: Theme.of(context).textTheme.bodyLarge),
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .bodyLarge),
                   Text(profile?['job'] ?? '',
-                      style: Theme.of(context).textTheme.bodySmall),
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .bodySmall),
                   const SizedBox(height: 10),
-                  Text(profile?['bio'] ?? '',
-                      style: const TextStyle(fontSize: 12, color: AppColors.black900)),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _buildCount("팔로워", profile?['followers'] ?? 0),
-                      const SizedBox(width: 24),
-                      _buildCount("팔로잉", profile?['followings'] ?? 0),
-                    ],
-                  ),
+                  _buildBio(context),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  width: 71,
-                  height: 71,
-                  margin: const EdgeInsets.only(bottom :8),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.black100, width: 1),
+            if (!isMyProfile)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    width: 71,
+                    height: 71,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.black100, width: 1),
+                    ),
+                    child: CircleAvatar(
+                      radius: 70,
+                      backgroundImage: avatarUrl == 'basic'
+                          ? null
+                          : NetworkImage(avatarUrl),
+                      child: avatarUrl == 'basic'
+                          ? Image.asset(
+                          'assets/basic_avatar.png', width: 70, height: 70)
+                          : null,
+                    ),
                   ),
-                  child: CircleAvatar(
-                    radius: 70,
-                    backgroundImage: avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
-                    child: avatarUrl == 'basic'
-                        ? Image.asset('assets/basic_avatar.png', width: 70, height: 70)
-                        : null,
-                  ),
-                ),
 
-                OutlinedButton(
-                  onPressed: _toggleFollow,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 43, vertical: 9),
-                    side: BorderSide(
-                      color: isFollowing ? AppColors.black300 : AppColors.black900,
+                ],
+              )
+            else
+              Container(
+                width: 71,
+                height: 71,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.black100, width: 1),
+                ),
+                child: CircleAvatar(
+                  radius: 70,
+                  backgroundImage: avatarUrl == 'basic' ? null : NetworkImage(
+                      avatarUrl),
+                  child: avatarUrl == 'basic'
+                      ? Image.asset(
+                      'assets/basic_avatar.png', width: 70, height: 70)
+                      : null,
+                ),
+              ),
+          ],
+        ),
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () {
+                final userId = profile?['id'];
+                final username = profile?['username'];
+                final followerCount = profile?['followers'] ?? 0;
+                final followingCount = profile?['following'] ?? 0;
+
+                if (userId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FollowTabScreen(
+                        userId: userId,
+                        initialTabIndex: 0,
+                        username: username,
+                        followerCount: followerCount,
+                        followingCount: followingCount,
+                        isMyProfile: isMyProfile,
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5), // ✅ 여기가 border-radius
+                  );
+                }
+              },
+              child: _buildCount("팔로워", profile?['followers'] ?? 0),
+            ),
+            const SizedBox(width: 24),
+            GestureDetector(
+              onTap: () {
+                final userId = profile?['id'];
+                final username = profile?['username'];
+                final followerCount = profile?['followers'] ?? 0;
+                final followingCount = profile?['following'] ?? 0;
+
+                if (userId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FollowTabScreen(
+                        userId: userId,
+                        initialTabIndex: 1,
+                        username: username,
+                        followerCount: followerCount,
+                        followingCount: followingCount,
+                        isMyProfile: isMyProfile,
+                      ),
                     ),
+                  );
+                }
+              },
+              child: _buildCount("팔로잉", profile?['following'] ?? 0),
+            ),
+            const SizedBox(width: 24),
+            if (isMyProfile)
+              _buildCount("방문자", profile?['visitors'] ?? 0),
+            const Spacer(),
+            if (!isMyProfile)
+              OutlinedButton(
+                onPressed: _toggleFollow,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+                  side: BorderSide(
+                    color: profile?['isFollowing'] == true
+                        ? AppColors.black300
+                        : AppColors.black900,
                   ),
-                  child: Text(
-                    isFollowing ? '팔로잉' : '팔로우',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isFollowing ? AppColors.black500 : AppColors.black900,
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
                   ),
                 ),
-              ],
-            ),
+                child: Text(
+                  profile?['isFollowing'] == true ? '팔로잉' : '팔로우',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: profile?['isFollowing'] == true
+                        ? AppColors.black500
+                        : AppColors.black900,
+                  ),
+                ),
+              ),
           ],
         ),
       ],
@@ -272,9 +366,55 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   Widget _buildCount(String label, int count) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.black500)),
-        Text('$count', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+        Text('$count',
+            style: const TextStyle(fontSize: 12, color: AppColors.black500)),
       ],
+    );
+  }
+
+  Widget _buildBio(BuildContext context) {
+    final bio = profile?['bio'] ?? '';
+    final bool showMore = bio.length > 40;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textSpan = TextSpan(
+          text: bio,
+          style: const TextStyle(fontSize: 12, color: AppColors.black900),
+        );
+
+        final tp = TextPainter(
+          text: textSpan,
+          textDirection: TextDirection.ltr,
+          maxLines: 2,
+          ellipsis: showMore ? '...' : null,
+        )
+          ..layout(maxWidth: constraints.maxWidth);
+
+        final isOverflowing = tp.didExceedMaxLines;
+
+        return RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: isOverflowing
+                    ? bio.substring(
+                  0,
+                  tp
+                      .getPositionForOffset(
+                      Offset(constraints.maxWidth, 28 * 2))
+                      .offset,
+                ) +
+                    '...'
+                    : bio,
+                style: const TextStyle(fontSize: 12, color: AppColors.black900),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
