@@ -10,6 +10,7 @@ import 'package:logue/data/utils/fetch_profile.dart';
 import 'package:logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
 
 import '../../../domain/entities/follow_list_type.dart';
+import 'follow/follow_tab_screen.dart';
 import 'follow_list_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -273,14 +274,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             GestureDetector(
               onTap: () {
                 final userId = profile?['id'];
+                final username = profile?['username'];
+                final followerCount = profile?['followers'] ?? 0;
+                final followingCount = profile?['following'] ?? 0;
                 if (userId != null) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => FollowListScreen(
-                        type: FollowListType.followers,
-                        userId: userId,
-                      ),
+                      builder: (_) => FollowTabScreen(userId: userId, initialTabIndex: 0, username: username, followerCount: followerCount,followingCount: followingCount,), // 팔로워 탭
                     ),
                   );
                 }
@@ -291,14 +292,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             GestureDetector(
               onTap: () {
                 final userId = profile?['id'];
+                final username = profile?['username'];
+                final followerCount = profile?['followers'] ?? 0;
+                final followingCount = profile?['following'] ?? 0;
                 if (userId != null) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => FollowListScreen(
-                        type: FollowListType.followings,
-                        userId: userId,
-                      ),
+                      builder: (_) => FollowTabScreen(userId: userId, initialTabIndex: 1, username: username, followerCount: followerCount,followingCount: followingCount,), // 팔로잉 탭
                     ),
                   );
                 }
