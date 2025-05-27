@@ -43,8 +43,9 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     _followUser = FollowUser(_followRepo);
     _unfollowUser = UnfollowUser(_followRepo);
     _isFollowing = IsFollowing(_followRepo);
-
     _getUserBooks = GetUserBooks(UserBookApi(client));
+
+    _increaseVisitors();
     _fetchProfile();
     _loadBooks();
 
@@ -58,6 +59,18 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     final isNowScrollable = _scrollController.position.maxScrollExtent > 0;
     if (mounted && isNowScrollable != _isScrollable) {
       setState(() => _isScrollable = isNowScrollable);
+    }
+  }
+  Future<void> _increaseVisitors() async {
+    final currentUserId = client.auth.currentUser?.id;
+    if (currentUserId == null || currentUserId == widget.userId) return;
+
+    try {
+      await Supabase.instance.client.rpc('increment_visitors', params: {
+        'user_id': widget.userId, // ✅ 단순 문자열만 전달
+      });
+    } catch (e) {
+      debugPrint('❌ 방문자 증가 실패: $e');
     }
   }
 

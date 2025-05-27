@@ -9,6 +9,9 @@ import 'package:logue/core/widgets/book/user_book_grid.dart';
 import 'package:logue/data/utils/fetch_profile.dart';
 import 'package:logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
 
+import '../../../domain/entities/follow_list_type.dart';
+import 'follow_list_screen.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
@@ -267,9 +270,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         Row(
           children: [
-            _buildCount("팔로워", profile?['followers'] ?? 0),
+            GestureDetector(
+              onTap: () {
+                final userId = profile?['id'];
+                if (userId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FollowListScreen(
+                        type: FollowListType.followers,
+                        userId: userId,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: _buildCount("팔로워", profile?['followers'] ?? 0),
+            ),
             const SizedBox(width: 24),
-            _buildCount("팔로잉", profile?['following'] ?? 0),
+            GestureDetector(
+              onTap: () {
+                final userId = profile?['id'];
+                if (userId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FollowListScreen(
+                        type: FollowListType.followings,
+                        userId: userId,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: _buildCount("팔로잉", profile?['following'] ?? 0),
+            ),
             const SizedBox(width: 24),
             _buildCount("방문자", profile?['visitors'] ?? 0),
           ],
