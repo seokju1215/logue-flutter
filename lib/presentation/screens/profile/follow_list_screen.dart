@@ -58,20 +58,18 @@ class FollowListScreen extends StatelessWidget {
 
     try {
       if (type == FollowListType.followers) {
+        // 팔로워 = 나를 팔로우한 사람 = followers_with_profiles 에서 following_id == 나
         final res = await client
             .from('followers_with_profiles')
             .select('*')
             .eq('following_id', userId);
-
-        print('📥 followers raw result: $res');
         return List<Map<String, dynamic>>.from(res);
       } else {
+        // 팔로잉 = 내가 팔로우한 사람 = followings_with_profiles 에서 follower_id == 나
         final res = await client
             .from('followings_with_profiles')
             .select('*')
             .eq('follower_id', userId);
-
-        print('📥 followings raw result: $res');
         return List<Map<String, dynamic>>.from(res);
       }
     } catch (e, st) {

@@ -299,7 +299,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => FollowTabScreen(userId: userId, initialTabIndex: 1, username: username, followerCount: followerCount,followingCount: followingCount,), // 팔로잉 탭
+                      builder: (_) => FollowTabScreen(
+                        userId: userId,
+                        initialTabIndex: 1, // or 1
+                        username: username,
+                        followerCount: followerCount,
+                        followingCount: followingCount,
+                      ),// 팔로잉 탭
                     ),
                   );
                 }

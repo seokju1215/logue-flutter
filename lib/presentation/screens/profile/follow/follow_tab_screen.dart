@@ -25,11 +25,19 @@ class FollowTabScreen extends StatefulWidget {
 
 class _FollowTabScreenState extends State<FollowTabScreen> {
   late int currentIndex;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
     currentIndex = widget.initialTabIndex;
+    _pageController = PageController(initialPage: currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -53,8 +61,13 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
           ),
         ),
       ),
-      body: IndexedStack(
-        index: currentIndex,
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            currentIndex = index;
+          });
+        },
         children: [
           FollowListTab(type: FollowListType.followers, userId: widget.userId),
           FollowListTab(type: FollowListType.followings, userId: widget.userId),
@@ -68,7 +81,13 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => currentIndex = index),
+        onTap: () {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+          );
+        },
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
@@ -77,7 +96,7 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
               alignment: Alignment.center,
               decoration: const BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: AppColors.black500, width: 1), // 기본 연한 밑줄
+                  bottom: BorderSide(color: AppColors.black500, width: 1), // 기본 밑줄
                 ),
               ),
               child: Text(
@@ -90,12 +109,13 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
               ),
             ),
             if (isSelected)
-              Positioned(
+              const Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: Container(
-                  height: 2,
+                child: Divider(
+                  thickness: 2,
+                  height: 0,
                   color: AppColors.black900,
                 ),
               ),

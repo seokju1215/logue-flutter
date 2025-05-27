@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/domain/entities/follow_list_type.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -25,20 +26,43 @@ class FollowListTab extends StatelessWidget {
           itemCount: users.length,
           itemBuilder: (context, index) {
             final user = users[index];
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundImage: user['avatar_url'] == 'basic'
-                    ? null
-                    : NetworkImage(user['avatar_url']),
-                child: user['avatar_url'] == 'basic'
-                    ? Image.asset('assets/basic_avatar.png')
-                    : null,
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/other_profile', arguments: user['id']);
+                },
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundImage: user['avatar_url'] == 'basic'
+                          ? null
+                          : NetworkImage(user['avatar_url']),
+                      child: user['avatar_url'] == 'basic'
+                          ? Image.asset('assets/basic_avatar.png')
+                          : null,
+                    ),
+                    const SizedBox(width: 22), // ✅ 여기서 간격 조절
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${user['username']}',
+                            style: const TextStyle(fontSize: 14, color: AppColors.black900),
+                          ),
+                          Text(
+                            user['name'] ?? '사용자',
+                            style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              title: Text('${user['username']}'),
-              subtitle: Text(user['name'] ?? '사용자'),
-              onTap: () {
-                Navigator.pushNamed(context, '/other_profile', arguments: user['id']);
-              },
             );
           },
         );
