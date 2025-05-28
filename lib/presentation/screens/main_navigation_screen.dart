@@ -6,7 +6,13 @@ import 'package:logue/presentation/screens/profile/profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
-  const MainNavigationScreen({super.key, this.initialIndex = 0});
+  final Widget? child; // ✅ SearchScreen 같은 외부 child
+
+  const MainNavigationScreen({
+    Key? key,
+    this.initialIndex = 0,
+    this.child,
+  }) : super(key: key);
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -14,6 +20,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _selectedIndex;
+  bool _overrideWithChild = true; // ✅ 처음에만 child 보여줄지 여부
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -29,13 +36,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      _overrideWithChild = false; // ✅ 탭 클릭 시 child 무시하고 기본 화면 보여줌
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final Widget body = (_overrideWithChild && widget.child != null)
+        ? widget.child!
+        : _screens[_selectedIndex];
+
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: body,
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
           splashColor: Colors.transparent,
@@ -52,7 +64,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           selectedLabelStyle: const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: AppColors.black900, // 실제로는 selectedItemColor로 적용됨
+            color: AppColors.black900,
           ),
           unselectedLabelStyle: const TextStyle(
             fontSize: 10,

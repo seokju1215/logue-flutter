@@ -32,16 +32,24 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     setState(() => _isSaving = true);
 
     try {
+      await client.from('books').upsert({
+        'isbn': widget.book.isbn,
+        'title': widget.book.title,
+        'author': widget.book.author,
+        'publisher': widget.book.publisher,
+        'published_date': widget.book.publishedDate,
+        'page_count': widget.book.pageCount,
+        'description': widget.book.description,
+        'toc': widget.book.toc,
+        'image': widget.book.image,
+      });
       // 1. order_index 모두 +1 (한 쿼리로 처리)
       await client.rpc('increment_all_order_indices', params: {'uid': user.id});
 
       // 2. 새 책 추가
       await client.from('user_books').insert({
         'user_id': user.id,
-        'title': widget.book.title,
-        'author': widget.book.author,
-        'publisher': widget.book.publisher,
-        'image': widget.book.image,
+        'isbn': widget.book.isbn, // ✅ FK로 books 테이블과 연결
         'order_index': 0,
         'review_title': reviewTitle,
         'review_content': reviewContent,

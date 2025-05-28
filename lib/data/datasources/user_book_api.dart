@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart'; // debugPrint를 위해 필요
 
@@ -12,11 +13,17 @@ class UserBookApi {
     try {
       final response = await client
           .from('user_books')
-          .select('*, profiles!fk_user_profile(username, avatar_url)')
+          .select('*, books(isbn,image), profiles!fk_user_profile(username, avatar_url)')
           .eq('user_id', userId)
           .order('order_index', ascending: true);
 
-      return List<Map<String, dynamic>>.from(response);
+      final result = response.map<Map<String, dynamic>>((e) {
+        return Map<String, dynamic>.from(e);
+      }).toList();
+
+      debugPrint('📦 fetchBooks 결과 예시: ${jsonEncode(result.first)}');
+
+      return result;
     } catch (e, stack) {
       debugPrint("❌ Supabase 쿼리 실패: $e");
       debugPrint("🔍 스택 트레이스: $stack");
@@ -34,10 +41,6 @@ class UserBookApi {
           .delete()
           .eq('id', bookId)
           .eq('user_id', userId); // 본인만 삭제 가능
-
-      if (response != null && response.error != null) {
-        throw Exception('삭제 실패: ${response.error!.message}');
-      }
 
       debugPrint("🗑️ 책 삭제 성공: $bookId");
     } catch (e, stack) {

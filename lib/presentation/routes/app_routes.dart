@@ -22,6 +22,7 @@ import '../screens/profile/profile_screen.dart';
 import '../screens/post/my_post_screen.dart';
 import '../screens/home/search/search_screen.dart';
 import 'package:logue/presentation/screens/profile/other_profile_screen.dart';
+import '../screens/book/book_detail_screen.dart';
 
 
 Map<String, WidgetBuilder> appRoutes = {
@@ -36,7 +37,15 @@ Map<String, WidgetBuilder> appRoutes = {
   '/login_blocked': (context) => const LoginScreen(blocked: true),
   '/search_book' : (context) => const SearchBookScreen(),
   '/profile' : (context) => const ProfileScreen(),
-  '/search' : (context) => const SearchScreen(),
+  '/main/search': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    final index = args?['initialIndex'] ?? 0;
+    return MainNavigationScreen(
+      initialIndex: index,
+      child: const SearchScreen(),
+    );
+  },
+
   '/other_profile': (context) {
     final userId = ModalRoute.of(context)!.settings.arguments as String;
     return OtherProfileScreen(userId: userId);
@@ -82,9 +91,11 @@ Map<String, WidgetBuilder> appRoutes = {
     final args = ModalRoute.of(context)!.settings.arguments as BookPostModel;
     return EditReviewScreen(post: args);
   },
-
-
-
+  '/book_detail': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments;
+    final isbn = args is String ? args : '';
+    return BookDetailScreen(isbn: isbn);
+  }
 
 
 

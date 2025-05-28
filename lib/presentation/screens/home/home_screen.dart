@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/presentation/screens/home/home_recommand_tab.dart';
+import 'package:logue/presentation/screens/home/search/search_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/presentation/screens/home/home_following_tab.dart';
 import 'package:logue/presentation/screens/home/home_popular_tab.dart';
+
+import '../main_navigation_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -61,7 +64,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               actions: [
                 IconButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/search');
+                    Navigator.of(context).push(PageRouteBuilder(
+                      transitionDuration: Duration.zero,
+                      reverseTransitionDuration: Duration.zero,
+                      pageBuilder: (context, animation, secondaryAnimation) => MainNavigationScreen(
+                        initialIndex: 0,
+                        child: const SearchScreen(),
+                      ),
+                    ));
                   },
                   icon: const Icon(Icons.search, color: Colors.black, size: 28),
                 ),

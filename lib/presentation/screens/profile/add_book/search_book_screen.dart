@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
-import '../../../../data/datasources/kakao_book_api.dart';
+import '../../../../data/datasources/aladin_book_api.dart';
 import '../../../../data/models/book_model.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:logue/presentation/screens/profile/add_book/write_review_screen.dart';
@@ -31,7 +31,7 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final rawResults = await KakaoBookApi().searchBooks(query);
+      final rawResults = await AladinBookApi().searchBooks(query);
       final results = rawResults.map((data) => BookModel.fromJson(data)).toList();
 
       setState(() {

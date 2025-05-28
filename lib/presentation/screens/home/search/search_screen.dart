@@ -265,10 +265,19 @@ class _SearchScreenState extends State<SearchScreen>
                                 itemCount: _bookResults.length,
                                 itemBuilder: (context, index) {
                                   final book = _bookResults[index];
-                                  return ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Image.network(book.image,
-                                        fit: BoxFit.cover),
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/book_detail',
+                                        arguments: book.isbn,
+                                      );
+                                    },
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: Image.network(book.image, fit: BoxFit.cover),
+                                    ),
                                   );
                                 },
                               )

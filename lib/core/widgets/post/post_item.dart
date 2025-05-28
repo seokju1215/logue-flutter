@@ -57,26 +57,28 @@ class PostItem extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: () {
-                Navigator.pushNamed(context, '/other_profile', arguments: post.userId);
+                Navigator.pushNamed(context, '/other_profile',
+                    arguments: post.userId);
               },
               child: Row(
                 children: [
                   (avatarUrl.isEmpty || avatarUrl == 'basic')
                       ? CircleAvatar(
-                    radius: 16,
-                    backgroundColor: Colors.grey[300],
-                    child: Image.asset('assets/basic_avatar.png',
-                        width: 32, height: 32, fit: BoxFit.cover),
-                  )
+                          radius: 16,
+                          backgroundColor: Colors.grey[300],
+                          child: Image.asset('assets/basic_avatar.png',
+                              width: 32, height: 32, fit: BoxFit.cover),
+                        )
                       : CircleAvatar(
-                    radius: 16,
-                    backgroundImage: NetworkImage(avatarUrl),
-                    backgroundColor: Colors.grey[300],
-                  ),
+                          radius: 16,
+                          backgroundImage: NetworkImage(avatarUrl),
+                          backgroundColor: Colors.grey[300],
+                        ),
                   const SizedBox(width: 8),
                   Text(
                     userName,
-                    style: const TextStyle(color: AppColors.black900, fontSize: 16),
+                    style: const TextStyle(
+                        color: AppColors.black900, fontSize: 16),
                   ),
                 ],
               ),
@@ -86,8 +88,37 @@ class PostItem extends StatelessWidget {
                 ? Row(
                     children: [
                       OutlinedButton(
-                        onPressed: () {
-                          // 버튼 눌렀을 때 동작
+                        onPressed: () async {
+                          final client = Supabase.instance.client;
+
+                          try {
+                            final response = await client
+                                .from('user_books')
+                                .select('isbn')
+                                .eq('id', post.id)
+                                .maybeSingle();
+
+                            final isbn = response?['isbn'] as String?;
+                            if (isbn == null || isbn.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('ISBN을 찾을 수 없어요.')),
+                              );
+                              return;
+                            }
+
+                            print('📚 user_books.id로 조회한 ISBN: $isbn');
+
+                            Navigator.pushNamed(
+                              context,
+                              '/book_detail',
+                              arguments: isbn,
+                            );
+                          } catch (e) {
+                            print('❌ ISBN 조회 실패: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('도서 정보를 불러오는 데 실패했어요.')),
+                            );
+                          }
                         },
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: AppColors.black300),
@@ -147,7 +178,11 @@ class PostItem extends StatelessWidget {
                   )
                 : OutlinedButton(
                     onPressed: () {
-                      // 버튼 눌렀을 때 동작
+                      Navigator.pushNamed(
+                        context,
+                        '/book_detail',
+                        arguments: post.isbn, // 또는 post.bookIsbn, 실제 필드명 확인
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.black300),
