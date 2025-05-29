@@ -43,22 +43,58 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         'toc': widget.book.toc,
         'image': widget.book.image,
       });
-      // 1. order_index 모두 +1 (한 쿼리로 처리)
+
       await client.rpc('increment_all_order_indices', params: {'uid': user.id});
 
-      // 2. 새 책 추가
       await client.from('user_books').insert({
         'user_id': user.id,
-        'isbn': widget.book.isbn, // ✅ FK로 books 테이블과 연결
+        'isbn': widget.book.isbn,
         'order_index': 0,
         'review_title': reviewTitle,
         'review_content': reviewContent,
       });
 
+      final response = await client
+          .from('follows')
+          .select('follower_id')
+          .eq('following_id', user.id);
+
+      if (response is List && response.isNotEmpty) {
+        final followers = List<Map<String, dynamic>>.from(response);
+
+        final notifications = followers.map((f) => {
+          'recipient_id': f['follower_id'],
+          'sender_id': user.id,
+          'type': 'post',
+          'book_id': widget.book.isbn,
+          'is_read': false,
+        }).toList();
+
+        try {
+          await client.from('notifications').insert(notifications);
+          debugPrint('✅ 알림 저장 성공');
+
+          for (final f in followers) {
+            final result = await client.functions.invoke('send-notification', body: {
+              'recipient_id': f['follower_id'],
+              'sender_id': user.id,
+              'type': 'post',
+              'book_id': widget.book.isbn,
+            });
+            debugPrint('📨 FCM 응답: ${result.data}');
+          }
+        } catch (e) {
+          debugPrint('❌ 알림 저장 또는 전송 중 예외 발생: $e');
+        }
+      } else {
+        debugPrint('ℹ️ 팔로워 없음. 알림 건너뜀');
+      }
+
       if (context.mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen(initialIndex: 1)),
+          MaterialPageRoute(
+              builder: (_) => const MainNavigationScreen(initialIndex: 1)),
               (route) => false,
         );
       }
@@ -77,12 +113,16 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('후기 작성', style: TextStyle(fontSize: 18, color: AppColors.black900),),
+        title: const Text(
+          '후기 작성',
+          style: TextStyle(fontSize: 18, color: AppColors.black900),
+        ),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveReview,
@@ -95,73 +135,63 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: SizedBox(
-                width: 235,  // 원하는 너비
-                height: 349, // 원하는 높이
-                child: BookFrame(imageUrl: widget.book.image),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: EdgeInsets.fromLTRB(13, 0, 0, 0),
-              child: Text('후기 제목', style: TextStyle(fontSize: 12, color: AppColors.black500)),
-            ),
-            TextField(
-              controller: _titleController,
-              maxLength: 50,
-              minLines: 2,
-              maxLines: null,
-              style: const TextStyle(fontSize: 14, color:AppColors.black900),
-              decoration:  InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5),
-                  borderSide: const BorderSide(color: Colors.grey), // ✅ hover나 focus에도 변화 없게
-                ),
-
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('후기 내용', style: TextStyle(fontSize: 12, color: AppColors.black500)),
-            Expanded(
-              child: TextField(
-                controller: _contentController,
-                maxLength: 1000,
-                minLines: 3,
-                maxLines: null,
-                style: const TextStyle(fontSize: 14, color:AppColors.black900),
-                decoration:  InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: const BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    borderSide: const BorderSide(color: Colors.grey), // ✅ hover나 focus에도 변화 없게
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: SizedBox(
+                    width: 235,
+                    height: 349,
+                    child: BookFrame(imageUrl: widget.book.image),
                   ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(13, 0, 0, 0),
+                  child: Text('후기 제목',
+                      style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                ),
+                TextField(
+                  controller: _titleController,
+                  maxLength: 50,
+                  minLines: 2,
+                  maxLines: null,
+                  style: const TextStyle(fontSize: 14, color: AppColors.black900),
+                  decoration: InputDecoration(
+                    contentPadding:
+                    const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('후기 내용',
+                    style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                TextField(
+                  controller: _contentController,
+                  maxLength: 1000,
+                  minLines: 3,
+                  maxLines: null,
+                  style: const TextStyle(fontSize: 14, color: AppColors.black900),
+                  decoration: InputDecoration(
+                    contentPadding:
+                    const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
