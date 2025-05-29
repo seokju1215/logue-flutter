@@ -41,7 +41,7 @@ class BookPostModel {
     }
 
     final isbn = books?['isbn'] ?? map['isbn'];
-    final image = books?['image'] ?? map['image'];
+    final image = map['image'] ?? books?['image'];
 
     return BookPostModel(
       id: map['id'] as String,

@@ -1,3 +1,5 @@
+
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/themes/app_colors.dart';
@@ -30,6 +32,10 @@ void main() async {
   );
   FcmTokenUtil.listenTokenRefresh();
 
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  final messaging = FirebaseMessaging.instance;
+
   // ✅ Auth 상태 변경 처리
   Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
     final event = data.event;
@@ -46,6 +52,15 @@ void main() async {
 
   NotificationSettings settings = await FirebaseMessaging.instance.requestPermission();
   print('🔧 알림 권한 상태: ${settings.authorizationStatus}');
+
+  if (Platform.isIOS) {
+    String? apnsToken;
+    do {
+      await Future.delayed(const Duration(milliseconds: 500));
+      apnsToken = await messaging.getAPNSToken();
+    } while (apnsToken == null);
+    print('📲 APNs 토큰: $apnsToken');
+  }
 
   final fcmToken = await FirebaseMessaging.instance.getToken();
   print('📱 FCM 토큰: $fcmToken');

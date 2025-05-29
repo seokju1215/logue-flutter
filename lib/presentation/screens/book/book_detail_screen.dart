@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:logue/presentation/screens/book/life_book_users_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/themes/app_colors.dart';
 import '../../../core/widgets/book/book_frame.dart';
 import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:logue/data/datasources/aladin_book_api.dart';
+
+import '../profile/follow/follow_list_tab.dart';
 
 class BookDetailScreen extends StatefulWidget {
   final String bookId; // UUID로 변경
@@ -171,7 +174,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               if (moreThanThree)
                 Center(
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LifebookUsersScreen(
+                            users: lifebookUsers.cast<Map<String, dynamic>>(),
+                          ),
+                        ),
+                      );
+                    },
                     child: const Text("더보기", style: TextStyle(color: AppColors.black500)),
                   ),
                 ),
