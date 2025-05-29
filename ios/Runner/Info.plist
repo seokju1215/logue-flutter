@@ -72,5 +72,11 @@
 	</array>
 	<key>UNUserNotificationCenterUsageDescription</key>
 	<string>앱에서 알림을 보내기 위해 권한이 필요합니다.</string>
+	<key>UIBackgroundModes</key>
+    <array>
+      <string>remote-notification</string>
+    </array>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>알림 권한을 확인하기 위해 필요합니다.</string>
 </dict>
 </plist>

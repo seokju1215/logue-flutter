@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:app_settings/app_settings.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/domain/usecases/get_notifications.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -10,7 +12,7 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> {
+class _NotificationScreenState extends State<NotificationScreen> with WidgetsBindingObserver {
   final client = Supabase.instance.client;
   late final GetNotifications _getNotifications;
   List<Map<String, dynamic>> _notifications = [];
@@ -21,6 +23,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
     super.initState();
     _getNotifications = GetNotifications(client);
     _loadNotifications();
+    _checkNotificationPermission();
+    WidgetsBinding.instance.addObserver(this); // 앱으로 복귀 시 권한 재확인
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkNotificationPermission(); // 앱으로 돌아왔을 때 권한 상태 재확인
+    }
+  }
+
+  Future<void> _checkNotificationPermission() async {
+    final status = await Permission.notification.status;
+    setState(() {
+      isNotificationOn = status.isGranted;
+    });
   }
 
   Future<void> _loadNotifications() async {
@@ -54,23 +78,37 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(),
-        title: const Text('알림'),
+        leading: const BackButton(),
+        title: const Text('알림', style: TextStyle(fontSize: 16, color: AppColors.black900),),
         centerTitle: true,
       ),
       body: Column(
         children: [
-          SwitchListTile(
-            title: const Text('서비스 알림 수신 설정'),
-            value: isNotificationOn,
-            onChanged: (val) {
-              setState(() {
-                isNotificationOn = val;
-              });
-              // TODO: 실제 알림 권한 저장 로직
-            },
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '서비스 알림 수신 설정',
+                  style: TextStyle(fontSize: 14, color: AppColors.black900),
+                ),
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: isNotificationOn,
+                    onChanged: (_) {
+                      AppSettings.openAppSettings();
+                    },
+                    activeColor: AppColors.white500,
+                    activeTrackColor: AppColors.black900,
+                    inactiveThumbColor: AppColors.black900,
+                    inactiveTrackColor: AppColors.white500,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Divider(height: 1),
           Expanded(
             child: _notifications.isEmpty
                 ? const Center(child: Text('알림이 없습니다'))
@@ -89,7 +127,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     : '$username님이 새로운 인생 책을 추가했어요.';
 
                 return ListTile(
-                  title: Text(content, style: TextStyle(fontSize: 14, color: AppColors.black500),),
+                  title: Text(
+                    content,
+                    style: const TextStyle(fontSize: 14, color: AppColors.black500),
+                  ),
                   onTap: () {
                     if (type == 'follow') {
                       _goToProfile(sender['id']);
@@ -98,7 +139,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     }
                   },
                   trailing: IconButton(
-                    icon: const Icon(Icons.close, size: 16,),
+                    icon: const Icon(Icons.close, size: 16),
                     onPressed: () => _deleteNotification(notifId),
                   ),
                 );
