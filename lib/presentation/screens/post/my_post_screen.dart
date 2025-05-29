@@ -4,16 +4,19 @@ import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/core/widgets/post/post_item.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/presentation/screens/post/comment_screen.dart';
+
 class MyBookPostScreen extends StatefulWidget {
   final String bookId;
+  final String? userId; // ✅ 다른 유저의 ID도 받을 수 있도록 수정
 
-  const MyBookPostScreen({Key? key, required this.bookId}) : super(key: key);
+  const MyBookPostScreen({Key? key, required this.bookId, this.userId}) : super(key: key);
 
   @override
   State<MyBookPostScreen> createState() => _MyBookPostScreenState();
 }
 
 class _MyBookPostScreenState extends State<MyBookPostScreen> {
+  bool _hasDeleted = false; // ✅ 추가
   final client = Supabase.instance.client;
   List<BookPostModel> posts = [];
   bool isLoading = true;
@@ -27,12 +30,12 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
   }
 
   Future<void> _fetchPosts() async {
-    final userId = client.auth.currentUser?.id;
+    final userId = widget.userId ?? client.auth.currentUser?.id;
     if (userId == null) return;
 
     try {
       final response = await client
-          .rpc('get_user_books_with_profiles') // Supabase Function 호출
+          .rpc('get_user_books_with_profiles', params: {'target_user_id': userId})
           .execute();
 
       if (response.data == null) {
@@ -40,12 +43,9 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       }
 
       final fetched = List<Map<String, dynamic>>.from(response.data);
-
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
       final mappedPosts = userPosts.map((e) => BookPostModel.fromMap(e)).toList();
 
-
-      // ✅ 정렬 이후 클릭한 책(bookId)의 인덱스 찾기
       final index = mappedPosts.indexWhere((post) => post.id == widget.bookId);
 
       setState(() {
@@ -56,7 +56,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
-          _scrollController.jumpTo(initialIndex * 450); // 대략 하나 높이
+          _scrollController.jumpTo(initialIndex * 450);
         }
       });
     } catch (e) {
@@ -78,13 +78,13 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         : '사용자';
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white, // 배경 흰색
-        elevation: 0,                  // 그림자 제거
+        backgroundColor: Colors.white,
+        elevation: 0,
         surfaceTintColor: Colors.white,
-        title: Text(appBarTitle, style: TextStyle(fontSize: 18, color: AppColors.black900),),
+        title: Text(appBarTitle, style: const TextStyle(fontSize: 18, color: AppColors.black900)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _hasDeleted),
         ),
       ),
       body: isLoading
@@ -95,19 +95,34 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         itemCount: posts.length,
         itemBuilder: (context, index) {
           final post = posts[index];
-          final isMyPost = post.userId == client.auth.currentUser?.id;
+          final currentUserId = client.auth.currentUser?.id;
+          final isMyPost = currentUserId != null && currentUserId == post.userId;
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
             child: PostItem(
               isMyPost: isMyPost,
               post: post,
-              onTapComment: () {
-                Navigator.push(
+              onDeleteSuccess: () {
+                setState(() {
+                  posts.removeAt(index);
+                  _hasDeleted = true;
+                });
+                if (posts.isEmpty) {
+                  Navigator.pop(context, true);
+                }
+              },
+              onEditSuccess: _fetchPosts,
+              onTap: () async {
+                final result = await Navigator.pushNamed(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => CommentScreen(post: post),
-                  ),
+                  '/post_detail',
+                  arguments: post,
                 );
+
+                if (result == true) {
+                  await _fetchPosts();
+                  setState(() => _hasDeleted = true);
+                }
               },
             ),
           );

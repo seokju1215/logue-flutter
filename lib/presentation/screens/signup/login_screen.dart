@@ -45,8 +45,8 @@ class LoginScreen extends StatelessWidget {
           Align(
             alignment: Alignment(0, 0.0), // y = -0.5 (화면 세로의 1/2 위치)
             child: SvgPicture.asset(
-              'assets/logue_logo_with_text.svg', // SVG 파일 경로
-              height: 94,
+              'assets/logue_logo_with_title.svg', // SVG 파일 경로
+              height: 64,
             ),
           ),
           // 로그인 버튼: 화면의 하단 1/5 지점에 위치

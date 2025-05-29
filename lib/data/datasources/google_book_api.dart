@@ -19,7 +19,13 @@ class GoogleBookApi {
         return {
           'title': volumeInfo['title'] ?? '',
           'author': (volumeInfo['authors'] as List?)?.join(', ') ?? '',
-          'image': imageLinks['thumbnail'] ?? '',
+          'image': imageLinks['extraLarge'] ??
+              imageLinks['large'] ??
+              imageLinks['medium'] ??
+              imageLinks['small'] ??
+              imageLinks['thumbnail'] ??
+              imageLinks['smallThumbnail'] ??
+              '',
           'publisher': volumeInfo['publisher'] ?? '',
         };
       }).toList();

@@ -18,6 +18,8 @@ class KakaoBookApi {
         'Authorization': 'KakaoAK $restApiKey',
       },
     );
+    print('📨 응답 코드: ${response.statusCode}');
+    print('📨 응답 바디: ${response.body}');
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);

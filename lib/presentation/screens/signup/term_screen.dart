@@ -96,8 +96,8 @@ class _TermsScreenState extends State<TermsScreen> {
               const SizedBox(height: 28),
               Center(
                 child: SvgPicture.asset(
-                  'assets/logue_logo_with_text.svg', // SVG 파일 경로
-                  height: 94,
+                  'assets/logue_logo_with_title.svg', // SVG 파일 경로
+                  height: 64,
                 ),
               ),
               const SizedBox(height: 40),

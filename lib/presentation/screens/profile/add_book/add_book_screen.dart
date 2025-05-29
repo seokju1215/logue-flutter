@@ -30,7 +30,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
     try {
       final data = await client
           .from('user_books')
-          .select()
+          .select('id, user_id, order_index, books(image)')
           .eq('user_id', userId)
           .order('order_index', ascending: true);
 
@@ -144,7 +144,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       final totalSpacing = spacing * (crossAxisCount - 1);
                       final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
 
-                      return Center(
+                      return Align(
+                        alignment: Alignment.topLeft,
                         child: ReorderableWrap(
                           spacing: spacing,
                           runSpacing: spacing,
@@ -159,8 +160,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(0),
                                 child: Image.network(
-                                  book['image'],
+                                  book['books']?['image'] ?? 'https://via.placeholder.com/150',
                                   fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.broken_image),
+                                    );
+                                  },
                                 ),
                               ),
                             ),

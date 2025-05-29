@@ -15,19 +15,32 @@ class AddBookUseCase {
 
     for (int i = 0; i < books.length; i++) {
       final book = books[i];
+
+      // books 테이블에 이미 있는지 확인
+      final existing = await client
+          .from('books')
+          .select('isbn')
+          .eq('isbn', book.isbn)
+          .maybeSingle();
+
+      if (existing == null) {
+        try {
+          await client.from('books').insert(book.toBookMap());
+        } catch (e) {
+          print('❌ books 테이블 insert 실패: $e');
+        }
+      }
+
       try {
         await client.from('user_books').insert({
           'user_id': user.id,
-          'title': book.title,
-          'author': book.author,
-          'image': book.image,
-          'publisher': book.publisher,
+          'isbn': book.isbn,
           'order_index': i,
           'review_title': '',
           'review_content': '',
         });
       } catch (e) {
-        print('! 개별 책 저장 실패: $e');
+        print('❌ user_books 테이블 insert 실패: $e');
       }
     }
   }

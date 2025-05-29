@@ -38,6 +38,9 @@ dependencies:
   flutter_web_auth_2: ^2.0.3
   image_picker: ^1.0.4
   reorderables: ^0.4.2
+  url_launcher: ^6.1.7
+  firebase_core: ^2.0.0
+  firebase_messaging: ^14.0.0
 
 
 
@@ -75,3 +78,5 @@ flutter:
     - assets/share_button.svg
     - assets/add_book_button.svg
     - assets/comment_btn.svg
+    - assets/logue_logo_with_title.svg
+    - assets/logue_logo.svg

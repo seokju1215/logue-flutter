@@ -31,7 +31,7 @@ class UserBookGrid extends StatelessWidget {
         ),
         itemBuilder: (context, index) {
           final book = books[index];
-          final imageUrl = book['image'];
+          final imageUrl = book['books']?['image'] ?? '';
 
           return GestureDetector(
             onTap: () {
