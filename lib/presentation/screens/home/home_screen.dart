@@ -47,9 +47,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               snap: true,
               pinned: false,
               elevation: 0,
-              titleSpacing: 0,
-              leading: const SizedBox(),
-              title: Padding(
+              titleSpacing: 0, // ✅ leading과의 간격 제거
+              leadingWidth: 120,
+              leading: Padding(
                 padding: const EdgeInsets.only(left: 20),
                 child: GestureDetector(
                   onTap: () async {
@@ -58,9 +58,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Navigator.pushReplacementNamed(context, '/splash');
                     }
                   },
-                  child: SvgPicture.asset('assets/logue_logo.svg', height: 24),
+                  child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28,),
                 ),
               ),
+              title: const SizedBox(),
               actions: [
                 IconButton(
                   onPressed: () {

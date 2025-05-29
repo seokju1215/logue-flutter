@@ -30,6 +30,7 @@ class BookPostModel {
   factory BookPostModel.fromMap(Map<String, dynamic> map) {
     debugPrint('🧪 map keys: ${map.keys}');
     final books = map['books'] as Map<String, dynamic>?;
+    final profiles = map['profiles'] as Map<String, dynamic>?;
 
     if (books == null) {
       debugPrint('❌ books 변환 실패: ${map['books']}');
@@ -43,14 +44,14 @@ class BookPostModel {
     return BookPostModel(
       id: map['id'] as String,
       userId: map['user_id'] as String,
-      title: map['title'] as String?,
-      author: map['author'] as String?,
+      title: books?['title'] as String? ?? map['title'] as String?,
+      author: books?['author'] as String? ?? map['author'] as String?,
       image: image as String?,
       isbn: isbn as String?,
       reviewTitle: map['review_title'] as String?,
       reviewContent: map['review_content'] as String?,
-      userName: map['username'] as String?,
-      avatarUrl: map['avatar_url'] as String?,
+      userName: profiles?['username'] as String? ?? map['username'] as String?,
+      avatarUrl: profiles?['avatar_url'] as String? ?? map['avatar_url'] as String?,
       orderIndex: map['order_index'] as int?,
     );
   }

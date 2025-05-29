@@ -144,7 +144,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       final totalSpacing = spacing * (crossAxisCount - 1);
                       final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
 
-                      return Center(
+                      return Align(
+                        alignment: Alignment.topLeft,
                         child: ReorderableWrap(
                           spacing: spacing,
                           runSpacing: spacing,

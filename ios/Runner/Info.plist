@@ -63,5 +63,13 @@
           <key>NSAllowsArbitraryLoads</key>
           <true/>
         </dict>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>remote-notification</string>
+    </array>
+    <key>UNUserNotificationCenterUsageDescription</key>
+    <string>앱에서 알림을 보내기 위해 권한이 필요합니다.</string>
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <true/>
 </dict>
 </plist>
