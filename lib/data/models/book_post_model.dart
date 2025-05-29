@@ -6,7 +6,8 @@ class BookPostModel {
   final String? title;
   final String? author;
   final String? image;
-  final String? isbn;
+  final String? isbn;        // 유지
+  final String? bookId;       // ✅ 새 PK 기반 필드 추가
   final String? reviewTitle;
   final String? reviewContent;
   final String? userName;
@@ -16,6 +17,7 @@ class BookPostModel {
   BookPostModel({
     required this.id,
     required this.userId,
+    this.bookId, // ✅ required
     this.title,
     this.author,
     this.image,
@@ -32,26 +34,27 @@ class BookPostModel {
     final books = map['books'] as Map<String, dynamic>?;
     final profiles = map['profiles'] as Map<String, dynamic>?;
 
-    if (books == null) {
-      debugPrint('❌ books 변환 실패: ${map['books']}');
+    final bookId = books?['id'] ?? map['book_id'];
+    if (bookId == null) {
+      debugPrint('❌ bookId 누락: books: $books | map[book_id]: ${map['book_id']}');
+      throw Exception('Book ID is required');
     }
 
     final isbn = books?['isbn'] ?? map['isbn'];
     final image = books?['image'] ?? map['image'];
 
-    debugPrint('📚 PostItem에서 넘기는 ISBN: $isbn');
-
     return BookPostModel(
       id: map['id'] as String,
       userId: map['user_id'] as String,
-      title: books?['title'] as String? ?? map['title'] as String?,
-      author: books?['author'] as String? ?? map['author'] as String?,
-      image: image as String?,
-      isbn: isbn as String?,
-      reviewTitle: map['review_title'] as String?,
-      reviewContent: map['review_content'] as String?,
-      userName: profiles?['username'] as String? ?? map['username'] as String?,
-      avatarUrl: profiles?['avatar_url'] as String? ?? map['avatar_url'] as String?,
+      bookId: bookId,
+      title: books?['title'] ?? map['title'],
+      author: books?['author'] ?? map['author'],
+      image: image,
+      isbn: isbn,
+      reviewTitle: map['review_title'],
+      reviewContent: map['review_content'],
+      userName: profiles?['username'] ?? map['username'],
+      avatarUrl: profiles?['avatar_url'] ?? map['avatar_url'],
       orderIndex: map['order_index'] as int?,
     );
   }

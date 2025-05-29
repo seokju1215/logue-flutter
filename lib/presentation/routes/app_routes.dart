@@ -92,9 +92,8 @@ Map<String, WidgetBuilder> appRoutes = {
     return EditReviewScreen(post: args);
   },
   '/book_detail': (context) {
-    final args = ModalRoute.of(context)!.settings.arguments;
-    final isbn = args is String ? args : '';
-    return BookDetailScreen(isbn: isbn);
+    final bookId = ModalRoute.of(context)!.settings.arguments as String;
+    return BookDetailScreen(bookId: bookId);
   }
 
 

@@ -74,40 +74,78 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
   }
 
   Future<void> _submitBooks() async {
-    final usecase = AddBookUseCase(Supabase.instance.client);
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
 
-    if (user != null) {
-      final insertProfile = InsertProfileUseCase(client);
+    if (user == null) return;
 
-      // Supabase에 프로필 저장
-      await insertProfile(
-        id: user.id,
-        username: generateRandomUsername(),
-        name: user.userMetadata?['full_name'] ?? '이름 없음',
-        job: '사용자',
-        bio: '',
-        profileUrl: generateRandomProfileUrl(),
-        avatarUrl: 'basic',
-      );
+    final insertProfile = InsertProfileUseCase(client);
 
-      // job_tags count 증가
-      try {
-        await client
-            .rpc('increment_job_tag_count', params: {'input_job_name': '사용자'});
-      } catch (e) {
-        debugPrint('job_tags 증가 실패: $e');
-      }
+    // 1. 프로필 insert
+    await insertProfile(
+      id: user.id,
+      username: generateRandomUsername(),
+      name: user.userMetadata?['full_name'] ?? '이름 없음',
+      job: '사용자',
+      bio: '',
+      profileUrl: generateRandomProfileUrl(),
+      avatarUrl: 'basic',
+    );
+
+    try {
+      await client.rpc('increment_job_tag_count', params: {'input_job_name': '사용자'});
+    } catch (e) {
+      debugPrint('job_tags 증가 실패: $e');
     }
 
     try {
-      await usecase(_selectedBooks);
+      await client.rpc('increment_all_order_indices', params: {'uid': user.id});
+
+      for (int i = 0; i < _selectedBooks.length; i++) {
+        final book = _selectedBooks[i];
+
+        // ✅ books 테이블에 존재하는지 확인
+        final query = book.isbn.isNotEmpty
+            ? client.from('books').select('id').eq('isbn', book.isbn!).maybeSingle()
+            : client.from('books').select('id').eq('title', book.title).eq('author', book.author).maybeSingle();
+
+        final existing = await query;
+        String bookId;
+
+        if (existing != null) {
+          bookId = existing['id'];
+        } else {
+          // ✅ 없다면 books 테이블에 삽입 후 id 받아오기
+          final inserted = await client
+              .from('books')
+              .insert(book.toBookMap())
+              .select('id')
+              .maybeSingle();
+
+          if (inserted == null) throw Exception('책 저장 실패');
+          bookId = inserted['id'];
+        }
+
+        // ✅ user_books에 연결 저장
+        await client.from('user_books').insert({
+          'user_id': user.id,
+          'book_id': bookId,
+          'order_index': i,
+          'review_title': '',
+          'review_content': '',
+        });
+      }
+
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, '/main');
       }
     } catch (e) {
-      print('저장 실패: $e');
+      debugPrint('❌ 책 저장 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('저장에 실패했어요. 다시 시도해주세요.')),
+        );
+      }
     }
   }
 

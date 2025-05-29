@@ -7,8 +7,8 @@ import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:logue/data/datasources/aladin_book_api.dart';
 
 class BookDetailScreen extends StatefulWidget {
-  final String isbn;
-  const BookDetailScreen({super.key, required this.isbn});
+  final String bookId; // UUID로 변경
+  const BookDetailScreen({super.key,  required this.bookId});
 
   @override
   State<BookDetailScreen> createState() => _BookDetailScreenState();
@@ -34,12 +34,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     try {
       final res = await Supabase.instance.client.functions.invoke(
         'get-book-detail',
-        body: {'isbn13': widget.isbn},
+        body: {'book_id': widget.bookId},
       );
 
       final decoded = res.data as Map<String, dynamic>;
       final bookData = decoded['book'];
-      final authors = _extractAuthors(bookData['author'] ?? '');
+      print("bookData = ${jsonEncode(bookData)}");
+      final authors = _extractAuthors(bookData['author']?.toString() ?? '');
 
       setState(() {
         book = bookData;
@@ -56,7 +57,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       });
     }
   }
-  List<String> _extractAuthors(String authorString) {
+  List<String> _extractAuthors(String? authorString) {
+    if (authorString == null || authorString.isEmpty) return [];
+
     final regex = RegExp(r'([^,(]+)\s+\([^)]+\)');
     final matches = regex.allMatches(authorString);
     return matches.map((m) => m.group(1)!.trim()).toList();
@@ -153,6 +156,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               avatarUrl: user['avatar_url'] ?? 'basic',
               isFollowing: user['is_following'] ?? false,
               showActions: user['id'] != currentUserId,
+              showdelete: false,
               onTapFollow: () {},
               onTapProfile: () {
                 Navigator.pushNamed(context, '/other_profile', arguments: user['id']);

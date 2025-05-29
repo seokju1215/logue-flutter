@@ -94,24 +94,23 @@ class PostItem extends StatelessWidget {
                           try {
                             final response = await client
                                 .from('user_books')
-                                .select('isbn')
+                                .select('book_id') // ✅ isbn → book_id
                                 .eq('id', post.id)
                                 .maybeSingle();
 
-                            final isbn = response?['isbn'] as String?;
-                            if (isbn == null || isbn.isEmpty) {
+                            final bookId = response?['book_id'] as String?;
+                            if (bookId == null || bookId.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('ISBN을 찾을 수 없어요.')),
+                                const SnackBar(content: Text('책 정보를 찾을 수 없어요.')),
                               );
                               return;
                             }
 
-                            print('📚 user_books.id로 조회한 ISBN: $isbn');
 
                             Navigator.pushNamed(
                               context,
                               '/book_detail',
-                              arguments: isbn,
+                                arguments: post.bookId,
                             );
                           } catch (e) {
                             print('❌ ISBN 조회 실패: $e');
@@ -181,7 +180,7 @@ class PostItem extends StatelessWidget {
                       Navigator.pushNamed(
                         context,
                         '/book_detail',
-                        arguments: post.isbn, // 또는 post.bookIsbn, 실제 필드명 확인
+                        arguments: post.bookId,
                       );
                     },
                     style: OutlinedButton.styleFrom(

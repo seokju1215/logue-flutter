@@ -138,6 +138,7 @@ class _FollowListTabState extends State<FollowListTab> {
           avatarUrl: user['avatar_url'] ?? 'basic',
           isFollowing: user['isFollowing'] == true,
           showActions: widget.type == FollowListType.followers && isMyProfile,
+          showdelete: true,
           onTapFollow: () => _handleFollow(user['id']),
           onTapRemove: () => _handleRemoveFollower(user['id']),
           onTapProfile: () {

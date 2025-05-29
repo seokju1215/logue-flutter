@@ -32,28 +32,73 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     setState(() => _isSaving = true);
 
     try {
-      await client.from('books').upsert({
-        'isbn': widget.book.isbn,
-        'title': widget.book.title,
-        'author': widget.book.author,
-        'publisher': widget.book.publisher,
-        'published_date': widget.book.publishedDate,
-        'page_count': widget.book.pageCount,
-        'description': widget.book.description,
-        'toc': widget.book.toc,
-        'image': widget.book.image,
-      });
+      // ✅ 1. 책 존재 확인: isbn > title + author
+      String? bookId;
 
+      if (widget.book.isbn != null && widget.book.isbn!.isNotEmpty) {
+        final existingByIsbn = await client
+            .from('books')
+            .select('id')
+            .eq('isbn', widget.book.isbn)
+            .maybeSingle();
+
+        if (existingByIsbn != null) {
+          bookId = existingByIsbn['id'];
+        }
+      }
+
+      if (bookId == null) {
+        final existingByInfo = await client
+            .from('books')
+            .select('id')
+            .eq('title', widget.book.title)
+            .eq('author', widget.book.author)
+            .maybeSingle();
+
+        if (existingByInfo != null) {
+          bookId = existingByInfo['id'];
+        }
+      }
+
+      // ✅ 2. 없으면 삽입
+      if (bookId == null) {
+        final inserted = await client
+            .from('books')
+            .insert({
+          'isbn': widget.book.isbn,
+          'title': widget.book.title,
+          'author': widget.book.author,
+          'publisher': widget.book.publisher,
+          'published_date': widget.book.publishedDate,
+          'page_count': widget.book.pageCount,
+          'description': widget.book.description,
+          'toc': widget.book.toc,
+          'image': widget.book.image,
+        })
+            .select('id')
+            .maybeSingle();
+
+        bookId = inserted?['id'];
+      }
+
+      if (bookId == null) {
+        throw Exception('책 ID를 확보할 수 없습니다.');
+      }
+
+      // ✅ 3. 기존 순서 밀기
       await client.rpc('increment_all_order_indices', params: {'uid': user.id});
 
+      // ✅ 4. user_books 저장
       await client.from('user_books').insert({
         'user_id': user.id,
+        'book_id': bookId,
         'isbn': widget.book.isbn,
         'order_index': 0,
         'review_title': reviewTitle,
         'review_content': reviewContent,
       });
 
+      // ✅ 5. 알림 처리
       final response = await client
           .from('follows')
           .select('follower_id')
@@ -66,7 +111,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           'recipient_id': f['follower_id'],
           'sender_id': user.id,
           'type': 'post',
-          'book_id': widget.book.isbn,
+          'book_id': bookId,
           'is_read': false,
         }).toList();
 
@@ -79,7 +124,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               'recipient_id': f['follower_id'],
               'sender_id': user.id,
               'type': 'post',
-              'book_id': widget.book.isbn,
+              'book_id': bookId,
             });
             debugPrint('📨 FCM 응답: ${result.data}');
           }
@@ -90,16 +135,16 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         debugPrint('ℹ️ 팔로워 없음. 알림 건너뜀');
       }
 
+      // ✅ 6. 완료 시 홈 이동
       if (context.mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(
-              builder: (_) => const MainNavigationScreen(initialIndex: 1)),
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen(initialIndex: 1)),
               (route) => false,
         );
       }
     } catch (e) {
-      debugPrint('❌ 책 저장 실패: $e');
+      debugPrint('❌ 저장 실패: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('저장에 실패했어요. 다시 시도해주세요.')),
@@ -162,8 +207,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   maxLines: null,
                   style: const TextStyle(fontSize: 14, color: AppColors.black900),
                   decoration: InputDecoration(
-                    contentPadding:
-                    const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5),
                       borderSide: const BorderSide(color: Colors.grey),
@@ -180,8 +224,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   maxLines: null,
                   style: const TextStyle(fontSize: 14, color: AppColors.black900),
                   decoration: InputDecoration(
-                    contentPadding:
-                    const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(5),
                       borderSide: const BorderSide(color: Colors.grey),

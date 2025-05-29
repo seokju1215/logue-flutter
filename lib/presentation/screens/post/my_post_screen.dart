@@ -46,7 +46,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
       final mappedPosts = userPosts.map((e) => BookPostModel.fromMap(e)).toList();
 
-      final index = mappedPosts.indexWhere((post) => post.id == widget.bookId);
+      final index = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
 
       setState(() {
         posts = mappedPosts;
