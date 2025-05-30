@@ -246,7 +246,7 @@ class _SearchScreenState extends State<SearchScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              if (_userResults.isNotEmpty) ...[Text(
                                 "계정",
                                 style: TextStyle(
                                     fontSize: 16, color: AppColors.black900),
@@ -291,8 +291,8 @@ class _SearchScreenState extends State<SearchScreen>
                                       },
                                     ),
                                   ),
-                              const SizedBox(height: 26),
-                              Text(
+                              const SizedBox(height: 26),],
+                              if (_bookResults.isNotEmpty) ...[Text(
                                 "책",
                                 style: TextStyle(
                                     fontSize: 16, color: AppColors.black900),
@@ -320,7 +320,7 @@ class _SearchScreenState extends State<SearchScreen>
                                     ),
                                   );
                                 },
-                              )
+                              )],
                             ],
                           ),
                         ),
