@@ -98,6 +98,14 @@ class _FollowListTabState extends State<FollowListTab> {
           });
       });
     } else {
+      if (!isMyProfile && widget.type == FollowListType.followings) {
+        final index = rawList.indexWhere((user) => user['id'] == currentUserId);
+        if (index != -1) {
+          final me = rawList.removeAt(index);
+          rawList.insert(0, me); // 현재 유저를 최상단으로 이동
+        }
+      }
+
       setState(() => users = rawList);
     }
   }

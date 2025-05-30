@@ -8,6 +8,7 @@ import 'package:logue/domain/usecases/get_user_books.dart';
 import 'package:logue/core/widgets/book/user_book_grid.dart';
 import 'package:logue/data/utils/fetch_profile.dart';
 import 'package:logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
+import 'dart:ui'; // 맨 위에 추가
 
 import '../../../domain/entities/follow_list_type.dart';
 import 'follow/follow_tab_screen.dart';
@@ -264,21 +265,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            Container(
-              width: 71,
-              height: 71,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.black100, width: 1),
-              ),
-              child: CircleAvatar(
-                radius: 70,
-                backgroundImage:
+            GestureDetector(
+              onLongPress: () => _showZoomedAvatar(avatarUrl),
+              child: Hero(
+                tag: 'profile-avatar',
+                child: Container(
+                  width: 71,
+                  height: 71,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.black100, width: 1),
+                  ),
+                  child: CircleAvatar(
+                    radius: 70,
+                    backgroundImage:
                     avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
-                child: avatarUrl == 'basic'
-                    ? Image.asset('assets/basic_avatar.png',
+                    child: avatarUrl == 'basic'
+                        ? Image.asset('assets/basic_avatar.png',
                         width: 70, height: 70)
-                    : null,
+                        : null,
+                  ),
+                ),
               ),
             ),
           ],
@@ -388,6 +395,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _loadBooks();
         }
       },
+    );
+  }
+  void _showZoomedAvatar(String avatarUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Stack(
+          children: [
+            // 🔹 배경 블러 처리
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                color: Colors.black.withOpacity(0.4), // 블러 + 반투명 배경
+              ),
+            ),
+            Center(
+              child: Hero(
+                tag: 'profile-avatar',
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: DecorationImage(
+                      fit: BoxFit.cover,
+                      image: avatarUrl == 'basic'
+                          ? const AssetImage('assets/basic_avatar.png')
+                      as ImageProvider
+                          : NetworkImage(avatarUrl),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

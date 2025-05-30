@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
@@ -71,7 +72,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
 
     try {
       await Supabase.instance.client.rpc('increment_visitors', params: {
-        'user_id': widget.userId, // ✅ 단순 문자열만 전달
+        'user_id': widget.userId,
       });
     } catch (e) {
       debugPrint('❌ 방문자 증가 실패: $e');
@@ -122,6 +123,45 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     });
   }
 
+  void _showZoomedAvatar(String avatarUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Stack(
+          children: [
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                color: Colors.black.withOpacity(0.4),
+              ),
+            ),
+            Center(
+              child: Hero(
+                tag: 'profile-avatar',
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: DecorationImage(
+                      fit: BoxFit.cover,
+                      image: avatarUrl == 'basic'
+                          ? const AssetImage('assets/basic_avatar.png')
+                      as ImageProvider
+                          : NetworkImage(avatarUrl),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (profile == null) {
@@ -142,10 +182,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 Text(profile?['username'] ?? '사용자',
-                    style: Theme
-                        .of(context)
-                        .textTheme
-                        .titleMedium),
+                    style: Theme.of(context).textTheme.titleMedium),
                 IconButton(
                   icon: SvgPicture.asset('assets/share_icon.svg'),
                   onPressed: () {},
@@ -201,65 +238,39 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(profile?['name'] ?? '',
-                      style: Theme
-                          .of(context)
-                          .textTheme
-                          .bodyLarge),
+                      style: Theme.of(context).textTheme.bodyLarge),
                   Text(profile?['job'] ?? '',
-                      style: Theme
-                          .of(context)
-                          .textTheme
-                          .bodySmall),
+                      style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 10),
                   _buildBio(context),
                   const SizedBox(height: 20),
                 ],
               ),
             ),
-            if (!isMyProfile)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    width: 71,
-                    height: 71,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.black100, width: 1),
-                    ),
-                    child: CircleAvatar(
-                      radius: 70,
-                      backgroundImage: avatarUrl == 'basic'
-                          ? null
-                          : NetworkImage(avatarUrl),
-                      child: avatarUrl == 'basic'
-                          ? Image.asset(
-                          'assets/basic_avatar.png', width: 70, height: 70)
-                          : null,
-                    ),
+            GestureDetector(
+              onLongPress: () => _showZoomedAvatar(avatarUrl),
+              child: Hero(
+                tag: 'profile-avatar',
+                child: Container(
+                  width: 71,
+                  height: 71,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.black100, width: 1),
                   ),
-
-                ],
-              )
-            else
-              Container(
-                width: 71,
-                height: 71,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.black100, width: 1),
-                ),
-                child: CircleAvatar(
-                  radius: 70,
-                  backgroundImage: avatarUrl == 'basic' ? null : NetworkImage(
-                      avatarUrl),
-                  child: avatarUrl == 'basic'
-                      ? Image.asset(
-                      'assets/basic_avatar.png', width: 70, height: 70)
-                      : null,
+                  child: CircleAvatar(
+                    radius: 70,
+                    backgroundImage: avatarUrl == 'basic'
+                        ? null
+                        : NetworkImage(avatarUrl),
+                    child: avatarUrl == 'basic'
+                        ? Image.asset('assets/basic_avatar.png',
+                        width: 70, height: 70)
+                        : null,
+                  ),
                 ),
               ),
+            ),
           ],
         ),
         Row(
@@ -316,8 +327,6 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
               child: _buildCount("팔로잉", profile?['following'] ?? 0),
             ),
             const SizedBox(width: 24),
-            if (isMyProfile)
-              _buildCount("방문자", profile?['visitors'] ?? 0),
             const Spacer(),
             if (!isMyProfile)
               OutlinedButton(
@@ -390,8 +399,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
           textDirection: TextDirection.ltr,
           maxLines: 2,
           ellipsis: showMore ? '...' : null,
-        )
-          ..layout(maxWidth: constraints.maxWidth);
+        )..layout(maxWidth: constraints.maxWidth);
 
         final isOverflowing = tp.didExceedMaxLines;
 
