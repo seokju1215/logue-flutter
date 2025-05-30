@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import '../../../data/datasources/kakao_book_api.dart';
 import '../../../data/models/book_model.dart';
+import '../../../data/utils/fcmPermissionUtil.dart';
 import '../../../domain/usecases/add_book.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/domain/usecases/insert_profile.dart';
@@ -73,6 +74,69 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     return _selectedBooks.any((b) => b.image == book.image);
   }
 
+  Future<String> _getOrInsertBookId(BookModel book) async {
+    final client = Supabase.instance.client;
+
+    Map<String, dynamic>? existing;
+
+    // ✅ ISBN이 유효할 때만 중복 확인
+    final hasValidIsbn = book.isbn.isNotEmpty;
+
+    if (hasValidIsbn) {
+      existing = await client
+          .from('books')
+          .select('id')
+          .eq('isbn', book.isbn!)
+          .maybeSingle();
+
+      if (existing != null && existing['id'] != null) {
+        return existing['id'];
+      }
+    }
+
+    // ✅ ISBN 외 정보로도 중복 체크 (title + author)
+    if (!hasValidIsbn || existing == null || existing['id'] == null) {
+      existing = await client
+          .from('books')
+          .select('id')
+          .eq('title', book.title)
+          .eq('author', book.author)
+          .maybeSingle();
+
+      if (existing != null && existing['id'] != null) {
+        return existing['id'];
+      }
+    }
+
+    try {
+      final inserted = await client
+          .from('books')
+          .insert(book.toBookMap())
+          .select('id')
+          .maybeSingle();
+
+      if (inserted == null || inserted['id'] == null) {
+        throw Exception('책 저장 실패');
+      }
+
+      return inserted['id'];
+    } on PostgrestException catch (e) {
+      if (e.code == '23505' && hasValidIsbn) {
+        // 중복 ISBN으로 insert 실패했을 때 재조회
+        final retry = await client
+            .from('books')
+            .select('id')
+            .eq('isbn', book.isbn!)
+            .maybeSingle();
+        if (retry != null && retry['id'] != null) {
+          return retry['id'];
+        }
+      }
+
+      rethrow; // 다른 오류는 다시 던짐
+    }
+  }
+
   Future<void> _submitBooks() async {
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
@@ -103,33 +167,12 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
 
       for (int i = 0; i < _selectedBooks.length; i++) {
         final book = _selectedBooks[i];
+        final bookId = await _getOrInsertBookId(book);
 
-        // ✅ books 테이블에 존재하는지 확인
-        final query = book.isbn.isNotEmpty
-            ? client.from('books').select('id').eq('isbn', book.isbn!).maybeSingle()
-            : client.from('books').select('id').eq('title', book.title).eq('author', book.author).maybeSingle();
-
-        final existing = await query;
-        String bookId;
-
-        if (existing != null) {
-          bookId = existing['id'];
-        } else {
-          // ✅ 없다면 books 테이블에 삽입 후 id 받아오기
-          final inserted = await client
-              .from('books')
-              .insert(book.toBookMap())
-              .select('id')
-              .maybeSingle();
-
-          if (inserted == null) throw Exception('책 저장 실패');
-          bookId = inserted['id'];
-        }
-
-        // ✅ user_books에 연결 저장
         await client.from('user_books').insert({
           'user_id': user.id,
           'book_id': bookId,
+          'isbn': book.isbn.isNotEmpty ? book.isbn : '',
           'order_index': i,
           'review_title': '',
           'review_content': '',
@@ -137,6 +180,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       }
 
       if (context.mounted) {
+        await FcmPermissionUtil.requestOnceIfNeeded();
         Navigator.pushReplacementNamed(context, '/main');
       }
     } catch (e) {

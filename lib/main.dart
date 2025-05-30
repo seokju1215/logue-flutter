@@ -37,33 +37,45 @@ void main() async {
   final messaging = FirebaseMessaging.instance;
 
   // ✅ Auth 상태 변경 처리
+  bool _isRequestingPermission = false; // 전역 변수
+
   Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
     final event = data.event;
     final session = data.session;
 
     if (event == AuthChangeEvent.signedIn && session != null) {
-      await FcmTokenUtil.updateFcmToken();
-      navigatorKey.currentState?.pushReplacementNamed('/splash');
+      if (!_isRequestingPermission) {
+        _isRequestingPermission = true;
+
+        try {
+          final settings = await FirebaseMessaging.instance.requestPermission();
+          print('🔧 알림 권한 상태: ${settings.authorizationStatus}');
+
+          if (Platform.isIOS) {
+            String? apnsToken;
+            do {
+              await Future.delayed(const Duration(milliseconds: 500));
+              apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+            } while (apnsToken == null);
+            print('📲 APNs 토큰: $apnsToken');
+          }
+
+          final fcmToken = await FirebaseMessaging.instance.getToken();
+          print('📱 FCM 토큰: $fcmToken');
+          await FcmTokenUtil.updateFcmToken();
+        } catch (e) {
+          print('❌ 알림 권한 요청 중 에러: $e');
+        } finally {
+          _isRequestingPermission = false;
+        }
+
+        navigatorKey.currentState?.pushReplacementNamed('/splash');
+      }
     }
   });
 
   // ✅ Firebase Messaging 설정
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  NotificationSettings settings = await FirebaseMessaging.instance.requestPermission();
-  print('🔧 알림 권한 상태: ${settings.authorizationStatus}');
-
-  if (Platform.isIOS) {
-    String? apnsToken;
-    do {
-      await Future.delayed(const Duration(milliseconds: 500));
-      apnsToken = await messaging.getAPNSToken();
-    } while (apnsToken == null);
-    print('📲 APNs 토큰: $apnsToken');
-  }
-
-  final fcmToken = await FirebaseMessaging.instance.getToken();
-  print('📱 FCM 토큰: $fcmToken');
 
   // ✅ 포그라운드 수신
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {

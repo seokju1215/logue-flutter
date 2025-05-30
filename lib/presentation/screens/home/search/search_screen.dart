@@ -6,7 +6,7 @@ import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:logue/data/models/book_model.dart';
 import 'package:logue/data/models/user_profile.dart';
 import 'package:logue/domain/usecases/search_users.dart';
-import 'package:logue/data/datasources/kakao_book_api.dart';
+import 'package:logue/data/datasources/aladin_book_api.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:logue/data/repositories/follow_repository.dart';
 import 'package:logue/domain/usecases/follows/follow_user.dart';
@@ -63,8 +63,11 @@ class _SearchScreenState extends State<SearchScreen>
     });
     try {
       final users = await SearchUsers().call(query);
-      final booksRaw = await KakaoBookApi().searchBooks(query);
+
+      // ✅ AladinBookApi 사용
+      final booksRaw = await AladinBookApi().searchBooks(query);
       final books = booksRaw.map((data) => BookModel.fromJson(data)).toList();
+
       setState(() {
         _userResults = users;
         _bookResults = books;
@@ -73,6 +76,49 @@ class _SearchScreenState extends State<SearchScreen>
       print('검색 오류: $e');
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _onTapBook(BookModel book) async {
+    final client = Supabase.instance.client;
+
+    if (book.isbn == null || book.isbn.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ISBN이 유효하지 않아요.')),
+      );
+      return;
+    }
+
+    try {
+      final res = await client.functions.invoke(
+        'get-book-detail',
+        body: {
+          'isbn': book.isbn,
+          'title': book.title, // ✅ title도 함께 넘김
+        },
+      );
+      print('🔍 isbn: ${book.isbn}');
+      print('🔍 title: ${book.title}');
+
+      final data = res.data;
+
+      if (data == null || data['book'] == null || data['book']['id'] == null) {
+        print('📦 함수 결과: ${res.data}');
+        throw Exception('유효한 책 정보를 가져오지 못했어요.');
+      }
+
+      final bookId = data['book']['id'];
+
+      Navigator.pushNamed(
+        context,
+        '/book_detail',
+        arguments: bookId,
+      );
+    } catch (e) {
+      debugPrint('❌ 책 정보 가져오기 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('책 정보를 불러오지 못했어요.')),
+      );
     }
   }
 
@@ -267,13 +313,7 @@ class _SearchScreenState extends State<SearchScreen>
                                   final book = _bookResults[index];
 
                                   return GestureDetector(
-                                    onTap: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/book_detail',
-                                        arguments: book.isbn,
-                                      );
-                                    },
+                                    onTap: () => _onTapBook(book),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
                                       child: Image.network(book.image, fit: BoxFit.cover),

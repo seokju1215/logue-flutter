@@ -44,7 +44,6 @@ class _TermsScreenState extends State<TermsScreen> {
     if (!agreedTerms || !agreedPrivacy) return;
 
     setState(() => isLoading = true);
-
     await Supabase.instance.client.from('user_agreements').insert({
       'user_id': user.id,
       'agreed_terms': agreedTerms,

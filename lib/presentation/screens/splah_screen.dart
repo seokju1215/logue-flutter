@@ -4,6 +4,8 @@ import 'package:logue/data/repositories/agreement_repository.dart';
 import 'package:logue/presentation/screens/signup/login_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../data/utils/fcmPermissionUtil.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -28,10 +30,33 @@ class _SplashScreenState extends State<SplashScreen> {
     final user = client.auth.currentSession?.user;
 
     if (user == null) {
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/login');
       return;
+    }
+
+    // 탈퇴 확인
+    final deletedUser = await client
+        .from('deleted_users')
+        .select('deleted_at')
+        .eq('email', user.email)
+        .maybeSingle();
+
+    if (!mounted) return;
+
+    if (deletedUser != null && deletedUser.isNotEmpty) {
+      final deletedAt = DateTime.parse(deletedUser['deleted_at']);
+      final now = DateTime.now();
+
+      if (now.difference(deletedAt).inDays < 30) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(blocked: true),
+          ),
+        );
+        return;
+      }
     }
 
     // 프로필 존재 확인
@@ -41,59 +66,32 @@ class _SplashScreenState extends State<SplashScreen> {
         .eq('id', user.id)
         .maybeSingle();
 
-    if (profile == null || profile.isEmpty) {
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/login');
-    }
+    if (!mounted) return;
 
     // 약관 동의 여부 확인
     final hasAgreed = await AgreementRepository().hasAgreedTerms(user.id);
+
+    if (!mounted) return;
+
     if (!hasAgreed) {
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/terms');
-      }
+      Navigator.pushReplacementNamed(context, '/terms');
       return;
     }
 
-    // 탈퇴 유저 확인
-    final deletedUser = await client
-        .from('deleted_users')
-        .select('deleted_at')
-        .eq('email', user.email)
-        .maybeSingle();
-
-    if (deletedUser != null && deletedUser.isNotEmpty) {
-      final deletedAt = DateTime.parse(deletedUser['deleted_at']);
-      final now = DateTime.now();
-
-      if (now.difference(deletedAt).inDays < 30) {
-        if (context.mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const LoginScreen(blocked: true),
-            ),
-          );
-        }
-        return;
-      }
-    }
-
-    Navigator.pushReplacementNamed(context, '/main');
-
     // 책 3권 선택 여부 확인
-    // final books = await client
-    //     .from('user_books')
-    //     .select('id')
-    //     .eq('user_id', user.id);
-    //
-    // if (context.mounted) {
-    //   if (books.length < 3) {
-    //     Navigator.pushReplacementNamed(context, '/select-3books');
-    //   } else {
-    //     Navigator.pushReplacementNamed(context, '/main');
-    //   }
-    // }
+    final books = await client
+        .from('user_books')
+        .select('id')
+        .eq('user_id', user.id);
+
+    if (!mounted) return;
+
+    if (profile == null || profile.isEmpty) {
+      Navigator.pushReplacementNamed(context, '/select-3books');
+    } else {
+      await FcmPermissionUtil.requestOnceIfNeeded();
+      Navigator.pushReplacementNamed(context, '/main');
+    }
   }
 
   @override

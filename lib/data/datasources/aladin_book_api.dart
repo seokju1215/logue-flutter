@@ -33,14 +33,20 @@ class AladinBookApi {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       final List items = decoded['item'] ?? [];
 
-      return items.map<Map<String, dynamic>>((item) {
+
+      return items
+          .where((item) {
+        final cover = item['cover'] ?? '';
+        return cover.trim().isNotEmpty;
+      })
+          .map<Map<String, dynamic>>((item) {
         String cover = item['cover'] ?? '';
         if (cover.startsWith('http://')) {
           cover = cover.replaceFirst('http://', 'https://');
         }
 
         cover = cover.replaceAllMapped(
-          RegExp(r'(cover(sum|\d{2,3}))'), // cover90, cover200, coversum 등 매치
+          RegExp(r'(cover(sum|\d{2,3}))'),
               (_) => 'cover500',
         );
 

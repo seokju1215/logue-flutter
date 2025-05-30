@@ -11,6 +11,7 @@ import '../profile/follow/follow_list_tab.dart';
 
 class BookDetailScreen extends StatefulWidget {
   final String bookId; // UUID로 변경
+
   const BookDetailScreen({super.key,  required this.bookId});
 
   @override
@@ -35,14 +36,19 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   Future<void> _fetchBookOnly() async {
     try {
+      final body = {
+        if (widget.bookId.length == 36) 'book_id': widget.bookId,
+        if (widget.bookId.length != 36) 'isbn': widget.bookId,
+      };
+
       final res = await Supabase.instance.client.functions.invoke(
         'get-book-detail',
-        body: {'book_id': widget.bookId},
+        body: body,
       );
 
       final decoded = res.data as Map<String, dynamic>;
       final bookData = decoded['book'];
-      print("bookData = ${jsonEncode(bookData)}");
+
       final authors = _extractAuthors(bookData['author']?.toString() ?? '');
 
       setState(() {
@@ -51,8 +57,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         errorMessage = decoded['error'];
         isLoading = false;
       });
-      await _fetchOtherBooks(authors);
 
+      await _fetchOtherBooks(authors);
     } catch (e) {
       setState(() {
         errorMessage = e.toString();

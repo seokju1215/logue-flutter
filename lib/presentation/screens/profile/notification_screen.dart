@@ -111,7 +111,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
           ),
           Expanded(
             child: _notifications.isEmpty
-                ? const Center(child: Text('알림이 없습니다'))
+                ? const Center(child: Text('친구를 팔로우해 서로의 인생 책을 공유해보세요.', style: TextStyle(color: AppColors.black500, fontSize: 12),))
                 : ListView.builder(
               itemCount: _notifications.length,
               itemBuilder: (context, index) {
@@ -134,7 +134,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
                   onTap: () {
                     if (type == 'follow') {
                       _goToProfile(sender['id']);
-                    } else if (type == 'book_added' && bookId != null) {
+                    } else if (type == 'post' && bookId != null) {
                       _goToPost(bookId);
                     }
                   },
