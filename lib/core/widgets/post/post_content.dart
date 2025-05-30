@@ -32,7 +32,7 @@ class _PostContentState extends State<PostContent> {
     final span = TextSpan(text: fullText, style: textStyle);
     final tp = TextPainter(
       text: span,
-      maxLines: 3,
+      maxLines: 6,
       textDirection: TextDirection.ltr,
     );
 
@@ -53,7 +53,7 @@ class _PostContentState extends State<PostContent> {
       );
       final testTp = TextPainter(
         text: testSpan,
-        maxLines: 3,
+        maxLines: 6,
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: MediaQuery.of(context).size.width - 44);
 

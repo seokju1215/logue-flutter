@@ -51,9 +51,19 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
       final authors = _extractAuthors(bookData['author']?.toString() ?? '');
 
+      final rawUsers = decoded['lifebooks'] ?? [];
+      final seenIds = <String>{};
+      final uniqueUsers = <dynamic>[];
+
+      for (final u in rawUsers) {
+        if (u is Map && seenIds.add(u['id'])) {
+          uniqueUsers.add(u);
+        }
+      }
+
       setState(() {
         book = bookData;
-        lifebookUsers = decoded['lifebooks'] ?? [];
+        lifebookUsers = uniqueUsers;
         errorMessage = decoded['error'];
         isLoading = false;
       });
