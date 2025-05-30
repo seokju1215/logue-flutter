@@ -133,106 +133,152 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           children: [
-            const SizedBox(height: 24),
-            EditAvatarButton(
-              avatarUrl: avatarUrl,
-              onAvatarChanged: (url) {
-                setState(() {
-                  avatarUrl = url;
-                  isEdited = true;
-                });
-              },
-            ),
-            const SizedBox(height: 24),
-            ProfileEditButton(
-              label: '사용자 이름',
-              username: username,
-              onTap: () async {
-                final result = await Navigator.pushNamed(
-                  context,
-                  '/username_edit',
-                  arguments: {'username': username},
-                );
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  EditAvatarButton(
+                    avatarUrl: avatarUrl,
+                    onAvatarChanged: (url) {
+                      setState(() {
+                        avatarUrl = url;
+                        isEdited = true;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  ProfileEditButton(
+                    label: '사용자 이름',
+                    username: username,
+                    onTap: () async {
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/username_edit',
+                        arguments: {'username': username},
+                      );
 
-                if (result != null && result is Map<String, dynamic>) {
-                  setState(() {
-                    username = result['username'] ?? username;
-                    isEdited = true;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 25),
-            ProfileEditButton(
-              label: '이름',
-              username: name,
-              onTap: () async {
-                final result = await Navigator.pushNamed(
-                  context,
-                  '/name_edit',
-                  arguments: {'currentName': name}, // ✅ 올바른 키
-                );
+                      if (result != null && result is Map<String, dynamic>) {
+                        setState(() {
+                          username = result['username'] ?? username;
+                          isEdited = true;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 25),
+                  ProfileEditButton(
+                    label: '이름',
+                    username: name,
+                    onTap: () async {
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/name_edit',
+                        arguments: {'currentName': name}, // ✅ 올바른 키
+                      );
 
-                if (result != null && result is Map<String, dynamic>) {
-                  setState(() {
-                    name = result['name'] ?? name;
-                    isEdited = true;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 25),
-            ProfileEditButton(
-              label: '직업',
-              username: job,
-              onTap: () async {
-                final result = await Navigator.pushNamed(
-                  context,
-                  '/job_edit',
-                  arguments: {'username': job},
-                );
+                      if (result != null && result is Map<String, dynamic>) {
+                        setState(() {
+                          name = result['name'] ?? name;
+                          isEdited = true;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 25),
+                  ProfileEditButton(
+                    label: '직업',
+                    username: job,
+                    onTap: () async {
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/job_edit',
+                        arguments: {'username': job},
+                      );
 
-                if (result != null && result is Map<String, dynamic>) {
-                  setState(() {
-                    job = result['job'] ?? job;
-                    isEdited = true;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 25),
-            ProfileEditButton(
-              label: '소개',
-              username: bio,
-              onTap: () async {
-                final result = await Navigator.pushNamed(
-                  context,
-                  '/bio_edit',
-                  arguments: {'currentBio': bio},
-                );
+                      if (result != null && result is Map<String, dynamic>) {
+                        setState(() {
+                          job = result['job'] ?? job;
+                          isEdited = true;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 25),
+                  ProfileEditButton(
+                    label: '소개',
+                    username: bio,
+                    onTap: () async {
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/bio_edit',
+                        arguments: {'currentBio': bio},
+                      );
 
-                if (result != null && result is Map<String, dynamic>) {
-                  setState(() {
-                    bio = result['bio'] ?? bio;
-                    isEdited = true;
-                  });
-                }
-              },
+                      if (result != null && result is Map<String, dynamic>) {
+                        setState(() {
+                          bio = result['bio'] ?? bio;
+                          isEdited = true;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 27),
+                  ProfileLinkTile(link: profileLink),
+                  const SizedBox(height: 30),
+                ],
+              ),
             ),
-            const SizedBox(height: 27),
-            ProfileLinkTile(link: profileLink),
-            const SizedBox(height: 30),
-            Center(
-              child: Text("링크를 공유하여 당신의 책장을 보여주세요.", style: TextStyle(fontSize: 14, color: AppColors.black500),),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9F9F9),
+              ),
+              child: Column(
+                children: [
+                  _buildMenuItem(context, '고객센터', () {
+                    // TODO: 고객센터 페이지 연결
+                  }),
+                  _buildMenuItem(context, '법적 고지사항', () {
+                    // TODO: 약관 페이지 연결
+                  }),
+                  _buildMenuItem(context, '로그아웃', () {
+
+                  }),
+                  _buildMenuItem(context, '계정 탈퇴', () {
+
+                  }),
+                  const SizedBox(height: 16),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 22),
+                    child: Text(
+                      '로그퍼블릭(주)는 개인정보처리방침, 이용약관, 환불정책, 사업자정보 등을 법적 고지사항 링크에서 통합하여 안내합니다.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: AppColors.black500),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 45),
-            TextButton(
-              onPressed: () => showLogoutOrDeleteDialog(context),
-              child: const Text('로그아웃 | 계정탈퇴'),
-            )
+          ],
+        ),
+      ),
+    );
+  }
+  Widget _buildMenuItem(BuildContext context, String title, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title,
+                style: const TextStyle(fontSize: 14, color: AppColors.black500)),
+            const Icon(Icons.chevron_right, color: AppColors.black300),
           ],
         ),
       ),

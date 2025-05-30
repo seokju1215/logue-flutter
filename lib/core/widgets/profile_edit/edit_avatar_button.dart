@@ -102,7 +102,7 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
                 : IconButton(
-              icon: const Icon(Icons.camera_alt, size: 16),
+              icon: const Icon(Icons.camera_alt_outlined, size: 16),
               onPressed: _pickImage,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
