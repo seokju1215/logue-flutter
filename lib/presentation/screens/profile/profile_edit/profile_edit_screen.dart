@@ -124,7 +124,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('프로필 편집'),
+        title: const Text('프로필 편집', style: TextStyle(fontSize: 16, color: AppColors.black900),),
         centerTitle: true,
         actions: [SaveButton(enabled: isEdited, onPressed: onSave)],
         leading: IconButton(

@@ -112,7 +112,7 @@ class MyApp extends StatelessWidget {
           backgroundColor: AppColors.white500,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
-        appBarTheme: const AppBarTheme(backgroundColor: AppColors.white500),
+        appBarTheme: const AppBarTheme(backgroundColor: AppColors.white500,surfaceTintColor: Colors.transparent,),
         scaffoldBackgroundColor: AppColors.white500,
         textTheme: GoogleFonts.interTextTheme().apply(
           bodyColor: AppColors.black900,
