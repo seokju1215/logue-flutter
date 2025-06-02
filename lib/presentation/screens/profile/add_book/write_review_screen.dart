@@ -195,12 +195,19 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(13, 0, 0, 0),
-                  child: Text('후기 제목',
-                      style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('후기 제목',
+                        style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                    Text(
+                      '${_titleController.text.length}/50',
+                      style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                    ),
+                  ],
                 ),
                 TextField(
+                  buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                   controller: _titleController,
                   maxLength: 50,
                   minLines: 2,
@@ -215,9 +222,19 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('후기 내용',
-                    style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('후기 내용',
+                        style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                    Text(
+                      '${_contentController.text.length}/1000',
+                      style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                    ),
+                  ],
+                ),
                 TextField(
+                  buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                   controller: _contentController,
                   maxLength: 1000,
                   minLines: 3,

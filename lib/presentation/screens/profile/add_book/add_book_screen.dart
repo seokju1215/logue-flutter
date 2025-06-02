@@ -110,28 +110,57 @@ class _AddBookScreenState extends State<AddBookScreen> {
         padding: const EdgeInsets.fromLTRB(0, 27, 0, 27),
         child: Column(
           children: [
-            GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/search_book'),
-              child: SvgPicture.asset(
-                'assets/add_book_button.svg',
-                height: 153,
-                width: 103,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Container(height: 1, color: AppColors.black300),
-            const SizedBox(height: 13),
-            const Padding(
-              padding: EdgeInsets.only(left: 22),
+            Padding(
+              padding: const EdgeInsets.only(left: 22),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '책을 선택해 이동시킬 수 있어요.',
-                  style: TextStyle(fontSize: 12, color: AppColors.black500),
+                  '지금의 당신을 만든 인생 책은 무엇인가요?',
+                  style: TextStyle(fontSize: 16, color: AppColors.black900),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 13),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 21),
+              child: Row(
+                children: [
+                  const Expanded(child: SizedBox()), // 왼쪽 빈 공간
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/search_book'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.black900,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                        side: const BorderSide(color: AppColors.black900),
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                      child: const Text(
+                        '책 추가 +',
+                        style: TextStyle(fontSize: 12, color: AppColors.black900),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 19,),
+            Padding(
+              padding: const EdgeInsets.only(left: 22, right: 22),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '책을 눌러 위치를 변경할 수 있어요.',
+                    style: TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                  Text(
+                    '${books.length}/9',
+                    style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(21),

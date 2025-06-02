@@ -523,7 +523,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   ButtonStyle _outlinedStyle(BuildContext context) {
     return OutlinedButton.styleFrom(
-      foregroundColor: AppColors.black500,
+      foregroundColor: AppColors.black900,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       textStyle: Theme.of(context).textTheme.bodySmall,
     );
