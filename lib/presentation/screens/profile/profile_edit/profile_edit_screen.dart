@@ -92,34 +92,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       }
     }
   }
-  Future<void> _deleteAccount() async {
-    final client = Supabase.instance.client;
-    final userId = client.auth.currentUser?.id;
-
-    if (userId == null) return;
-
-    final res = await client.functions.invoke('delete_account', body: {
-      'userId': userId,
-    });
-
-    debugPrint('📡 계정 삭제 결과: ${res.status}, ${res.data}');
-
-    if (res.status == 200 && res.data['success'] == true) {
-      try {
-        await client.auth.signOut();
-      } catch (e) {
-        debugPrint('🔴 로그아웃 실패 (이미 계정 삭제된 상태일 수 있음): $e');
-      }
-
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('계정 삭제에 실패했습니다.')),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

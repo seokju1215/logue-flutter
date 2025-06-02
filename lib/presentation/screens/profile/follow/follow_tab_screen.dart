@@ -61,8 +61,8 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
             color: Colors.white,
             child: Row(
               children: [
-                _buildTab('팔로워', widget.followerCount, 0),
-                _buildTab('팔로잉', widget.followingCount, 1),
+                _buildTab('팔로워', _followerCount, 0),
+                _buildTab('팔로잉', _followingCount, 1),
               ],
             ),
           ),

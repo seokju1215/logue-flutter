@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -24,8 +25,52 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     '기타',
   ];
 
-  void _onSubmit() {
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+  Future<void> _onSubmit() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    final reasonText = (selectedReasonIndex == reasons.length - 1)
+        ? _controller.text
+        : '';
+
+    try {
+      // 🔹 1. 탈퇴 사유 저장
+      await client.from('delete_feedback').insert({
+        'user_id': user.id,
+        'reason_index': selectedReasonIndex,
+        'reason_text': reasonText,
+      });
+
+      // 🔹 2. 계정 삭제 Edge Function 호출
+      final res = await client.functions.invoke('delete_account', body: {
+        'userId': user.id,
+        'email' : user.email,
+      });
+
+      debugPrint('📡 계정 삭제 결과: ${res.status}, ${res.data}');
+
+      if (res.status == 200 && res.data['success'] == true) {
+        try {
+          await client.auth.signOut();
+        } catch (e) {
+          debugPrint('🔴 로그아웃 실패: $e');
+        }
+
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('계정 삭제에 실패했습니다.')),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ 탈퇴 처리 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('탈퇴 처리 중 문제가 발생했습니다.')),
+      );
+    }
   }
 
   @override
@@ -35,37 +80,63 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('계정 탈퇴'),
-        leading: BackButton(onPressed: () => Navigator.pop(context)),
+        title: const Text(
+          '계정 탈퇴',
+          style: TextStyle(fontSize: 16, color: AppColors.black900),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('정말 계정을 탈퇴하시겠어요?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            const Text('한 번 더 생각해 보지 않으시겠어요?', style: TextStyle(fontSize: 14)),
-            const SizedBox(height: 16),
+            const Text('정말 계정을 탈퇴하시겠어요?\n한 번 더 생각해 보지 않으시겠어요?',
+                style: TextStyle(fontSize: 16, color: AppColors.black900)),
+            const SizedBox(height: 10),
             const Text(
               '계정을 탈퇴하시려는 이유를 말씀해주세요. 제품 개선에 중요자료로 활용할게요.',
-              style: TextStyle(fontSize: 12, color: AppColors.black500),
+              style: TextStyle(fontSize: 14, color: AppColors.black500),
             ),
             const SizedBox(height: 10),
 
-            // 🔹 탈퇴 사유 선택
             for (int i = 0; i < reasons.length; i++)
-              RadioListTile(
-                title: Text(reasons[i], style: const TextStyle(fontSize: 14)),
-                value: i,
-                groupValue: selectedReasonIndex,
-                onChanged: (int? value) {
-                  setState(() => selectedReasonIndex = value);
-                },
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 0),
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    visualDensity:
+                    const VisualDensity(horizontal: -4, vertical: -4),
+                    unselectedWidgetColor: AppColors.black300,
+                  ),
+                  child: RadioListTile<int>(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(
+                      reasons[i],
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.black900,
+                      ),
+                    ),
+                    activeColor: AppColors.black900,
+                    value: i,
+                    groupValue: selectedReasonIndex,
+                    onChanged: (int? value) {
+                      setState(() {
+                        selectedReasonIndex =
+                        (selectedReasonIndex == value) ? null : value;
+                      });
+                    },
+                  ),
+                ),
               ),
 
-            // 🔹 기타 선택 시 입력창
             if (isOtherSelected)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -80,30 +151,44 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               ),
 
             const SizedBox(height: 20),
-            const Text(
-              '계정 탈퇴 유의사항 (반드시 확인해 주세요)',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            const Center(
+              child: Text(
+                '계정 탈퇴 유의사항 (반드시 확인해 주세요)\n\n'
+                    '계정을 탈퇴 후 30일이 지나면 계정이 완전히 삭제되며,\n삭제된 정보는 복구가 불가합니다.\n\n'
+                    '30일 이내에 해당 구글 계정으로 로그인 시\n계정 탈퇴가 취소됩니다.',
+                style: TextStyle(fontSize: 12, color: AppColors.black500),
+                textAlign: TextAlign.center,
+              ),
             ),
-            const SizedBox(height: 6),
-            const Text(
-              '계정을 탈퇴 후 30일이 지나면 계정이 완전히 삭제되며, 삭제된 정보는 복구가 불가합니다.\n\n'
-                  '30일 이내에 해당 구글 계정으로 로그인 시 계정 탈퇴가 취소됩니다.',
-              style: TextStyle(fontSize: 12, color: AppColors.black500),
-            ),
-
             const SizedBox(height: 20),
-            CheckboxListTile(
-              value: agreed,
-              onChanged: (value) =>
-                  setState(() => agreed = value ?? false),
-              title: const Text('위 내용을 모두 이해하고 동의합니다.',
-                  style: TextStyle(fontSize: 14)),
-              controlAffinity: ListTileControlAffinity.leading,
+
+            GestureDetector(
+              onTap: () {
+                setState(() => agreed = !agreed);
+              },
+              child: Row(
+                children: [
+                  Radio<bool>(
+                    value: true,
+                    groupValue: agreed ? true : null,
+                    onChanged: null,
+                    activeColor: AppColors.black900,
+                    visualDensity:
+                    const VisualDensity(horizontal: -4, vertical: -4),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const SizedBox(width: 4),
+                  const Expanded(
+                    child: Text(
+                      '위 내용을 모두 이해하고 동의합니다.',
+                      style: TextStyle(fontSize: 14, color: AppColors.black900),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
-            const SizedBox(height: 24),
-
-            // 🔺 이제 버튼도 스크롤 가능 영역에 포함됨
+            const SizedBox(height: 17),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -113,11 +198,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   canSubmit ? Colors.red : Colors.red.withOpacity(0.4),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('계정탈퇴', style: TextStyle(fontSize: 16)),
+                child: const Text('계정탈퇴', style: TextStyle(fontSize: 14)),
               ),
             ),
-
-            const SizedBox(height: 32), // 충분한 하단 여백
+            const SizedBox(height: 32),
           ],
         ),
       ),

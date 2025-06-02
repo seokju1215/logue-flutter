@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/data/repositories/agreement_repository.dart';
 import 'package:logue/presentation/screens/signup/login_screen.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/utils/fcmPermissionUtil.dart';
 

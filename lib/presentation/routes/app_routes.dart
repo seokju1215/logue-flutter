@@ -8,7 +8,7 @@ import '../screens/signup/login_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/signup/term_screen.dart';
 import '../screens/signup/select_3books_screen.dart';
-import '../screens/splah_screen.dart';
+import '../screens/splash_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/notification_screen.dart';
 import '../screens/profile/profile_edit/profile_edit_screen.dart';

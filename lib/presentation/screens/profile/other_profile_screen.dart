@@ -179,7 +179,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(context, true),
                 ),
                 Text(profile?['username'] ?? '사용자',
                     style: Theme.of(context).textTheme.titleMedium),

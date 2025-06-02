@@ -199,8 +199,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (books.isNotEmpty) ...[
                         _buildBookGrid(),
                         const SizedBox(height: 32),
-                        if (_isScrollable)
-                          Center(child: _buildPolicyLinks()), // 스크롤 있음
                       ] else ...[
                         const SizedBox(height: 95),
                         Center(
@@ -231,13 +229,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-            if (!_isScrollable)
-              Positioned(
-                bottom: 16,
-                left: 0,
-                right: 0,
-                child: Center(child: _buildPolicyLinks()), // 스크롤 없음
-              ),
           ],
         ),
       ),
@@ -437,27 +428,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPolicyLinks() {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 8,
-      children: [
-        TextButton(
-          onPressed: () {},
-          child: const Text('개인정보 처리방침',
-              style: TextStyle(fontSize: 12, color: AppColors.black500)),
-        ),
-        const Text('|',
-            style:
-                TextStyle(color: AppColors.black500, fontSize: 12, height: 4)),
-        TextButton(
-          onPressed: () {},
-          child: const Text('이용약관',
-              style: TextStyle(fontSize: 12, color: AppColors.black500)),
-        ),
-      ],
-    );
-  }
 
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
