@@ -25,7 +25,7 @@ class _BioEdit extends State<BioEdit> {
   void _onChanged() {
     final text = _controller.text;
     final changed = text != widget.currentBio;
-    final valid = text.length <= 30;
+    final valid = text.length <= 150;
 
     setState(() {
       hasChanged = changed;
@@ -77,7 +77,7 @@ class _BioEdit extends State<BioEdit> {
             const SizedBox(height: 8),
             TextField(
               controller: _controller,
-              maxLength: 30,
+              maxLength: 150,
               maxLines: null,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
@@ -85,7 +85,7 @@ class _BioEdit extends State<BioEdit> {
                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.black500)),
                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.black500)),
                 isDense: true,
-                counterText: '${_controller.text.length}/30',
+                counterText: '${_controller.text.length}/150',
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
             ),

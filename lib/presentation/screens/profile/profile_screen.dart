@@ -431,49 +431,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
-    final showMore = !_showFullBio && bio.length > 40;
+    if (bio.isEmpty) return const SizedBox();
+
+    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black900);
+    final moreText = ' 더보기';
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final textSpan = TextSpan(
-          text: bio,
-          style: const TextStyle(fontSize: 12, color: AppColors.black900),
-        );
+        if (_showFullBio) {
+          return Text(bio, style: textStyle);
+        }
 
-        final tp = TextPainter(
-          text: textSpan,
+        // 전체 텍스트를 먼저 계산
+        final fullTextSpan = TextSpan(text: bio, style: textStyle);
+        final fullPainter = TextPainter(
+          text: fullTextSpan,
+          maxLines: 2,
+          ellipsis: '',
           textDirection: TextDirection.ltr,
-          maxLines: _showFullBio ? null : 2,
-          ellipsis: showMore ? '...' : null,
         )..layout(maxWidth: constraints.maxWidth);
 
-        final isOverflowing = tp.didExceedMaxLines;
+        // 2줄 초과가 아니면 전체 텍스트만 보여줌
+        if (!fullPainter.didExceedMaxLines) {
+          return Text(bio, style: textStyle);
+        }
+
+        // "더보기" 길이 측정
+        final morePainter = TextPainter(
+          text: TextSpan(text: moreText, style: textStyle),
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: constraints.maxWidth);
+        final moreWidth = morePainter.width;
+
+        // 줄어든 공간만큼 bio를 자름
+        String trimmed = bio;
+        final textPainter = TextPainter(
+          text: TextSpan(text: trimmed, style: textStyle),
+          maxLines: 2,
+          textDirection: TextDirection.ltr,
+        );
+
+        while (trimmed.isNotEmpty) {
+          final candidate = trimmed + '...';
+          textPainter.text = TextSpan(text: candidate + moreText, style: textStyle);
+          textPainter.layout(maxWidth: constraints.maxWidth);
+
+          if (!textPainter.didExceedMaxLines) {
+            break;
+          }
+
+          trimmed = trimmed.substring(0, trimmed.length - 1);
+        }
 
         return RichText(
           text: TextSpan(
             children: [
               TextSpan(
-                text: _showFullBio || !isOverflowing
-                    ? bio
-                    : bio.substring(
-                          0,
-                          tp
-                              .getPositionForOffset(
-                                  Offset(constraints.maxWidth, 28 * 2))
-                              .offset,
-                        ) +
-                        '...',
-                style: const TextStyle(fontSize: 12, color: AppColors.black900),
+                text: trimmed.trimRight() + '...',
+                style: textStyle,
               ),
-              if (showMore)
-                WidgetSpan(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _showFullBio = true),
-                    child: const Text(' 더보기',
-                        style:
-                            TextStyle(fontSize: 12, color: AppColors.black900)),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.baseline,
+                baseline: TextBaseline.alphabetic,
+                child: GestureDetector(
+                  onTap: () => setState(() => _showFullBio = true),
+                  child: Text(
+                    moreText,
+                    style: textStyle.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
+              ),
             ],
           ),
         );

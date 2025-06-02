@@ -34,7 +34,7 @@ class _JobEditState extends State<JobEdit> {
 
     setState(() {
       hasChanged = changed;
-      isValid = text.isNotEmpty && text.length <= 10;
+      isValid = text.isNotEmpty && text.length <= 20;
     });
   }
 
@@ -51,7 +51,7 @@ class _JobEditState extends State<JobEdit> {
   void _onConfirm([String? selectedJob]) {
     final jobToSave = selectedJob ?? _controller.text.trim();
 
-    if (jobToSave == widget.currentJob || jobToSave.isEmpty || jobToSave.length > 10) return;
+    if (jobToSave == widget.currentJob || jobToSave.isEmpty || jobToSave.length > 20) return;
 
     Navigator.pop(context, {'job': jobToSave});
   }
@@ -69,7 +69,7 @@ class _JobEditState extends State<JobEdit> {
           .select()
           .ilike('job_name', '%$keyword%') // 부분 일치 검색
           .order('user_count', ascending: false)
-          .limit(10);
+          .limit(20);
 
       final data = response as List;
       setState(() {
