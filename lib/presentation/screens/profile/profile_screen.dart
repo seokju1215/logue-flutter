@@ -388,7 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return UserBookGrid(
       books: books,
       onTap: (book) async {
-        final bookId = book['id'] as String;
+        final bookId = book['book_id'] as String;
         final result = await Navigator.pushNamed(context, '/my_post_screen',
             arguments: {'bookId': bookId});
         if (result == true) {

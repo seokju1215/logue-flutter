@@ -362,7 +362,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     return UserBookGrid(
       books: books,
       onTap: (book) {
-        final bookId = book['id'] as String;
+        final bookId = book['book_id'] ?? book['id']; // <- 🔥 보장
         Navigator.pushNamed(
           context,
           '/my_post_screen',

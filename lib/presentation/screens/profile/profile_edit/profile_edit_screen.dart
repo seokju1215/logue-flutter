@@ -8,6 +8,9 @@ import 'package:logue/core/widgets/profile_edit/profile_edit_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/core/widgets/dialogs/logout_or_delete_dialog.dart';
 
+import '../../../../core/widgets/dialogs/delete_account_dialog.dart';
+import '../../../../core/widgets/dialogs/logout_dialog.dart';
+
 class ProfileEditScreen extends StatefulWidget {
   final Map<String, dynamic> initialProfile;
   const ProfileEditScreen({
@@ -89,7 +92,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       }
     }
   }
-  void _deleteAccount() async {
+  Future<void> _deleteAccount() async {
     final client = Supabase.instance.client;
     final userId = client.auth.currentUser?.id;
 
@@ -246,10 +249,36 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     // TODO: 약관 페이지 연결
                   }),
                   _buildMenuItem(context, '로그아웃', () {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: true,
+                      builder: (_) => LogoutDialog(
+                        onConfirm: () async {
+                          Navigator.pop(context); // 다이얼로그 닫기
+                          try {
+                            await Supabase.instance.client.auth.signOut();
+                            if (mounted) {
+                              Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+                            }
+                          } catch (e) {
+                            debugPrint('❌ 로그아웃 실패: $e');
+                          }
+                        },
+                      ),
+                    );
 
                   }),
                   _buildMenuItem(context, '계정 탈퇴', () {
-
+                    showDialog(
+                      context: context,
+                      barrierDismissible: true,
+                      builder: (_) => DeleteAccountDialog(
+                        onConfirm: () async {
+                          Navigator.pop(context); // 다이얼로그 닫기
+                          await _deleteAccount(); // 기존에 만든 계정삭제 함수
+                        },
+                      ),
+                    );
                   }),
                   const SizedBox(height: 16),
                   const Padding(
