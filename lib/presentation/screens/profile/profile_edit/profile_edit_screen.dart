@@ -273,9 +273,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       context: context,
                       barrierDismissible: true,
                       builder: (_) => DeleteAccountDialog(
-                        onConfirm: () async {
-                          Navigator.pop(context); // 다이얼로그 닫기
-                          await _deleteAccount(); // 기존에 만든 계정삭제 함수
+                        onConfirm: () {
+                          Navigator.pop(context); // 기존 다이얼로그 닫기
+                          Navigator.pushNamed(context, '/delete_account_screen');
                         },
                       ),
                     );
@@ -289,6 +289,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       style: TextStyle(fontSize: 12, color: AppColors.black500),
                     ),
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

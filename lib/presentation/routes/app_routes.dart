@@ -3,6 +3,7 @@ import '../../data/models/book_post_model.dart';
 import '../../domain/entities/follow_list_type.dart';
 import '../screens/post/edit_review_screen.dart';
 import '../screens/profile/follow_list_screen.dart';
+import '../screens/profile/profile_edit/delete_accout_screen.dart';
 import '../screens/signup/login_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/signup/term_screen.dart';
@@ -37,6 +38,7 @@ Map<String, WidgetBuilder> appRoutes = {
   '/login_blocked': (context) => const LoginScreen(blocked: true),
   '/search_book' : (context) => const SearchBookScreen(),
   '/profile' : (context) => const ProfileScreen(),
+  '/delete_account_screen': (context) => const DeleteAccountScreen(),
   '/main/search': (context) {
     final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
     final index = args?['initialIndex'] ?? 0;
