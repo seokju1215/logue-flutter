@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import '../../../data/datasources/kakao_book_api.dart';
@@ -17,17 +18,18 @@ class Select3BooksScreen extends StatefulWidget {
 
 class _Select3BooksScreenState extends State<Select3BooksScreen> {
   final _searchController = TextEditingController();
+  final SupabaseClient client = Supabase.instance.client;
+
   List<BookModel> _results = [];
   List<BookModel> _selectedBooks = [];
   bool _isLoading = false;
   String _currentQuery = '';
+  Timer? _debounce; // ✅ 디바운싱 타이머
 
   void _search(String query) async {
     _currentQuery = query;
     if (query.isEmpty) {
-      setState(() {
-        _results = [];
-      });
+      setState(() => _results = []);
       return;
     }
 
@@ -35,12 +37,10 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
 
     try {
       final rawResults = await KakaoBookApi().searchBooks(query);
-
       final results =
-          rawResults.map((data) => BookModel.fromJson(data)).toList();
-      setState(() {
-        _results = results;
-      });
+      rawResults.map((data) => BookModel.fromJson(data)).toList();
+
+      setState(() => _results = results);
     } catch (e) {
       print('검색 실패: $e');
     } finally {
@@ -75,11 +75,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
   }
 
   Future<String> _getOrInsertBookId(BookModel book) async {
-    final client = Supabase.instance.client;
-
     Map<String, dynamic>? existing;
-
-    // ✅ ISBN이 유효할 때만 중복 확인
     final hasValidIsbn = book.isbn.isNotEmpty;
 
     if (hasValidIsbn) {
@@ -88,13 +84,11 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           .select('id')
           .eq('isbn', book.isbn!)
           .maybeSingle();
-
       if (existing != null && existing['id'] != null) {
         return existing['id'];
       }
     }
 
-    // ✅ ISBN 외 정보로도 중복 체크 (title + author)
     if (!hasValidIsbn || existing == null || existing['id'] == null) {
       existing = await client
           .from('books')
@@ -102,7 +96,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           .eq('title', book.title)
           .eq('author', book.author)
           .maybeSingle();
-
       if (existing != null && existing['id'] != null) {
         return existing['id'];
       }
@@ -122,7 +115,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       return inserted['id'];
     } on PostgrestException catch (e) {
       if (e.code == '23505' && hasValidIsbn) {
-        // 중복 ISBN으로 insert 실패했을 때 재조회
         final retry = await client
             .from('books')
             .select('id')
@@ -133,19 +125,16 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
         }
       }
 
-      rethrow; // 다른 오류는 다시 던짐
+      rethrow;
     }
   }
 
   Future<void> _submitBooks() async {
-    final client = Supabase.instance.client;
     final user = client.auth.currentUser;
-
     if (user == null) return;
 
     final insertProfile = InsertProfileUseCase(client);
 
-    // 1. 프로필 insert
     await insertProfile(
       id: user.id,
       username: generateRandomUsername(),
@@ -194,6 +183,13 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
   }
 
   @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isQueryEmpty = _searchController.text.isEmpty;
 
@@ -212,7 +208,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
               "확인",
               style: TextStyle(
                 color: _selectedBooks.length == 3
-                    ? Color(0xFF0055FF)
+                    ? const Color(0xFF0055FF)
                     : Colors.grey,
               ),
             ),
@@ -228,6 +224,12 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
               controller: _searchController,
               textInputAction: TextInputAction.search,
               onSubmitted: _search,
+              onChanged: (value) {
+                if (_debounce?.isActive ?? false) _debounce!.cancel();
+                _debounce = Timer(const Duration(milliseconds: 400), () {
+                  _search(value);
+                });
+              },
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF191A1C),
@@ -246,8 +248,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                   borderSide: BorderSide(color: AppColors.black200, width: 1.0),
                   borderRadius: BorderRadius.circular(5),
                 ),
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               ),
             ),
           ),
@@ -262,8 +263,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                     style: TextStyle(fontSize: 12, color: AppColors.black500),
                   )
                 else
-                  const SizedBox(), // 자리 유지를 위한 빈 위젯
-
+                  const SizedBox(),
                 Text(
                   '${_selectedBooks.length}/3',
                   style: TextStyle(fontSize: 12, color: AppColors.black500),
@@ -274,48 +274,44 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           Expanded(
             child: isQueryEmpty
                 ? const Center(
-                    child: Text(
-                      "프로필에서 언제든 수정이 가능해요.",
-                      style: TextStyle(fontSize: 12, color: AppColors.black500),
-                    ),
-                  )
+              child: Text(
+                "프로필에서 언제든 수정이 가능해요.",
+                style: TextStyle(fontSize: 12, color: AppColors.black500),
+              ),
+            )
                 : _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _results.isEmpty
-                        ? const Center(child: Text("검색 결과가 없습니다."))
-                        : GridView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 20),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.7,
-                            ),
-                            itemCount: _results.length,
-                            itemBuilder: (context, index) {
-                              final book = _results[index];
-                              final isSelected = _isSelected(book);
+                ? const Center(child: CircularProgressIndicator())
+                : _results.isEmpty
+                ? const Center(child: Text("검색 결과가 없습니다."))
+                : GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 20),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.7,
+              ),
+              itemCount: _results.length,
+              itemBuilder: (context, index) {
+                final book = _results[index];
+                final isSelected = _isSelected(book);
 
-                              return GestureDetector(
-                                onTap: () => _toggleSelection(book),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? Colors.blue
-                                          : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(0),
-                                  ),
-                                  child: ClipRRect(
-                                    child: BookFrame(imageUrl: book.image),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                return GestureDetector(
+                  onTap: () => _toggleSelection(book),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isSelected ? Colors.blue : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      child: BookFrame(imageUrl: book.image),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
