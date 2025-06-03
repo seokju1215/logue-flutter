@@ -90,9 +90,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   List<String> _extractAuthors(String? authorString) {
     if (authorString == null || authorString.isEmpty) return [];
 
-    final regex = RegExp(r'([^,(]+)\s+\([^)]+\)');
+    final regex = RegExp(r'([^,(]+)\s+\(([^)]+)\)');
     final matches = regex.allMatches(authorString);
-    return matches.map((m) => m.group(1)!.trim()).toList();
+
+    return matches
+        .where((m) {
+      final role = m.group(2)?.toLowerCase() ?? '';
+      return !role.contains('옮긴이') && !role.contains('엮음');
+    })
+        .map((m) => m.group(1)!.trim())
+        .toList();
   }
   Future<void> _fetchOtherBooks(List<String> authors) async {
     final api = AladinBookApi();
