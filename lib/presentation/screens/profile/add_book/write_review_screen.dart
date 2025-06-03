@@ -20,6 +20,20 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   final client = Supabase.instance.client;
   bool _isSaving = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(() => setState(() {}));
+    _contentController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
   Future<void> _saveReview() async {
     final user = client.auth.currentUser;
     if (user == null) return;
@@ -32,19 +46,15 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     setState(() => _isSaving = true);
 
     try {
-      // ✅ 1. 책 존재 확인: isbn > title + author
       String? bookId;
 
-      if (widget.book.isbn != null && widget.book.isbn!.isNotEmpty) {
+      if (widget.book.isbn.isNotEmpty) {
         final existingByIsbn = await client
             .from('books')
             .select('id')
             .eq('isbn', widget.book.isbn)
             .maybeSingle();
-
-        if (existingByIsbn != null) {
-          bookId = existingByIsbn['id'];
-        }
+        if (existingByIsbn != null) bookId = existingByIsbn['id'];
       }
 
       if (bookId == null) {
@@ -54,14 +64,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             .eq('title', widget.book.title)
             .eq('author', widget.book.author)
             .maybeSingle();
-
-        if (existingByInfo != null) {
-          bookId = existingByInfo['id'];
-        }
+        if (existingByInfo != null) bookId = existingByInfo['id'];
       }
 
-      // ✅ 2. 없으면 삽입
       if (bookId == null) {
+        print("api ${widget.book.link}");
         final inserted = await client
             .from('books')
             .insert({
@@ -74,21 +81,17 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           'description': widget.book.description,
           'toc': widget.book.toc,
           'image': widget.book.image,
+          'link': widget.book.link,
         })
             .select('id')
             .maybeSingle();
-
         bookId = inserted?['id'];
       }
 
-      if (bookId == null) {
-        throw Exception('책 ID를 확보할 수 없습니다.');
-      }
+      if (bookId == null) throw Exception('책 ID를 확보할 수 없습니다.');
 
-      // ✅ 3. 기존 순서 밀기
       await client.rpc('increment_all_order_indices', params: {'uid': user.id});
 
-      // ✅ 4. user_books 저장
       await client.from('user_books').insert({
         'user_id': user.id,
         'book_id': bookId,
@@ -98,7 +101,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         'review_content': reviewContent,
       });
 
-      // ✅ 5. 알림 처리
       final response = await client
           .from('follows')
           .select('follower_id')
@@ -135,7 +137,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         debugPrint('ℹ️ 팔로워 없음. 알림 건너뜀');
       }
 
-      // ✅ 6. 완료 시 홈 이동
       if (context.mounted) {
         Navigator.pushAndRemoveUntil(
           context,

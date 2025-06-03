@@ -9,6 +9,7 @@ class BookModel {
   final String? description;
   final String? toc;
   final String image;
+  final String? link; // ✅ 알라딘 링크 추가
 
   BookModel({
     required this.isbn,
@@ -21,14 +22,16 @@ class BookModel {
     this.description,
     this.toc,
     required this.image,
+    this.link, // ✅ 생성자에 추가
   });
+
   factory BookModel.fromJson(Map<String, dynamic> json) {
     final imageUrl = (json['image'] ?? '') as String;
 
     return BookModel(
       isbn: json['isbn13'] ?? '',
       title: json['title'] ?? '',
-      subtitle: null,
+      subtitle: json.containsKey('subtitle') ? json['subtitle'] : null,
       author: json['author'] ?? '',
       publisher: json['publisher'] ?? '',
       publishedDate: json['pubDate'],
@@ -38,6 +41,7 @@ class BookModel {
       image: imageUrl.startsWith('http://')
           ? imageUrl.replaceFirst('http://', 'https://')
           : imageUrl,
+      link: json['link'],
     );
   }
 
@@ -52,5 +56,6 @@ class BookModel {
     'description': description,
     'toc': toc,
     'image': image,
+    'link': link, // ✅ 저장용 map에도 추가
   };
 }

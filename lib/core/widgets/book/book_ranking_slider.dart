@@ -58,11 +58,21 @@ class BookRankingSlider extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 20),
                       child: GestureDetector(
                         onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/book_detail',
-                            arguments: book,
-                          );
+                          debugPrint('🧪 book map: $book');
+
+                          final bookId = book['book_id'];
+                          if (bookId != null && bookId is String) {
+                            Navigator.pushNamed(
+                              context,
+                              '/book_detail',
+                              arguments: bookId,
+                            );
+                          } else {
+                            debugPrint('❌ 유효한 bookId가 없음: $bookId');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('책 ID가 유효하지 않아요.')),
+                            );
+                          }
                         },
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,

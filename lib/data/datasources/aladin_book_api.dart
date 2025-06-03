@@ -33,13 +33,22 @@ class AladinBookApi {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       final List items = decoded['item'] ?? [];
 
-
       return items
           .where((item) {
         final cover = item['cover'] ?? '';
         return cover.trim().isNotEmpty;
       })
           .map<Map<String, dynamic>>((item) {
+        String rawTitle = item['title'] ?? '';
+        String title = rawTitle;
+        String? subtitle;
+
+        if (rawTitle.contains(' - ')) {
+          final parts = rawTitle.split(' - ');
+          title = parts.first.trim();
+          subtitle = parts.sublist(1).join(' - ').trim();
+        }
+
         String cover = item['cover'] ?? '';
         if (cover.startsWith('http://')) {
           cover = cover.replaceFirst('http://', 'https://');
@@ -49,12 +58,12 @@ class AladinBookApi {
           RegExp(r'(cover(sum|\d{2,3}))'),
               (_) => 'cover500',
         );
-
         final subInfo = item['subInfo'] ?? {};
 
+
         return {
-          'title': item['title'] ?? '',
-          'subtitle': item['subtitle'] ?? '',
+          'title': title,
+          'subtitle': subtitle,
           'author': item['author'] ?? '',
           'image': cover,
           'publisher': item['publisher'] ?? '',
@@ -66,6 +75,7 @@ class AladinBookApi {
               ? subInfo['itemPage']
               : int.tryParse(subInfo['itemPage']?.toString() ?? ''),
           'toc': subInfo['toc']?.toString() ?? '',
+          'link': item['link'] ?? '',
         };
       }).toList();
     } else {

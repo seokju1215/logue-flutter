@@ -6,6 +6,7 @@ import '../../../core/themes/app_colors.dart';
 import '../../../core/widgets/book/book_frame.dart';
 import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:logue/data/datasources/aladin_book_api.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../profile/follow/follow_list_tab.dart';
 
@@ -32,6 +33,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   void initState() {
     super.initState();
     _fetchBookOnly();
+  }
+  Future<void> _launchAladinLink(String? url) async {
+    if (url == null || url.isEmpty) return;
+    final cleanedUrl = url.replaceAll('&amp;', '&');
+    final uri = Uri.parse(cleanedUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('❌ URL 실행 실패: $url');
+    }
   }
 
   Future<void> _fetchBookOnly() async {
@@ -108,14 +119,34 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(book?['title'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Text(book?['subTitle'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
-                const SizedBox(height: 12),
+                const SizedBox(height: 1),
+                if (book?['subTitle'] != null)
+                  Text(book?['subTitle'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+                const SizedBox(height: 11),
                 Text(book?['author'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+                const SizedBox(height: 1),
                 Text('${book?['publisher'] ?? ''} | ${book?['published_date']?.toString().split("-").take(2).join(". ") ?? ''}',
                     style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+                const SizedBox(height: 1),
                 if (book?['page_count'] != null)
                   Text('${book?['page_count']} P', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+                const SizedBox(height: 1),
+                Text('도서 정보: 알라딘 제공', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+                const SizedBox(height: 1),
+                TextButton(
+                  onPressed: () {
+                    _launchAladinLink(book?['link']);
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero, // 기본 패딩 제거
+                    minimumSize: Size.zero,   // 클릭 영역 최소화
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    '알라딘에서 보기 >',
+                    style: TextStyle(fontSize: 12, color: AppColors.blue500, height: 1.5),
+                  ),
+                )
               ],
             ),
           ),
@@ -218,35 +249,34 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final lines = content.trim().split(RegExp(r'\r?\n'));
     final showMore = lines.length > maxLines;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(color: AppColors.black900, fontSize: 14)),
-          const SizedBox(height: 12),
-          ...lines.take(expanded ? lines.length : maxLines).map((line) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(line, style: const TextStyle(fontSize: 14, color: AppColors.black500)),
-          )),
-          SizedBox(
-            height: 50,
-            child: Column(
-              children: [
-                if (showMore && !expanded)
-                  Center(
-                    child: TextButton(
-                      onPressed: onToggle,
-                      child: const Text("더보기"),
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(color: AppColors.black900, fontSize: 14)),
+              const SizedBox(height: 12),
+              ...lines.take(expanded ? lines.length : maxLines).map((line) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(line, style: const TextStyle(fontSize: 14, color: AppColors.black500)),
+              )),
+              const SizedBox(height: 30),
+              if (showMore && !expanded)
+                Center(
+                  child: TextButton(
+                    onPressed: onToggle,
+                    child: const Text("더보기"),
                   ),
-                const Spacer(),
-                const Divider(height: 1, color: AppColors.black300),
-              ],
-            ),
+                ),
+              const SizedBox(height: 10),
+            ],
           ),
-        ],
-      ),
+        ),
+        const Divider(height: 1, color: AppColors.black300), // ✅ 여백 없는 Divider
+      ],
     );
   }
   Widget _buildOtherWorksSection() {
@@ -260,8 +290,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           padding: EdgeInsets.symmetric(horizontal: 20),
           child: Text('저자의 다른 작품', style: TextStyle(fontSize: 14, color: AppColors.black900)),
         ),
-        const SizedBox(height: 12),
-
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text('${authors.first}',
+              style: const TextStyle(fontSize: 16, color: AppColors.black900)),
+        ),
+        const SizedBox(height: 16),
         // 첫 번째 저자 책 목록
         SizedBox(
           height: 240,
@@ -301,8 +336,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Text('$author 저자의 다른 책',
-                        style: const TextStyle(fontSize: 14, color: AppColors.black900)),
+                    child: Text('$author',
+                        style: const TextStyle(fontSize: 16, color: AppColors.black900)),
                   ),
                   SizedBox(
                     height: 240,
@@ -319,10 +354,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
         // 마지막 Divider는 항상 하단에 고정
         const SizedBox(height: 12),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Divider(height: 1, color: AppColors.black300),
-        ),
+        Divider(height: 1, color: AppColors.black300),
+
       ],
     );
   }
