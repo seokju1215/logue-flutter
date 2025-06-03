@@ -39,27 +39,41 @@ class AladinBookApi {
         return cover.trim().isNotEmpty;
       })
           .map<Map<String, dynamic>>((item) {
+        final subInfo = item['subInfo'] ?? {};
+
+        // 제목과 fallback용 부제 분리
         String rawTitle = item['title'] ?? '';
         String title = rawTitle;
-        String? subtitle;
+        String? fallbackSubtitle;
 
         if (rawTitle.contains(' - ')) {
           final parts = rawTitle.split(' - ');
           title = parts.first.trim();
-          subtitle = parts.sublist(1).join(' - ').trim();
+          fallbackSubtitle = parts.sublist(1).join(' - ').trim();
         }
 
+        // subtitle 우선순위: 알라딘 subTitle > fallback > ''
+        final rawSub = subInfo['subTitle']?.toString().trim();
+        final subtitle = (rawSub != null && rawSub.isNotEmpty)
+            ? rawSub
+            : (fallbackSubtitle ?? '');
+
+        // 디버깅 로그
+        print('🔎 rawTitle: $rawTitle');
+        print('➡️ title: $title');
+        print('📌 subInfo.subTitle: $rawSub');
+        print('🔁 fallbackSubtitle: $fallbackSubtitle');
+        print('✅ 최종 subtitle: $subtitle');
+
+        // 이미지 처리
         String cover = item['cover'] ?? '';
         if (cover.startsWith('http://')) {
           cover = cover.replaceFirst('http://', 'https://');
         }
-
         cover = cover.replaceAllMapped(
           RegExp(r'(cover(sum|\d{2,3}))'),
               (_) => 'cover500',
         );
-        final subInfo = item['subInfo'] ?? {};
-
 
         return {
           'title': title,

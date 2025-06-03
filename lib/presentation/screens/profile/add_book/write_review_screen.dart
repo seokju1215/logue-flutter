@@ -74,6 +74,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             .insert({
           'isbn': widget.book.isbn,
           'title': widget.book.title,
+          'subtitle': widget.book.subtitle ?? '',
           'author': widget.book.author,
           'publisher': widget.book.publisher,
           'published_date': widget.book.publishedDate,
