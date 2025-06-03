@@ -8,12 +8,10 @@ import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:logue/data/datasources/aladin_book_api.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../profile/follow/follow_list_tab.dart';
-
 class BookDetailScreen extends StatefulWidget {
-  final String bookId; // UUID로 변경
+  final String bookId;
 
-  const BookDetailScreen({super.key,  required this.bookId});
+  const BookDetailScreen({super.key, required this.bookId});
 
   @override
   State<BookDetailScreen> createState() => _BookDetailScreenState();
@@ -34,14 +32,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     super.initState();
     _fetchBookOnly();
   }
+
   Future<void> _launchAladinLink(String? url) async {
     if (url == null || url.isEmpty) return;
     final cleanedUrl = url.replaceAll('&amp;', '&');
     final uri = Uri.parse(cleanedUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      debugPrint('❌ URL 실행 실패: $url');
     }
   }
 
@@ -59,7 +56,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
       final decoded = res.data as Map<String, dynamic>;
       final bookData = decoded['book'];
-
       final authors = _extractAuthors(bookData['author']?.toString() ?? '');
 
       final rawUsers = decoded['lifebooks'] ?? [];
@@ -87,6 +83,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       });
     }
   }
+
   List<String> _extractAuthors(String? authorString) {
     if (authorString == null || authorString.isEmpty) return [];
 
@@ -101,6 +98,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         .map((m) => m.group(1)!.trim())
         .toList();
   }
+
   Future<void> _fetchOtherBooks(List<String> authors) async {
     final api = AladinBookApi();
     Map<String, List<Map<String, dynamic>>> result = {};
@@ -127,14 +125,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               children: [
                 Text(book?['title'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 1),
-                if (book?['subtitle'] != null)...[
-                  if ((book?['subtitle'] ?? '').toString().trim().isNotEmpty) ...[
+                if (book?['subtitle'] != null && (book?['subtitle'] ?? '').toString().trim().isNotEmpty)
+                  ...[
                     Text(book?['subtitle'], style: const TextStyle(fontSize: 12, color: AppColors.black500)),
                     const SizedBox(height: 10),
-                  ] else ...[
-                    const SizedBox(height: 35),
-                  ],
-                ],
+                  ]
+                else
+                  const SizedBox(height: 35),
                 Text(book?['author'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
                 const SizedBox(height: 1),
                 Text('${book?['publisher'] ?? ''} | ${book?['published_date']?.toString().split("-").take(2).join(". ") ?? ''}',
@@ -144,20 +141,15 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   Text('${book?['page_count']} P', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
                 const SizedBox(height: 1),
                 Text('도서 정보: 알라딘 제공', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
-                const SizedBox(height: 1),
                 TextButton(
-                  onPressed: () {
-                    _launchAladinLink(book?['link']);
-                  },
+                  onPressed: () => _launchAladinLink(book?['link']),
                   style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero, // 기본 패딩 제거
-                    minimumSize: Size.zero,   // 클릭 영역 최소화
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
-                    '알라딘에서 보기 >',
-                    style: TextStyle(fontSize: 12, color: AppColors.blue500, height: 1.5),
-                  ),
+                  child: const Text('알라딘에서 보기 >',
+                      style: TextStyle(fontSize: 12, color: AppColors.blue500, height: 1.5)),
                 )
               ],
             ),
@@ -280,17 +272,18 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 Center(
                   child: TextButton(
                     onPressed: onToggle,
-                    child: const Text("더보기", style: TextStyle(color: AppColors.black900, fontSize: 12),),
+                    child: const Text("더보기", style: TextStyle(color: AppColors.black900, fontSize: 12)),
                   ),
                 ),
               const SizedBox(height: 10),
             ],
           ),
         ),
-        const Divider(height: 1, color: AppColors.black300), // ✅ 여백 없는 Divider
+        const Divider(height: 1, color: AppColors.black300),
       ],
     );
   }
+
   Widget _buildOtherWorksSection() {
     if (authorBooks.isEmpty) return const SizedBox.shrink();
     final authors = authorBooks.keys.toList();
@@ -305,11 +298,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text('${authors.first}',
-              style: const TextStyle(fontSize: 16, color: AppColors.black900)),
+          child: Text('${authors.first}', style: const TextStyle(fontSize: 16, color: AppColors.black900)),
         ),
         const SizedBox(height: 16),
-        // 첫 번째 저자 책 목록
         SizedBox(
           height: 240,
           child: ListView(
@@ -320,24 +311,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 .toList(),
           ),
         ),
-
-        // 더보기 버튼
         if (authors.length > 1 && !showAllAuthors)
           Center(
             child: TextButton(
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              onPressed: () {
-                setState(() => showAllAuthors = true);
-              },
-              child: const Text("더보기",style: TextStyle(color: AppColors.black900, fontSize: 12)),
+              onPressed: () => setState(() => showAllAuthors = true),
+              child: const Text("더보기", style: TextStyle(color: AppColors.black900, fontSize: 12)),
             ),
           ),
-
-        // 추가 저자들 (더보기 누른 후)
         if (showAllAuthors && authors.length > 1)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,8 +328,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Text('$author',
-                        style: const TextStyle(fontSize: 16, color: AppColors.black900)),
+                    child: Text('$author', style: const TextStyle(fontSize: 16, color: AppColors.black900)),
                   ),
                   SizedBox(
                     height: 240,
@@ -363,35 +342,45 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               );
             }).toList(),
           ),
-
-        // 마지막 Divider는 항상 하단에 고정
         const SizedBox(height: 12),
-        Divider(height: 1, color: AppColors.black300),
-
+        const Divider(height: 1, color: AppColors.black300),
       ],
     );
   }
 
   Widget _buildBookCard(Map<String, dynamic> book) {
-    return Container(
-      width: 120,
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            height: 180,
-            child: BookFrame(imageUrl: book['image'] ?? ''),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            book['title'] ?? '',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, color: AppColors.black900),
-          ),
-        ],
+    return GestureDetector(
+      onTap: () {
+        final bookId = book['isbn13'] ?? book['isbn'] ?? '';
+        if (bookId.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BookDetailScreen(bookId: bookId),
+            ),
+          );
+        }
+      },
+      child: Container(
+        width: 120,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 120,
+              height: 180,
+              child: BookFrame(imageUrl: book['image'] ?? ''),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              book['title'] ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: AppColors.black900),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -437,7 +426,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             _buildOtherWorksSection(),
             const SizedBox(height: 40),
           ],
-
         ),
       ),
     );
