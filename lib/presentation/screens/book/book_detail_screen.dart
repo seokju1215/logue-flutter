@@ -120,9 +120,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               children: [
                 Text(book?['title'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 1),
-                if (book?['subTitle'] != null)
-                  Text(book?['subTitle'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
-                const SizedBox(height: 11),
+                if (book?['subtitle'] != null)...[
+                  if ((book?['subtitle'] ?? '').toString().trim().isNotEmpty) ...[
+                    Text(book?['subtitle'], style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+                    const SizedBox(height: 10),
+                  ] else ...[
+                    const SizedBox(height: 35),
+                  ],
+                ],
                 Text(book?['author'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.black500)),
                 const SizedBox(height: 1),
                 Text('${book?['publisher'] ?? ''} | ${book?['published_date']?.toString().split("-").take(2).join(". ") ?? ''}',
@@ -231,7 +236,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                         ),
                       );
                     },
-                    child: const Text("더보기", style: TextStyle(color: AppColors.black500)),
+                    child: const Text("더보기", style: TextStyle(color: AppColors.black900, fontSize: 12)),
                   ),
                 ),
               const Spacer(),
@@ -268,7 +273,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 Center(
                   child: TextButton(
                     onPressed: onToggle,
-                    child: const Text("더보기"),
+                    child: const Text("더보기", style: TextStyle(color: AppColors.black900, fontSize: 12),),
                   ),
                 ),
               const SizedBox(height: 10),
@@ -321,7 +326,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               onPressed: () {
                 setState(() => showAllAuthors = true);
               },
-              child: const Text("더보기"),
+              child: const Text("더보기",style: TextStyle(color: AppColors.black900, fontSize: 12)),
             ),
           ),
 
