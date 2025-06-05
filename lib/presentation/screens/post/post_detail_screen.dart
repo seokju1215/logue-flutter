@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/core/widgets/dialogs/post_delete_dialog.dart';
 
+import '../book/book_detail_screen.dart';
+
 class PostDetailScreen extends StatelessWidget {
   final BookPostModel post;
 
@@ -58,7 +60,11 @@ class PostDetailScreen extends StatelessWidget {
                   const Spacer(),
                   OutlinedButton(
                     onPressed: () {
-                      // 책 둘러보기 기능 자리
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => BookDetailScreen(bookId: post.bookId!),
+                        ),
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.black300),

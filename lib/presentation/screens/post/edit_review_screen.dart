@@ -85,7 +85,7 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,19 +115,20 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
             ),
             const SizedBox(height: 16),
             const Text('후기 내용', style: TextStyle(fontSize: 12, color: AppColors.black500)),
-            Expanded(
-              child: TextField(
-                controller: _contentController,
-                maxLength: 1000,
-                minLines: 3,
-                maxLines: null,
-                style: const TextStyle(fontSize: 14, color: AppColors.black900),
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(5)),
-                ),
+            TextField(
+              controller: _contentController,
+              maxLength: 1000,
+              minLines: 8,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              style: const TextStyle(fontSize: 14, color: AppColors.black900),
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(5)),
               ),
             ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
