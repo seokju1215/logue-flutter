@@ -7,8 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class MyBookPostScreen extends StatefulWidget {
   final String? bookId;
   final String? userId;
-
-  const MyBookPostScreen({Key? key, this.bookId, this.userId}) : super(key: key);
+  final String? userBookId;
+  const MyBookPostScreen({Key? key, this.bookId, this.userBookId, this.userId}) : super(key: key);
 
   @override
   State<MyBookPostScreen> createState() => _MyBookPostScreenState();
@@ -49,7 +49,10 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       final mappedPosts = userPosts.map((e) => BookPostModel.fromMap(e)).toList();
 
       int index = 0;
-      if (widget.bookId != null) {
+      if (widget.userBookId != null) {
+        final foundIndex = mappedPosts.indexWhere((post) => post.id == widget.userBookId);
+        if (foundIndex != -1) index = foundIndex;
+      } else if (widget.bookId != null) {
         final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
         if (foundIndex != -1) index = foundIndex;
       }
@@ -71,14 +74,14 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
   }
 
   Future<void> _scrollToInitialIndex() async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 120));
 
     if (_scrollController.hasClients && initialIndex < _itemKeys.length) {
       final keyContext = _itemKeys[initialIndex].currentContext;
       if (keyContext != null) {
         Scrollable.ensureVisible(
           keyContext,
-          duration: const Duration(milliseconds: 300),
+          duration: Duration.zero,
           alignment: 0.1, // 상단에 가깝게 붙이기
         );
       }

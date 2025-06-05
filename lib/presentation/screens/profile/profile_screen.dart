@@ -395,10 +395,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return UserBookGrid(
       books: books,
       onTap: (book) async {
-        final bookId = book['book_id'] as String;
+        print("bookId : ${book['id']}");
         final result = await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => MyBookPostScreen(bookId: bookId),
+            builder: (_) => MyBookPostScreen(
+              bookId: book['book_id'] as String,
+              userBookId: book['id'] as String,
+              // ✅ 이걸 꼭 넘겨야 정확히 이동 가능!
+            ),
           ),
         );
         if (result == true) {
