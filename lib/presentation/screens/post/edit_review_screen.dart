@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/presentation/screens/main_navigation_screen.dart';
 
+import 'my_post_screen.dart';
+
 class EditReviewScreen extends StatefulWidget {
   final BookPostModel post;
 
@@ -47,6 +49,14 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
       // ✅ pop 먼저 하고, 나머지는 return
       if (mounted) {
         Navigator.of(context).pop(true);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MyBookPostScreen(
+              userBookId: widget.post.id,
+              // ✅ 이걸 꼭 넘겨야 정확히 이동 가능!
+            ),
+          ),
+        );
         return;
       }
     } catch (e) {
