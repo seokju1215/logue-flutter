@@ -39,8 +39,10 @@ class _SplashScreenState extends State<SplashScreen> {
     final deletedUser = await client
         .from('deleted_users')
         .select('deleted_at')
-        .eq('email', user.email)
+        .eq('email', user.email!)
         .maybeSingle();
+    debugPrint('🧪 삭제된 유저 검사: email = ${user.email}, deletedUser = $deletedUser');
+
 
     if (!mounted) return;
 
@@ -48,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
       final deletedAt = DateTime.parse(deletedUser['deleted_at']);
       final now = DateTime.now();
 
-      if (now.difference(deletedAt).inDays < 30) {
+      if (now.difference(deletedAt).inDays < 14) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

@@ -25,56 +25,58 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          if (blocked)
-            Positioned(
-              top: 90,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Text(
-                  "계정 탈퇴 이후 30일 동안 해당\n구글 계정으로 회원가입이 불가해요.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.black500,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-          // 로고: 화면의 높이 1/2 지점에 위치
+          // 로고: 화면 중앙
           Align(
-            alignment: Alignment(0, 0.0), // y = -0.5 (화면 세로의 1/2 위치)
+            alignment: Alignment(0, 0.0),
             child: SvgPicture.asset(
-              'assets/logue_logo_with_title.svg', // SVG 파일 경로
+              'assets/logue_logo_with_title.svg',
               height: 64,
             ),
           ),
-          // 로그인 버튼: 화면의 하단 1/5 지점에 위치
+
+          // 텍스트 + 로그인 버튼: 화면 아래 70% 지점
           Align(
-            alignment: Alignment(0, 0.7), // y = 0.8 (화면 하단에서 1/5 위치)
-            child: Container(
-              width: 350,
-              child: OutlinedButton.icon(
-                onPressed: () => _login(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.black900, // 텍스트 색상
-                  side: BorderSide(color: AppColors.black500, width: 1), // 테두리
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
+            alignment: Alignment(0, 0.7),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (blocked) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      "해당 계정은 탈퇴 후 14일이 지나지 않아 가입이 불가합니다.\n14일 후 다시 시도해 주세요.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.black900,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                ),
-                icon: Image.asset(
-                  'assets/google_logo.svg.png',
-                  height: 24,
-                ),
-                label: Text(
-                  "Sign in with Google",
-                  style: TextStyle(
-                    color: AppColors.black900,
+                  const SizedBox(height: 16),
+                ],
+                SizedBox(
+                  width: 350,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _login(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.black900,
+                      side: const BorderSide(color: AppColors.black500, width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                    ),
+                    icon: Image.asset(
+                      'assets/google_logo.svg.png',
+                      height: 24,
+                    ),
+                    label: const Text(
+                      "Sign in with Google",
+                      style: TextStyle(color: AppColors.black900),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ],

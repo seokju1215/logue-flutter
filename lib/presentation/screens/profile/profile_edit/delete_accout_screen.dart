@@ -37,10 +37,11 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     try {
       // 🔹 1. 탈퇴 사유 저장
       await client.from('delete_feedback').insert({
-        'user_id': user.id,
+        'email': user.email,
         'reason_index': selectedReasonIndex,
         'reason_text': reasonText,
       });
+      await client.auth.signOut();
 
       // 🔹 2. 계정 삭제 Edge Function 호출
       final res = await client.functions.invoke('delete_account', body: {
@@ -51,12 +52,6 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       debugPrint('📡 계정 삭제 결과: ${res.status}, ${res.data}');
 
       if (res.status == 200 && res.data['success'] == true) {
-        try {
-          await client.auth.signOut();
-        } catch (e) {
-          debugPrint('🔴 로그아웃 실패: $e');
-        }
-
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
         }
