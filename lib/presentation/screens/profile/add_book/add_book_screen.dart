@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
+import 'package:logue/presentation/screens/profile/add_book/search_book_screen.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../../../core/widgets/dialogs/book_limit_dialog.dart';
 
 class AddBookScreen extends StatefulWidget {
   const AddBookScreen({Key? key}) : super(key: key);
@@ -61,7 +63,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
       isEdited = false;
     });
 
-    if (context.mounted) Navigator.pop(context);
+    if (context.mounted) Navigator.pop(context, true);
   }
 
   void _onReorder(int oldIndex, int newIndex) {
@@ -84,8 +86,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scrollController = ScrollController();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('내 책장'),
@@ -100,24 +100,23 @@ class _AddBookScreenState extends State<AddBookScreen> {
               '확인',
               style: TextStyle(
                 color: isEdited ? AppColors.blue500 : AppColors.black300,
-                fontSize: 14
+                fontSize: 14,
               ),
             ),
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
+        primary: false,
         padding: const EdgeInsets.fromLTRB(0, 27, 0, 27),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 22),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  '지금의 당신을 만든 인생 책은 무엇인가요?',
-                  style: TextStyle(fontSize: 16, color: AppColors.black900),
-                ),
+              child: Text(
+                '지금의 당신을 만든 인생 책은 무엇인가요?',
+                style: TextStyle(fontSize: 16, color: AppColors.black900),
               ),
             ),
             const SizedBox(height: 13),
@@ -125,28 +124,43 @@ class _AddBookScreenState extends State<AddBookScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 21),
               child: Row(
                 children: [
-                  const Expanded(child: SizedBox()), // 왼쪽 빈 공간
+                  const Expanded(child: SizedBox()),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => Navigator.pushNamed(context, '/search_book'),
+                      onPressed: () {
+                        if (books.length >= 9) {
+                          showDialog(
+                            context: context,
+                            builder: (_) => const BookLimitDialog(),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SearchBookScreen()),
+                          );
+                        }
+                      },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.black900,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
                         side: const BorderSide(color: AppColors.black900),
                         minimumSize: const Size.fromHeight(40),
                       ),
                       child: const Text(
                         '책 추가 +',
-                        style: TextStyle(fontSize: 12, color: AppColors.black900),
+                        style:
+                        TextStyle(fontSize: 12, color: AppColors.black900),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 19,),
+            const SizedBox(height: 19),
             Padding(
-              padding: const EdgeInsets.only(left: 22, right: 22),
+              padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -156,57 +170,53 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   ),
                   Text(
                     '${books.length}/9',
-                    style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.black500),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(21),
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      const spacing = 8.0;
-                      const crossAxisCount = 3;
-                      final totalSpacing = spacing * (crossAxisCount - 1);
-                      final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 21),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const spacing = 8.0;
+                  const crossAxisCount = 3;
+                  final totalSpacing = spacing * (crossAxisCount - 1);
+                  final itemWidth =
+                      (constraints.maxWidth - totalSpacing) / crossAxisCount;
 
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: ReorderableWrap(
-                          spacing: spacing,
-                          runSpacing: spacing,
-                          needsLongPressDraggable: false,
-                          onReorder: _onReorder,
-                          children: books.map((book) {
-                            return Container(
-                              key: ValueKey(book['id']),
-                              width: itemWidth,
-                              child: AspectRatio(
-                              aspectRatio: 0.7,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(0),
-                                child: Image.network(
-                                  book['books']?['image'] ?? 'https://via.placeholder.com/150',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.broken_image),
-                                    );
-                                  },
-                                ),
-                              ),
+                  return ReorderableWrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    needsLongPressDraggable: false,
+                    onReorder: _onReorder,
+                    children: books.map((book) {
+                      return SizedBox(
+                        key: ValueKey(book['id']),
+                        width: itemWidth,
+                        child: AspectRatio(
+                          aspectRatio: 0.7,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(0),
+                            child: Image.network(
+                              book['books']?['image'] ??
+                                  'https://via.placeholder.com/150',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.broken_image),
+                                );
+                              },
                             ),
-                            );
-                          }).toList(),
+                          ),
                         ),
                       );
-                    },
-                  ),
-                ),
+                    }).toList(),
+                  );
+                },
               ),
             ),
           ],

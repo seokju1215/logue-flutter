@@ -5,10 +5,10 @@ import 'package:logue/core/widgets/post/post_item.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MyBookPostScreen extends StatefulWidget {
-  final String bookId;
+  final String? bookId;
   final String? userId;
 
-  const MyBookPostScreen({Key? key, required this.bookId, this.userId}) : super(key: key);
+  const MyBookPostScreen({Key? key, this.bookId, this.userId}) : super(key: key);
 
   @override
   State<MyBookPostScreen> createState() => _MyBookPostScreenState();
@@ -33,12 +33,14 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
   Future<void> _fetchPosts() async {
     final userId = widget.userId ?? client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null || !mounted) return;
 
     try {
       final response = await client
           .rpc('get_user_books_with_profiles', params: {'target_user_id': userId})
           .execute();
+
+      if (!mounted) return; // 🔐 여기서도 체크
 
       if (response.data == null) throw Exception('데이터를 불러올 수 없습니다.');
 
@@ -46,10 +48,13 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
       final mappedPosts = userPosts.map((e) => BookPostModel.fromMap(e)).toList();
 
-      debugPrint('📌 전달받은 bookId: ${widget.bookId}');
-      debugPrint('📌 mappedPosts: ${mappedPosts.map((e) => e.bookId)}');
+      int index = 0;
+      if (widget.bookId != null) {
+        final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
+        if (foundIndex != -1) index = foundIndex;
+      }
 
-      final index = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
+      if (!mounted) return;
 
       setState(() {
         posts = mappedPosts;
@@ -66,14 +71,16 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
   }
 
   Future<void> _scrollToInitialIndex() async {
-    await Future.delayed(const Duration(milliseconds: 10));
-    if (_scrollController.hasClients) {
-      final RenderBox? firstItemBox = _itemKeys.first.currentContext?.findRenderObject() as RenderBox?;
-      final RenderBox? targetBox = _itemKeys[initialIndex].currentContext?.findRenderObject() as RenderBox?;
+    await Future.delayed(const Duration(milliseconds: 100));
 
-      if (firstItemBox != null && targetBox != null) {
-        final offset = targetBox.localToGlobal(Offset.zero).dy - firstItemBox.localToGlobal(Offset.zero).dy;
-        _scrollController.jumpTo(offset);
+    if (_scrollController.hasClients && initialIndex < _itemKeys.length) {
+      final keyContext = _itemKeys[initialIndex].currentContext;
+      if (keyContext != null) {
+        Scrollable.ensureVisible(
+          keyContext,
+          duration: const Duration(milliseconds: 300),
+          alignment: 0.1, // 상단에 가깝게 붙이기
+        );
       }
     }
   }
@@ -106,7 +113,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
           : ListView(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        cacheExtent: 2000,
+        cacheExtent: 5000,
         children: List.generate(posts.length, (index) {
           final post = posts[index];
           final currentUserId = client.auth.currentUser?.id;

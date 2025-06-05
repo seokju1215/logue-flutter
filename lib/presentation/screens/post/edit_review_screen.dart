@@ -44,8 +44,10 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
         'review_content': newContent,
       }).eq('id', widget.post.id);
 
+      // ✅ pop 먼저 하고, 나머지는 return
       if (mounted) {
-        Navigator.pop(context, true);
+        Navigator.of(context).pop(true);
+        return;
       }
     } catch (e) {
       debugPrint('❌ 후기 수정 실패: $e');
@@ -55,7 +57,10 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      // ✅ pop 이후엔 setState 하지 않도록 조건 강화
+      if (mounted && Navigator.of(context).canPop()) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 

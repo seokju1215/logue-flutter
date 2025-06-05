@@ -35,7 +35,8 @@ class PostActionDialog extends StatelessWidget {
                 children: [
                   Container(
                     width: 300,
-                    padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 25),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 25, horizontal: 25),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(5),
@@ -46,31 +47,42 @@ class PostActionDialog extends StatelessWidget {
                         const SizedBox(height: 10),
                         const Text(
                           '책 수정',
-                          style: TextStyle(fontSize: 20, color: AppColors.black900),
+                          style: TextStyle(
+                              fontSize: 20, color: AppColors.black900),
                         ),
                         const SizedBox(height: 7),
                         const Text(
                           '후기 내용을 수정하거나\n책을 삭제할 수 있어요.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: AppColors.black500),
+                          style: TextStyle(
+                              fontSize: 12, color: AppColors.black500),
                         ),
                         const SizedBox(height: 20),
                         ElevatedButton(
-                          onPressed: onEdit,
+                          onPressed: () {
+                            Navigator.of(context).pop(); // ✅ 다이얼로그 닫기
+                            onEdit(); // ✅ 다이얼로그 닫은 뒤 콜백 실행
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.black900,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(5),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 72, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 72, vertical: 8),
                             elevation: 0,
                           ),
-                          child: const Text('내용 수정', style: TextStyle(fontSize: 16)),
+                          child: const Text('내용 수정',
+                              style: TextStyle(fontSize: 16)),
                         ),
                         TextButton(
-                          onPressed: onDelete,
-                          child: const Text('삭제', style: TextStyle(color: AppColors.red500, fontSize: 14)),
+                          onPressed: () {
+                            onDelete(); // ✅ 콜백 실행
+                          },
+                          child: const Text('삭제',
+                              style: TextStyle(
+                                  color: AppColors.red500, fontSize: 14)),
                         ),
                       ],
                     ),
@@ -81,7 +93,8 @@ class PostActionDialog extends StatelessWidget {
                     right: 8,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.close, size: 24, color: AppColors.black500),
+                      child: const Icon(Icons.close,
+                          size: 24, color: AppColors.black500),
                     ),
                   ),
                 ],

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
+import 'package:logue/presentation/screens/post/my_post_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/domain/usecases/get_user_books.dart';
@@ -363,10 +364,10 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
       books: books,
       onTap: (book) {
         final bookId = book['book_id'] ?? book['id']; // <- 🔥 보장
-        Navigator.pushNamed(
-          context,
-          '/my_post_screen',
-          arguments: {'bookId': bookId, 'userId': widget.userId},
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MyBookPostScreen(bookId: bookId, userId : widget.userId),
+          ),
         );
       },
     );

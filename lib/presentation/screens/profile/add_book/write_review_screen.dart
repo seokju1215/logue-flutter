@@ -138,13 +138,13 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         debugPrint('ℹ️ 팔로워 없음. 알림 건너뜀');
       }
 
-      if (context.mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const MainNavigationScreen(initialIndex: 1)),
-              (route) => false,
-        );
-      }
+
+        if (context.mounted) {
+          Navigator.pop(context);
+          Navigator.pop(context);
+          Navigator.pop(context, true);
+        }
+
     } catch (e) {
       debugPrint('❌ 저장 실패: $e');
       if (mounted) {

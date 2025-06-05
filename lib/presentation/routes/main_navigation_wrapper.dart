@@ -21,8 +21,8 @@ class MainNavigationWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    MainNavigationScreen.lastSelectedIndex = getTabIndex(); // ✅ 명시적으로 설정
     return MainNavigationScreen(
-      initialIndex: getTabIndex(),
       child: child,
     );
   }

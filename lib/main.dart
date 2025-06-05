@@ -114,6 +114,11 @@ class MyApp extends StatelessWidget {
         ),
         appBarTheme: const AppBarTheme(backgroundColor: AppColors.white500,surfaceTintColor: Colors.transparent,),
         scaffoldBackgroundColor: AppColors.white500,
+        canvasColor: AppColors.white500, // ✅ 추가: 전체적으로 하얗게 고정
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: AppColors.white500, // ✅ 바텀바 배경 흰색
+          elevation: 0,
+        ),
         textTheme: GoogleFonts.interTextTheme().apply(
           bodyColor: AppColors.black900,
           displayColor: AppColors.black900,

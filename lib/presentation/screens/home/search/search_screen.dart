@@ -12,6 +12,8 @@ import 'package:logue/data/repositories/follow_repository.dart';
 import 'package:logue/domain/usecases/follows/follow_user.dart';
 import 'package:logue/domain/usecases/follows/unfollow_user.dart';
 import 'package:logue/domain/usecases/follows/is_following.dart';
+import '../../book/book_detail_screen.dart';
+import '../../main_navigation_screen.dart';
 import '../../profile/other_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -109,10 +111,11 @@ class _SearchScreenState extends State<SearchScreen>
 
       final bookId = data['book']['id'];
 
-      Navigator.pushNamed(
-        context,
-        '/book_detail',
-        arguments: bookId,
+      MainNavigationScreen.lastSelectedIndex = 0;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => BookDetailScreen(bookId: bookId),
+        ),
       );
     } catch (e) {
       debugPrint('❌ 책 정보 가져오기 실패: $e');
@@ -246,81 +249,87 @@ class _SearchScreenState extends State<SearchScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (_userResults.isNotEmpty) ...[Text(
-                                "계정",
-                                style: TextStyle(
-                                    fontSize: 16, color: AppColors.black900),
-                              ),
-                              const SizedBox(height: 6),
-                              ..._userResults.take(6).map(
-                                    (e) => SearchUserItem(
-                                      user: e,
-                                      isFollowing: e.isFollowing,
-                                      onTapFollow: () async {
-                                        try {
-                                          if (e.isFollowing) {
-                                            await _unfollowUser(e.id);
-                                          } else {
-                                            await _followUser(e.id);
-                                          }
-
-                                          final updatedFollow =
-                                              await _isFollowing(e.id);
-                                          setState(() {
-                                            _userResults =
-                                                _userResults.map((u) {
-                                              return u.id == e.id
-                                                  ? u.copyWith(
-                                                      isFollowing:
-                                                          updatedFollow)
-                                                  : u;
-                                            }).toList();
-                                          });
-                                        } catch (err) {
-                                          debugPrint('❌ 팔로우 실패: $err');
-                                        }
-                                      },
-                                      onTapProfile: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => OtherProfileScreen(
-                                                userId: e.id),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                              const SizedBox(height: 26),],
-                              if (_bookResults.isNotEmpty) ...[Text(
-                                "책",
-                                style: TextStyle(
-                                    fontSize: 16, color: AppColors.black900),
-                              ),
-                              const SizedBox(height: 4),
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  childAspectRatio: 0.7,
+                              if (_userResults.isNotEmpty) ...[
+                                Text(
+                                  "계정",
+                                  style: TextStyle(
+                                      fontSize: 16, color: AppColors.black900),
                                 ),
-                                itemCount: _bookResults.length,
-                                itemBuilder: (context, index) {
-                                  final book = _bookResults[index];
+                                const SizedBox(height: 6),
+                                ..._userResults.take(6).map(
+                                      (e) => SearchUserItem(
+                                        user: e,
+                                        isFollowing: e.isFollowing,
+                                        onTapFollow: () async {
+                                          try {
+                                            if (e.isFollowing) {
+                                              await _unfollowUser(e.id);
+                                            } else {
+                                              await _followUser(e.id);
+                                            }
 
-                                  return GestureDetector(
-                                    onTap: () => _onTapBook(book),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: Image.network(book.image, fit: BoxFit.cover),
+                                            final updatedFollow =
+                                                await _isFollowing(e.id);
+                                            setState(() {
+                                              _userResults =
+                                                  _userResults.map((u) {
+                                                return u.id == e.id
+                                                    ? u.copyWith(
+                                                        isFollowing:
+                                                            updatedFollow)
+                                                    : u;
+                                              }).toList();
+                                            });
+                                          } catch (err) {
+                                            debugPrint('❌ 팔로우 실패: $err');
+                                          }
+                                        },
+                                        onTapProfile: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  OtherProfileScreen(
+                                                      userId: e.id),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  );
-                                },
-                              )],
+                                const SizedBox(height: 26),
+                              ],
+                              if (_bookResults.isNotEmpty) ...[
+                                Text(
+                                  "책",
+                                  style: TextStyle(
+                                      fontSize: 16, color: AppColors.black900),
+                                ),
+                                const SizedBox(height: 4),
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    mainAxisSpacing: 12,
+                                    crossAxisSpacing: 12,
+                                    childAspectRatio: 0.7,
+                                  ),
+                                  itemCount: _bookResults.length,
+                                  itemBuilder: (context, index) {
+                                    final book = _bookResults[index];
+
+                                    return GestureDetector(
+                                      onTap: () => _onTapBook(book),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Image.network(book.image,
+                                            fit: BoxFit.cover),
+                                      ),
+                                    );
+                                  },
+                                )
+                              ],
                             ],
                           ),
                         ),
@@ -351,11 +360,14 @@ class _SearchScreenState extends State<SearchScreen>
                                   isFollowing: e.isFollowing,
                                   onTapFollow: () {},
                                   onTapProfile: () {
+                                    MainNavigationScreen.lastSelectedIndex = 0;
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) =>
-                                            OtherProfileScreen(userId: e.id),
+                                        builder: (_) => MainNavigationScreen(
+                                          child:
+                                              OtherProfileScreen(userId: e.id),
+                                        ),
                                       ),
                                     );
                                   },

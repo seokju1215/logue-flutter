@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
+import 'package:logue/presentation/screens/profile/add_book/add_book_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/domain/usecases/get_user_books.dart';
@@ -11,8 +12,11 @@ import 'package:logue/presentation/screens/profile/profile_edit/profile_edit_scr
 import 'dart:ui'; // 맨 위에 추가
 
 import '../../../domain/entities/follow_list_type.dart';
+import '../main_navigation_screen.dart';
+import '../post/my_post_screen.dart';
 import 'follow/follow_tab_screen.dart';
 import 'follow_list_screen.dart';
+import 'notification_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -152,7 +156,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 IconButton(
                   icon: SvgPicture.asset('assets/bell_icon.svg'),
                   onPressed: () {
-                    Navigator.pushNamed(context, '/notification');
+                    Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                    );
                     setState(() => _showFullBio = false);
                   },
                 ),
@@ -162,8 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: SvgPicture.asset('assets/edit_icon.svg'),
                   onPressed: () {
                     setState(() => _showFullBio = false);
-                    Navigator.push(
-                      context,
+                    Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(
                         builder: (_) =>
                             ProfileEditScreen(initialProfile: profile!),
@@ -211,13 +216,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     fontSize: 12, color: AppColors.black500),
                               ),
                               const SizedBox(height: 5),
-                              TextButton(
-                                onPressed: () => Navigator.pushNamed(
-                                    context, '/add_book_screen'),
-                                child: const Text("책 추가 +",
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.black900)),
+                              Builder(
+                                builder: (context) {
+                                  return TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context, rootNavigator: true).push(
+                                        MaterialPageRoute(builder: (_) => const AddBookScreen()),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "책 추가 +",
+                                      style: TextStyle(fontSize: 12, color: AppColors.black900),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -355,8 +367,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: _outlinedStyle(context),
             onPressed: () async {
               setState(() => _showFullBio = false);
-              await Navigator.pushNamed(context, '/add_book_screen');
-              _loadBooks();
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AddBookScreen()),
+              );
+              if (result == true) {
+                _loadBooks(); // ✅ 변경사항 반영
+              }
             },
             child: const Text("책 추가 +",
                 style: TextStyle(color: AppColors.black900, fontSize: 12)),
@@ -380,8 +396,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       books: books,
       onTap: (book) async {
         final bookId = book['book_id'] as String;
-        final result = await Navigator.pushNamed(context, '/my_post_screen',
-            arguments: {'bookId': bookId});
+        final result = await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MyBookPostScreen(bookId: bookId),
+          ),
+        );
         if (result == true) {
           _loadBooks();
         }

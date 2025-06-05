@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/presentation/screens/home/home_screen.dart';
-import 'package:logue/presentation/screens/profile/profile_screen.dart';
+import 'package:logue/presentation/screens/profile/profile_view.dart';
+import 'package:logue/presentation/screens/post/my_post_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  final int initialIndex;
-  final Widget? child; // ✅ SearchScreen 같은 외부 child
+  static int lastSelectedIndex = 0;
+
+  final Widget? child;
+  final int initialTabIndex; // ✅ 외부에서 초기 탭 지정
 
   const MainNavigationScreen({
     Key? key,
-    this.initialIndex = 0,
     this.child,
+    this.initialTabIndex = 0,
   }) : super(key: key);
 
   @override
@@ -20,24 +23,52 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _selectedIndex;
-  bool _overrideWithChild = true; // ✅ 처음에만 child 보여줄지 여부
+  bool _overrideWithChild = true;
+  bool _hasNavigatedToPostScreen = false; // ✅ 중복 방지
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const ProfileScreen(),
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+  ];
+
+  late final List<Widget> _screens = [
+    HomeScreen(navigatorKey: _navigatorKeys[0]),
+    ProfileView(navigatorKey: _navigatorKeys[1]),
   ];
 
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.initialIndex;
+    _selectedIndex = widget.initialTabIndex;
+    MainNavigationScreen.lastSelectedIndex = widget.initialTabIndex;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // ✅ 최초 1회만 작동, initialTabIndex가 2일 때 MyBookPostScreen으로 이동
+    if (!_hasNavigatedToPostScreen && widget.initialTabIndex == 2) {
+      _hasNavigatedToPostScreen = true;
+
+      Future.microtask(() {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
+        );
+      });
+    }
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      _overrideWithChild = false; // ✅ 탭 클릭 시 child 무시하고 기본 화면 보여줌
-    });
+    if (_selectedIndex == index) {
+      _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
+    } else {
+      setState(() {
+        _selectedIndex = index;
+        MainNavigationScreen.lastSelectedIndex = index;
+        _overrideWithChild = false;
+      });
+    }
   }
 
   @override
@@ -54,23 +85,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           highlightColor: Colors.transparent,
         ),
         child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
           type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          backgroundColor: AppColors.white500,
           selectedItemColor: AppColors.black900,
           unselectedItemColor: AppColors.black500,
-          selectedLabelStyle: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black900,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w400,
-            color: AppColors.black500,
-          ),
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
           items: [
             BottomNavigationBarItem(
               icon: SvgPicture.asset(
