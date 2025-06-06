@@ -193,14 +193,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 21, vertical: 24),
+                      const EdgeInsets.symmetric(horizontal: 21, vertical: 19),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildProfileHeader(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 17),
                       _buildActionButtons(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 21),
                       if (books.isNotEmpty) ...[
                         _buildBookGrid(),
                         const SizedBox(height: 32),
@@ -253,6 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
@@ -260,11 +261,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Text(profile?['name'] ?? '',
                       style: Theme.of(context).textTheme.bodyLarge),
+                  const SizedBox(height: 6),
                   Text(profile?['job'] ?? '',
                       style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 9),
                   _buildBio(context),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
                 ],
               ),
             ),
@@ -322,7 +324,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               child: _buildCount("팔로워", profile?['followers'] ?? 0),
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: 27),
             GestureDetector(
               onTap: () {
                 final userId = profile?['id'];
@@ -351,7 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               child: _buildCount("팔로잉", profile?['following'] ?? 0),
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: 27),
             _buildCount("방문자", profile?['visitors'] ?? 0),
           ],
         ),
