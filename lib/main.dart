@@ -133,6 +133,24 @@ class MyApp extends StatelessWidget {
           bodyColor: AppColors.black900,
           displayColor: AppColors.black900,
         ),
+        textButtonTheme: TextButtonThemeData(
+          style: ButtonStyle(
+            overlayColor: MaterialStateProperty.all(Colors.transparent),
+            splashFactory: NoSplash.splashFactory,
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: ButtonStyle(
+            overlayColor: MaterialStateProperty.all(Colors.transparent),
+            splashFactory: NoSplash.splashFactory,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ButtonStyle(
+            overlayColor: MaterialStateProperty.all(Colors.transparent),
+            splashFactory: NoSplash.splashFactory,
+          ),
+        ),
         useMaterial3: true,
       ),
       initialRoute: '/splash',

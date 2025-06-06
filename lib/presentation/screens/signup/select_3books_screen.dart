@@ -208,7 +208,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
               "확인",
               style: TextStyle(
                 color: _selectedBooks.length == 3
-                    ? const Color(0xFF0055FF)
+                    ? AppColors.blue500
                     : Colors.grey,
               ),
             ),
@@ -301,7 +301,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: isSelected ? Colors.blue : Colors.transparent,
-                        width: 2,
+                        width: 3,
                       ),
                     ),
                     child: ClipRRect(
