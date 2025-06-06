@@ -69,7 +69,7 @@ class PostDetailScreen extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.black300),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 7),
                     ),
                     child: const Text('책 둘러보기 →', style: TextStyle(color: AppColors.black500, fontSize: 14)),
                   ),

@@ -47,12 +47,12 @@ class PostItem extends StatelessWidget {
             child: const Icon(Icons.broken_image, size: 50),
           )
               : SizedBox(
-            width: 235.429,
-            height: 349.714,
+            width: 206,
+            height: 306,
             child: BookFrame(imageUrl: imageUrl),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 15),
 
         Row(
           children: [
