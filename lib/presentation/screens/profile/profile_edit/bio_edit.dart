@@ -47,7 +47,7 @@ class _BioEdit extends State<BioEdit> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('소개', style: TextStyle(color: AppColors.black900, fontSize: 18)),
+        title: const Text('소개', style: TextStyle(color: AppColors.black900, fontSize: 16)),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -59,26 +59,22 @@ class _BioEdit extends State<BioEdit> {
             child: Text(
               '확인',
               style: TextStyle(
-                color: isConfirmEnabled ? AppColors.blue500 : AppColors.blue500.withOpacity(0.5),
+                color: isConfirmEnabled ? AppColors.blue500 : AppColors.black300,
               ),
             ),
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 9),
-              child: Text('소개', style: TextStyle(color: AppColors.black500, fontSize: 12)),
-            ),
             const SizedBox(height: 8),
             TextField(
               controller: _controller,
               maxLength: 150,
-              maxLines: null,
+              maxLines: 9,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
                 border: OutlineInputBorder(borderSide: BorderSide(color: AppColors.black500)),

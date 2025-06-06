@@ -7,6 +7,7 @@ import 'package:logue/core/widgets/profile_edit/save_button.dart';
 import 'package:logue/core/widgets/profile_edit/profile_edit_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/core/widgets/dialogs/logout_or_delete_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/widgets/dialogs/delete_account_dialog.dart';
 import '../../../../core/widgets/dialogs/logout_dialog.dart';
@@ -44,6 +45,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   void onValueChanged() {
     setState(() => isEdited = true);
+  }
+
+  void _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('❌ $url 열기 실패');
+    }
   }
 
   void onSave() async {
@@ -143,7 +153,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 14),
                   ProfileEditButton(
                     label: '이름',
                     username: name,
@@ -162,7 +172,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 14),
                   ProfileEditButton(
                     label: '직업',
                     username: job,
@@ -181,7 +191,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 14),
                   ProfileEditButton(
                     label: '소개',
                     username: bio,
@@ -200,9 +210,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 27),
+                  const SizedBox(height: 14),
                   ProfileLinkTile(link: profileLink),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 38),
                 ],
               ),
             ),
@@ -215,10 +225,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               child: Column(
                 children: [
                   _buildMenuItem(context, '고객센터', () {
-                    // TODO: 고객센터 페이지 연결
+                    _launchUrl('https://general-spatula-561.notion.site/LOGUE-2024e6fb980480dfb0e8d5908dec40bb');
                   }),
                   _buildMenuItem(context, '법적 고지사항', () {
-                    // TODO: 약관 페이지 연결
+                    _launchUrl('https://general-spatula-561.notion.site/2024e6fb980481589b15c74214c83718');
                   }),
                   _buildMenuItem(context, '로그아웃', () {
                     showDialog(

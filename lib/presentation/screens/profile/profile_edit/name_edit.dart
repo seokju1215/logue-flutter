@@ -59,7 +59,7 @@ class _NameEdit extends State<NameEdit> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('이름', style: TextStyle(color: AppColors.black900, fontSize: 18)),
+        title: const Text('이름', style: TextStyle(color: AppColors.black900, fontSize: 16)),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -71,24 +71,20 @@ class _NameEdit extends State<NameEdit> {
             child: Text(
               '확인',
               style: TextStyle(
-                color: isConfirmEnabled ? AppColors.blue500 : AppColors.blue500.withOpacity(0.5),
+                color: isConfirmEnabled ? AppColors.blue500 : AppColors.black300,
               ),
             ),
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 9),
-              child: Text('이름', style: TextStyle(color: AppColors.black500, fontSize: 12)),
-            ),
-            const SizedBox(height: 8),
             TextField(
               controller: _controller,
+              maxLength: 10,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
                 border: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
@@ -98,13 +94,10 @@ class _NameEdit extends State<NameEdit> {
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
             ),
-            const SizedBox(height: 12),
-            const Padding(
-              padding: EdgeInsets.only(left: 9),
-              child: Text(
-                '사람들이 이름, 별명 또는 비즈니스 이름 등 회원님의 알려진 이름을\n사용하여 회원님의 계정을 찾을 수 있도록 해주세요.\n\n이름은 한글과 영어만 가능해요.',
-                style: TextStyle(fontSize: 10, color: AppColors.black500),
-              ),
+            const SizedBox(height: 6),
+            const Text(
+                '이름, 별명 또는 비즈니스 이름 등 회원님의 알려진 이름을 사용하여\n사람들이 해당 계정을 찾을 수 있도록 해주세요.\n\n이름은 한글과 영어만 가능해요.',
+                style: TextStyle(fontSize: 12, color: AppColors.black500),
             ),
           ],
         ),

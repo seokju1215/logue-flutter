@@ -38,12 +38,17 @@ class ProfileEditButton extends StatelessWidget {
                   horizontal: 9,
                 ),
               ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  username,
-                  style: const TextStyle(color: AppColors.black900, fontSize: 14),
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      username,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppColors.black900, fontSize: 14),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

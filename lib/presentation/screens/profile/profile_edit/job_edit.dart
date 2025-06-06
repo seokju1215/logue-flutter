@@ -100,7 +100,7 @@ class _JobEditState extends State<JobEdit> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('직업', style: TextStyle(color: AppColors.black900, fontSize: 18)),
+        title: const Text('직업', style: TextStyle(color: AppColors.black900, fontSize: 16)),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -112,22 +112,17 @@ class _JobEditState extends State<JobEdit> {
             child: Text(
               '확인',
               style: TextStyle(
-                color: isConfirmEnabled ? AppColors.blue500 : AppColors.blue500.withOpacity(0.5),
+                color: isConfirmEnabled ? AppColors.blue500 : AppColors.black300,
               ),
             ),
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 9),
-              child: Text('직업', style: TextStyle(color: AppColors.black500, fontSize: 12)),
-            ),
-            const SizedBox(height: 8),
             TextField(
               controller: _controller,
               onSubmitted: (_) => _onSearch(),
@@ -140,7 +135,11 @@ class _JobEditState extends State<JobEdit> {
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 6),
+            const Text(
+              '실제 직업, 활동 분야 또는 대표하는 역할 등을 입력하여\n사람들이 직업을 알 수 있도록 해주세요.',
+              style: TextStyle(fontSize: 12, color: AppColors.black500),
+            ),
             if (_controller.text.isNotEmpty)
               if (searchKeyword != null && searchKeyword!.isNotEmpty)
                 Padding(
