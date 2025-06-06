@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:logue/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/core/widgets/post/post_item.dart';
 import '../../../data/models/book_post_model.dart';
 
@@ -14,22 +14,43 @@ class HomeFollowingTab extends StatefulWidget {
 }
 
 class _HomeFollowingTabState extends State<HomeFollowingTab> {
+  final ScrollController _scrollController = ScrollController();
+
   List<BookPostModel> posts = [];
   bool isLoading = true;
+  bool isFetching = false;
+  bool hasMore = true;
+
+  int page = 0;
+  final int limit = 10;
 
   @override
   void initState() {
     super.initState();
     fetchFollowingPosts();
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200 &&
+          !isFetching &&
+          hasMore) {
+        fetchFollowingPosts();
+      }
+    });
   }
 
   Future<void> fetchFollowingPosts() async {
+    setState(() {
+      isFetching = true;
+    });
+
     try {
       final client = Supabase.instance.client;
       final accessToken = client.auth.currentSession?.accessToken;
 
       final response = await http.get(
-        Uri.parse('https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/following-posts'),
+        Uri.parse(
+            'https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/following-posts?page=$page&limit=$limit'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -38,9 +59,15 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
 
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
+        final List<BookPostModel> fetched =
+        data.map((e) => BookPostModel.fromMap(e)).toList();
+
         setState(() {
-          posts = data.map((e) => BookPostModel.fromMap(e)).toList();
+          posts.addAll(fetched);
+          page += 1;
+          hasMore = fetched.length == limit;
           isLoading = false;
+          isFetching = false;
         });
       } else {
         throw Exception('Edge Function error ${response.statusCode}');
@@ -50,8 +77,15 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
       print(stack);
       setState(() {
         isLoading = false;
+        isFetching = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -70,10 +104,15 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
     }
 
     return ListView.separated(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      itemCount: posts.length,
+      itemCount: posts.length + (hasMore ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 40),
       itemBuilder: (context, index) {
+        if (index == posts.length) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         return PostItem(
           post: posts[index],
           isMyPost: false,

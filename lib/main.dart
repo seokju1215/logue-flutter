@@ -53,11 +53,20 @@ void main() async {
 
           if (Platform.isIOS) {
             String? apnsToken;
-            do {
+            int retryCount = 0;
+            const maxRetries = 10;
+
+            while (apnsToken == null && retryCount < maxRetries) {
               await Future.delayed(const Duration(milliseconds: 500));
               apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-            } while (apnsToken == null);
-            print('📲 APNs 토큰: $apnsToken');
+              retryCount++;
+            }
+
+            if (apnsToken == null) {
+              print('⚠️ APNs 토큰을 가져오지 못했습니다.');
+            } else {
+              print('📲 APNs 토큰: $apnsToken');
+            }
           }
 
           final fcmToken = await FirebaseMessaging.instance.getToken();
@@ -105,6 +114,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       title: 'Logue',
       theme: ThemeData(

@@ -219,7 +219,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 3, 22, 0),
+            padding: const EdgeInsets.fromLTRB(22, 0, 22, 0),
             child: TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
@@ -233,7 +233,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
               style: const TextStyle(
                 fontSize: 14,
                 color: Color(0xFF191A1C),
-                fontWeight: FontWeight.w400,
               ),
               decoration: InputDecoration(
                 hintText: "책 이름을 검색해주세요.",

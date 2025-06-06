@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/widgets/common/circle_checkbox.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TermsScreen extends StatefulWidget {
   const TermsScreen({super.key});
@@ -23,6 +24,14 @@ class _TermsScreenState extends State<TermsScreen> {
       agreedTerms = checked;
       agreedPrivacy = checked;
     });
+  }
+  void _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('❌ $url 열기 실패');
+    }
   }
 
   void _toggleIndividual({
@@ -62,7 +71,7 @@ class _TermsScreenState extends State<TermsScreen> {
     required String text,
     void Function()? onTap,
   }) {
-    return Row(
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         CircleCheckbox(
@@ -70,13 +79,28 @@ class _TermsScreenState extends State<TermsScreen> {
           onChanged: (v) => onChanged(v),
         ),
         const SizedBox(width: 12),
-        Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall,)),
+        Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall)),
         if (onTap != null)
-          IconButton(
-            onPressed: onTap,
-            icon: const Icon(Icons.chevron_right),
-          ),
+          const Icon(Icons.chevron_right),
       ],
+    );
+
+    // 전체 Row를 탭 가능하게
+    return onTap != null
+        ? InkWell(
+      onTap: onTap,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: row,
+      ),
+    )
+        : Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: row,
     );
   }
 
@@ -107,19 +131,19 @@ class _TermsScreenState extends State<TermsScreen> {
                 text: '약관 전체 동의',
               ),
               const SizedBox(height: 10),
-              const Divider(thickness: 4,),
+              const Divider(thickness: 2,),
 
               _buildCheckItem(
                 value: agreedTerms,
                 onChanged: (v) => _toggleIndividual(terms: v),
                 text: '(필수) 서비스 이용약관 동의',
-                onTap: () => print("서비스 이용약관 상세 보기"),
+                onTap: () => _launchUrl('https://general-spatula-561.notion.site/2024e6fb980480daadd6cd8bafe388a9'),
               ),
               _buildCheckItem(
                 value: agreedPrivacy,
                 onChanged: (v) => _toggleIndividual(privacy: v),
                 text: '(필수) 개인정보 수집 및 이용 동의',
-                onTap: () => print("개인정보 수집 약관 보기"),
+                onTap: () => _launchUrl('https://general-spatula-561.notion.site/2024e6fb980480efa65acb5c7e330be5'),
               ),
 
               const Spacer(),
@@ -136,9 +160,7 @@ class _TermsScreenState extends State<TermsScreen> {
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('확인'),
+                  child: const Text('확인'),
                 ),
               ),
             ],
