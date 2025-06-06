@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
-import '../../../data/datasources/kakao_book_api.dart';
+import '../../../data/datasources/aladin_book_api.dart';
 import '../../../data/models/book_model.dart';
 import '../../../data/utils/fcmPermissionUtil.dart';
 import '../../../domain/usecases/add_book.dart';
@@ -36,7 +36,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final rawResults = await KakaoBookApi().searchBooks(query);
+      final rawResults = await AladinBookApi().searchBooks(query);
       final results =
       rawResults.map((data) => BookModel.fromJson(data)).toList();
 
