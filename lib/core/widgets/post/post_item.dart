@@ -1,17 +1,17 @@
+// PostItem.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
-import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:logue/core/widgets/post/post_content.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:logue/core/widgets/dialogs/post_action_dialog.dart';
+import 'package:logue/data/datasources/user_book_api.dart';
+import 'package:logue/data/models/book_post_model.dart';
+import 'package:logue/presentation/screens/book/book_detail_screen.dart';
 import 'package:logue/presentation/screens/post/edit_review_screen.dart';
+import 'package:logue/presentation/screens/profile/other_profile_screen.dart';
+import 'package:logue/core/widgets/dialogs/post_action_dialog.dart';
+import 'package:logue/core/widgets/dialogs/post_delete_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../../../data/datasources/user_book_api.dart';
-import '../../../presentation/screens/book/book_detail_screen.dart';
-import '../../../presentation/screens/profile/other_profile_screen.dart';
-import '../dialogs/post_delete_dialog.dart';
 
 class PostItem extends StatelessWidget {
   final BookPostModel post;
@@ -21,13 +21,13 @@ class PostItem extends StatelessWidget {
   final VoidCallback? onTap;
 
   const PostItem({
-    Key? key,
-    required this.isMyPost,
+    super.key,
     required this.post,
+    required this.isMyPost,
     this.onDeleteSuccess,
     this.onEditSuccess,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -47,23 +47,16 @@ class PostItem extends StatelessWidget {
             color: Colors.grey[300],
             child: const Icon(Icons.broken_image, size: 50),
           )
-              : SizedBox(
-            width: 206,
-            height: 306,
-            child: BookFrame(imageUrl: imageUrl),
-          ),
+              : SizedBox(width: 206, height: 306, child: BookFrame(imageUrl: imageUrl)),
         ),
         const SizedBox(height: 15),
-
         Row(
           children: [
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => OtherProfileScreen(userId: post.userId),
-                  ),
-                );
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => OtherProfileScreen(userId: post.userId),
+                ));
               },
               child: Row(
                 children: [
@@ -84,142 +77,90 @@ class PostItem extends StatelessWidget {
                     backgroundColor: Colors.grey[300],
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    userName,
-                    style: const TextStyle(
-                      color: AppColors.black900,
-                      fontSize: 16,
-                    ),
-                  ),
+                  Text(userName,
+                      style: const TextStyle(fontSize: 16, color: AppColors.black900)),
                 ],
               ),
             ),
             const Spacer(),
-            isMyPost
-                ? Row(
-              children: [
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            BookDetailScreen(bookId: post.bookId!),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.black300),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5),
+            if (isMyPost)
+              Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => BookDetailScreen(bookId: post.bookId!),
+                      ));
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.black300),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 8),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 19,
-                      vertical: 8,
-                    ),
+                    child: const Text('책 둘러보기 →',
+                        style: TextStyle(fontSize: 14, color: AppColors.black500)),
                   ),
-                  child: const Text(
-                    '책 둘러보기 →',
-                    style: TextStyle(
-                      color: AppColors.black500,
-                      fontSize: 14,
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.more_vert),
+                    onPressed: () async {
+                      final action = await showDialog<String>(
+                        context: context,
+                        builder: (_) => const PostActionDialog(),
+                      );
+
+                      if (action == 'edit') {
+                        final result = await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => EditReviewScreen(post: post),
+                        ));
+                        if (result == true) {
+                          onEditSuccess?.call();
+                        }
+                      } else if (action == 'delete') {
+                        await showDialog(
+                          context: context,
+                          builder: (deleteDialogContext) => PostDeleteDialog(
+                            onDelete: () async {
+                              Navigator.pop(deleteDialogContext);
+                              final userBookApi = UserBookApi(Supabase.instance.client);
+                              try {
+                                await userBookApi.deleteBook(post.id);
+                                onDeleteSuccess?.call();
+                              } catch (_) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
+                                );
+                              }
+                            },
+                          ),
+                        );
+                      }
+                    },
                   ),
+                ],
+              )
+            else
+              OutlinedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/book_detail', arguments: post.bookId);
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.black300),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                  padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 8),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () async {
-                    final scaffoldContext = context;
-
-                    await showDialog(
-                      context: context,
-                      useRootNavigator: true,
-                      builder: (dialogContext) => PostActionDialog(
-                        onEdit: () {
-                          Navigator.of(dialogContext).pop(); // ✅ PostActionDialog 닫기
-
-                          Future.delayed(Duration.zero, () async {
-                            final editResult = await Navigator.of(scaffoldContext).push(
-                              MaterialPageRoute(
-                                builder: (_) => EditReviewScreen(post: post),
-                              ),
-                            );
-                            if (editResult == true) {
-                              onEditSuccess?.call();
-                            }
-                          });
-                        },
-                        onDelete: () {
-                          Navigator.of(dialogContext).pop(); // ✅ PostActionDialog 닫기
-
-                          Future.microtask(() {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: true,
-                              builder: (deleteDialogContext) => PostDeleteDialog(
-                                onDelete: () async {
-                                  Navigator.pop(deleteDialogContext); // ✅ PostDeleteDialog 닫기
-                                  final userBookApi = UserBookApi(Supabase.instance.client);
-                                  try {
-                                    await userBookApi.deleteBook(post.id);
-                                    onDeleteSuccess?.call();
-                                  } catch (_) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
-                                    );
-                                  }
-                                },
-                              ),
-                            );
-                          });
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ],
-            )
-                : OutlinedButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  '/book_detail',
-                  arguments: post.bookId,
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.black300),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 19,
-                  vertical: 8,
-                ),
+                child: const Text('책 둘러보기 →',
+                    style: TextStyle(fontSize: 14, color: AppColors.black500)),
               ),
-              child: const Text(
-                '책 둘러보기 →',
-                style: TextStyle(
-                  color: AppColors.black500,
-                  fontSize: 14,
-                ),
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 8),
         if (reviewTitle.isNotEmpty)
           Text(
             reviewTitle,
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppColors.black900,
-            ),
+            style: const TextStyle(fontSize: 16, color: AppColors.black900),
           ),
         const SizedBox(height: 8),
-        PostContent(
-          post: post,
-          onTapMore: onEditSuccess,
-        ),
+        PostContent(post: post),
       ],
     );
   }

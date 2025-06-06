@@ -76,11 +76,12 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('🛠️ EditReviewScreen: ${widget.post.id}, ${widget.post.reviewTitle}');
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),// 👈 또는 null, 원하는 값으로
         ),
         title: const Text('수정', style: TextStyle(fontSize: 18, color: AppColors.black900)),
         actions: [
