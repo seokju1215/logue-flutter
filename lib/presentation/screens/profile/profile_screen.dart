@@ -79,12 +79,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadBooks() async {
     final user = client.auth.currentUser;
     if (user == null) return;
+
     final result = await _getUserBooks(user.id);
-    result.sort(
-        (a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
-    setState(() => books = result);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkIfScrollable();
+    result.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+
+    setState(() {
+      books = result;
+      // ✅ 스크롤 가능 여부 즉시 반영
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkIfScrollable();
+      });
     });
   }
 
@@ -219,10 +223,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Builder(
                                 builder: (context) {
                                   return TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context, rootNavigator: true).push(
+                                    onPressed: () async {
+                                      final result = await Navigator.of(context, rootNavigator: true).push(
                                         MaterialPageRoute(builder: (_) => const AddBookScreen()),
                                       );
+                                      if (result == true) {
+                                        _loadBooks(); // ✅ 책 목록 다시 불러오기
+                                      }
                                     },
                                     child: const Text(
                                       "책 추가 +",

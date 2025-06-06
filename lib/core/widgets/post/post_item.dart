@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/datasources/user_book_api.dart';
 import '../../../presentation/screens/book/book_detail_screen.dart';
 import '../../../presentation/screens/profile/other_profile_screen.dart';
+import '../dialogs/post_delete_dialog.dart';
 
 class PostItem extends StatelessWidget {
   final BookPostModel post;
@@ -132,17 +133,14 @@ class PostItem extends StatelessWidget {
                     await showDialog(
                       context: context,
                       useRootNavigator: true,
-                      builder: (_) => PostActionDialog(
+                      builder: (dialogContext) => PostActionDialog(
                         onEdit: () {
-                          Navigator.of(context).pop(); // 다이얼로그 닫기
+                          Navigator.of(dialogContext).pop(); // ✅ PostActionDialog 닫기
 
-                          Future.microtask(() async {
-                            final editResult =
-                            await Navigator.of(scaffoldContext).push(
+                          Future.delayed(Duration.zero, () async {
+                            final editResult = await Navigator.of(scaffoldContext).push(
                               MaterialPageRoute(
-                                fullscreenDialog: true,
-                                builder: (_) =>
-                                    EditReviewScreen(post: post),
+                                builder: (_) => EditReviewScreen(post: post),
                               ),
                             );
                             if (editResult == true) {
@@ -150,19 +148,29 @@ class PostItem extends StatelessWidget {
                             }
                           });
                         },
-                        onDelete: () async {
-                          Navigator.of(context).pop();
-                          final userBookApi = UserBookApi(
-                              Supabase.instance.client);
-                          try {
-                            await userBookApi.deleteBook(post.id);
-                            onDeleteSuccess?.call();
-                          } catch (_) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('책 삭제 중 오류가 발생했어요')),
+                        onDelete: () {
+                          Navigator.of(dialogContext).pop(); // ✅ PostActionDialog 닫기
+
+                          Future.microtask(() {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: true,
+                              builder: (deleteDialogContext) => PostDeleteDialog(
+                                onDelete: () async {
+                                  Navigator.pop(deleteDialogContext); // ✅ PostDeleteDialog 닫기
+                                  final userBookApi = UserBookApi(Supabase.instance.client);
+                                  try {
+                                    await userBookApi.deleteBook(post.id);
+                                    onDeleteSuccess?.call();
+                                  } catch (_) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
+                                    );
+                                  }
+                                },
+                              ),
                             );
-                          }
+                          });
                         },
                       ),
                     );

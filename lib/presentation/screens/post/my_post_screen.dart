@@ -96,10 +96,9 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String appBarTitle = (posts.isNotEmpty && posts[initialIndex].userName != null)
-        ? posts[initialIndex].userName!
+    final String appBarTitle = (posts.isNotEmpty && posts[initialIndex.clamp(0, posts.length - 1)].userName != null)
+        ? posts[initialIndex.clamp(0, posts.length - 1)].userName!
         : '사용자';
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,

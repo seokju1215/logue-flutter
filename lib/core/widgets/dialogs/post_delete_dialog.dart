@@ -44,11 +44,7 @@ class PostDeleteDialog extends StatelessWidget {
                           TextSpan(
                             children: [
                               TextSpan(
-                                text: '정말 책을 삭제하시겠어요?\n',
-                                style: TextStyle(fontSize: 12, color: AppColors.black500, fontWeight: FontWeight.bold),
-                              ),
-                              TextSpan(
-                                text: '작성한 후기도 같이 삭제돼요.',
+                                text: '정말 책을 삭제하시겠어요?\n작성한 후기도 같이 삭제돼요.',
                                 style: TextStyle(fontSize: 12, color: AppColors.black500),
                               ),
                             ],

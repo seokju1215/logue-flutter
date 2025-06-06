@@ -52,7 +52,7 @@ class PostActionDialog extends StatelessWidget {
                         ),
                         const SizedBox(height: 7),
                         const Text(
-                          '후기 내용을 수정하거나\n책을 삭제할 수 있어요.',
+                          '후기 내용을 수정하거나 또는 \n프로필에서 책을 삭제할 수 있어요.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 12, color: AppColors.black500),
@@ -94,7 +94,7 @@ class PostActionDialog extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: const Icon(Icons.close,
-                          size: 24, color: AppColors.black500),
+                          size: 26, color: AppColors.black900),
                     ),
                   ),
                 ],
