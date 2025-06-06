@@ -198,9 +198,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildProfileHeader(),
-                      const SizedBox(height: 17),
+                      const SizedBox(height: 14),
                       _buildActionButtons(),
-                      const SizedBox(height: 21),
+                      const SizedBox(height: 20),
                       if (books.isNotEmpty) ...[
                         _buildBookGrid(),
                         const SizedBox(height: 32),
@@ -260,13 +260,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(profile?['name'] ?? '',
-                      style: Theme.of(context).textTheme.bodyLarge),
+                      style: TextStyle(fontSize: 20, color: AppColors.black900)),
                   const SizedBox(height: 6),
                   Text(profile?['job'] ?? '',
-                      style: Theme.of(context).textTheme.bodySmall),
+                      style: TextStyle(fontSize: 12, color: AppColors.black500)),
                   const SizedBox(height: 9),
                   _buildBio(context),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 9),
                 ],
               ),
             ),
@@ -275,19 +275,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Hero(
                 tag: 'profile-avatar',
                 child: Container(
-                  width: 71,
-                  height: 71,
+                  width: 81,
+                  height: 81,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.black100, width: 1),
                   ),
                   child: CircleAvatar(
-                    radius: 70,
+                    radius: 80,
                     backgroundImage:
                     avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                     child: avatarUrl == 'basic'
                         ? Image.asset('assets/basic_avatar.png',
-                        width: 70, height: 70)
+                        width: 80, height: 80)
                         : null,
                   ),
                 ),

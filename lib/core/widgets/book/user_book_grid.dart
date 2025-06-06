@@ -25,9 +25,9 @@ class UserBookGrid extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          childAspectRatio: 103 / 153,
+          crossAxisSpacing: 23,
+          mainAxisSpacing: 30,
+          childAspectRatio: 98 / 145,
         ),
         itemBuilder: (context, index) {
           final book = books[index];
