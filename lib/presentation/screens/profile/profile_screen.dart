@@ -11,12 +11,14 @@ import 'package:logue/data/utils/fetch_profile.dart';
 import 'package:logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
 import 'dart:ui'; // 맨 위에 추가
 
+import '../../../core/widgets/common/custom_app_bar.dart';
 import '../../../domain/entities/follow_list_type.dart';
 import '../main_navigation_screen.dart';
 import '../post/my_post_screen.dart';
 import 'follow/follow_tab_screen.dart';
 import 'follow_list_screen.dart';
 import 'notification_screen.dart';
+import 'package:flutter/gestures.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -150,39 +152,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(90),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 7),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: SvgPicture.asset('assets/bell_icon.svg'),
-                  onPressed: () {
-                    Navigator.of(context, rootNavigator: true).push(
-                      MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                    );
-                    setState(() => _showFullBio = false);
-                  },
-                ),
-                Text(profile?['username'] ?? '사용자',
-                    style: Theme.of(context).textTheme.titleMedium),
-                IconButton(
-                  icon: SvgPicture.asset('assets/edit_icon.svg'),
-                  onPressed: () {
-                    setState(() => _showFullBio = false);
-                    Navigator.of(context, rootNavigator: true).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ProfileEditScreen(initialProfile: profile!),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
+        preferredSize: const Size.fromHeight(40),
+        child: CustomAppBar(
+          title: profile?['username'] ?? '사용자',
+          leadingIconPath: 'assets/bell_icon.svg',
+          onLeadingTap: () {
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(builder: (_) => const NotificationScreen()),
+            );
+            setState(() => _showFullBio = false);
+          },
+          trailingIconPath: 'assets/edit_icon.svg',
+          onTrailingTap: () {
+            setState(() => _showFullBio = false);
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (_) => ProfileEditScreen(initialProfile: profile!),
+              ),
+            );
+          },
         ),
       ),
       body: SafeArea(
@@ -196,18 +184,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 21, vertical: 19),
+                  padding: EdgeInsets.zero,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildProfileHeader(),
-                      const SizedBox(height: 14),
-                      _buildActionButtons(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+                        child: _buildProfileHeader(),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                        child: _buildActionButtons(),
+                      ),
                       const SizedBox(height: 20),
                       if (books.isNotEmpty) ...[
-                        _buildBookGrid(),
-                        const SizedBox(height: 32),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 0, horizontal:26),
+                          child: _buildBookGrid(),
+                        ),
+                        const SizedBox(height: 20),
                       ] else ...[
                         const SizedBox(height: 95),
                         Center(
@@ -282,14 +277,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Hero(
                 tag: 'profile-avatar',
                 child: Container(
-                  width: 81,
-                  height: 81,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.black100, width: 1),
                   ),
                   child: CircleAvatar(
-                    radius: 80,
+                    radius: 81,
                     backgroundImage:
                     avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                     child: avatarUrl == 'basic'
@@ -465,80 +460,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bio = profile?['bio'] ?? '';
     if (bio.isEmpty) return const SizedBox();
 
-    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black900);
-    final moreText = ' 더보기';
+    const textStyle = TextStyle(
+      fontSize: 12,
+      color: AppColors.black900,
+      fontFamily: 'Inter',
+      fontWeight: FontWeight.w400,
+      height: 1.2,
+    );
+    const maxLines = 2;
+    const maxWidth = 241.0;
+    const moreText = '... 더보기';
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (_showFullBio) {
-          return Text(bio, style: textStyle);
-        }
+    if (_showFullBio) {
+      return Container(
+        constraints: const BoxConstraints(maxWidth: maxWidth),
+        child: Text(bio, style: textStyle),
+      );
+    }
 
-        // 전체 텍스트를 먼저 계산
-        final fullTextSpan = TextSpan(text: bio, style: textStyle);
-        final fullPainter = TextPainter(
-          text: fullTextSpan,
-          maxLines: 2,
-          ellipsis: '',
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: constraints.maxWidth);
+    return Container(
+      constraints: const BoxConstraints(maxWidth: maxWidth),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final fullTextPainter = TextPainter(
+            text: TextSpan(text: bio, style: textStyle),
+            textDirection: TextDirection.ltr,
+            maxLines: maxLines,
+          )..layout(maxWidth: constraints.maxWidth);
 
-        // 2줄 초과가 아니면 전체 텍스트만 보여줌
-        if (!fullPainter.didExceedMaxLines) {
-          return Text(bio, style: textStyle);
-        }
-
-        // "더보기" 길이 측정
-        final morePainter = TextPainter(
-          text: TextSpan(text: moreText, style: textStyle),
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: constraints.maxWidth);
-        final moreWidth = morePainter.width;
-
-        // 줄어든 공간만큼 bio를 자름
-        String trimmed = bio;
-        final textPainter = TextPainter(
-          text: TextSpan(text: trimmed, style: textStyle),
-          maxLines: 2,
-          textDirection: TextDirection.ltr,
-        );
-
-        while (trimmed.isNotEmpty) {
-          final candidate = trimmed + '...';
-          textPainter.text = TextSpan(text: candidate + moreText, style: textStyle);
-          textPainter.layout(maxWidth: constraints.maxWidth);
-
-          if (!textPainter.didExceedMaxLines) {
-            break;
+          if (!fullTextPainter.didExceedMaxLines) {
+            return Text(bio, style: textStyle);
           }
 
-          trimmed = trimmed.substring(0, trimmed.length - 1);
-        }
+          // 더보기 포함한 줄 수로 자르기
+          String trimmed = bio;
+          while (trimmed.isNotEmpty) {
+            final testText = trimmed.trimRight() + moreText;
+            final tp = TextPainter(
+              text: TextSpan(text: testText, style: textStyle),
+              textDirection: TextDirection.ltr,
+              maxLines: maxLines,
+            )..layout(maxWidth: constraints.maxWidth);
 
-        return RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: trimmed.trimRight() + '...',
-                style: textStyle,
-              ),
-              WidgetSpan(
-                alignment: PlaceholderAlignment.baseline,
-                baseline: TextBaseline.alphabetic,
-                child: GestureDetector(
-                  onTap: () => setState(() => _showFullBio = true),
-                  child: Text(
-                    moreText,
-                    style: textStyle.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+            if (!tp.didExceedMaxLines) break;
+            trimmed = trimmed.substring(0, trimmed.length - 1);
+          }
+
+          return RichText(
+            text: TextSpan(
+              style: textStyle,
+              children: [
+                TextSpan(text: trimmed.trimRight()),
+                TextSpan(
+                  text: '... 더보기',
+                  style: textStyle.copyWith(fontWeight: FontWeight.w500),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => setState(() => _showFullBio = true),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -547,6 +530,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Text(label,
             style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+        const SizedBox(height: 3),
         Text('$count',
             style: const TextStyle(fontSize: 12, color: AppColors.black500)),
       ],
@@ -554,10 +538,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   ButtonStyle _outlinedStyle(BuildContext context) {
-    return OutlinedButton.styleFrom(
-      foregroundColor: AppColors.black900,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-      textStyle: Theme.of(context).textTheme.bodySmall,
+    return ButtonStyle(
+      foregroundColor: MaterialStateProperty.all(AppColors.black900),
+      backgroundColor: MaterialStateProperty.all(Colors.white),
+      overlayColor: MaterialStateProperty.resolveWith<Color?>(
+            (states) {
+          if (states.contains(MaterialState.pressed)) {
+            return AppColors.black100;
+          }
+          return null;
+        },
+      ),
+      side: MaterialStateProperty.all(
+        const BorderSide(color: AppColors.black500, width: 1),
+      ),
+      shape: MaterialStateProperty.all(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+      ),
+      textStyle: MaterialStateProperty.all(
+        Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w400),
+      ),
+      padding: MaterialStateProperty.all(
+        const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      ),
     );
   }
 }

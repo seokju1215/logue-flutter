@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:logue/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/core/widgets/post/post_item.dart';
 import '../../../data/models/book_post_model.dart';
@@ -97,8 +98,8 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
     if (posts.isEmpty) {
       return const Center(
         child: Text(
-          '추천할 후기가 아직 없어요 😢',
-          style: TextStyle(color: Colors.grey, fontSize: 16),
+          '추천할 후기가 아직 없어요',
+          style: TextStyle(color: AppColors.black500, fontSize: 16),
         ),
       );
     }

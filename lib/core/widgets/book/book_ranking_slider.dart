@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
 
+import '../../../presentation/screens/book/book_detail_screen.dart';
+
 class BookRankingSlider extends StatelessWidget {
   final List<Map<String, dynamic>> books;
 
@@ -62,11 +64,9 @@ class BookRankingSlider extends StatelessWidget {
 
                           final bookId = book['book_id'];
                           if (bookId != null && bookId is String) {
-                            Navigator.pushNamed(
-                              context,
-                              '/book_detail',
-                              arguments: bookId,
-                            );
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => BookDetailScreen(bookId: bookId!),
+                            ));
                           } else {
                             debugPrint('❌ 유효한 bookId가 없음: $bookId');
                             ScaffoldMessenger.of(context).showSnackBar(
