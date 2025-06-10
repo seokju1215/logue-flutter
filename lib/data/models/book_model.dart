@@ -58,4 +58,13 @@ class BookModel {
     'image': image,
     'link': link, // ✅ 저장용 map에도 추가
   };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BookModel && other.isbn == isbn;
+  }
+
+  @override
+  int get hashCode => isbn.hashCode;
 }

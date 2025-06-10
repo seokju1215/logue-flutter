@@ -63,53 +63,51 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
   Widget build(BuildContext context) {
     final isBasic = widget.avatarUrl == 'basic';
 
-    return Stack(
-      alignment: Alignment.bottomRight,
-      children: [
-        Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: CircleAvatar(
-            radius: 48,
-            backgroundColor: Colors.white,
-            backgroundImage: isBasic ? null : NetworkImage(widget.avatarUrl),
-            child: isBasic
-                ? ClipOval(
-              child: Image.asset(
-                'assets/basic_avatar.png',
-                width: 96,
-                height: 96,
-                fit: BoxFit.cover,
-              ),
-            )
-                : null,
-          ),
-        ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: CircleAvatar(
-            radius: 14,
-            backgroundColor: Colors.white,
-            child: _isUploading
-                ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-                : IconButton(
-              icon: const Icon(Icons.camera_alt_outlined, size: 16),
-              onPressed: _pickImage,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+    return GestureDetector(
+      onTap: _isUploading ? null : _pickImage, // ✅ 전체 터치 영역에 적용
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: CircleAvatar(
+              radius: 48,
+              backgroundColor: Colors.white,
+              backgroundImage: isBasic ? null : NetworkImage(widget.avatarUrl),
+              child: isBasic
+                  ? ClipOval(
+                child: Image.asset(
+                  'assets/basic_avatar.png',
+                  width: 96,
+                  height: 96,
+                  fit: BoxFit.cover,
+                ),
+              )
+                  : null,
             ),
           ),
-        ),
-      ],
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: CircleAvatar(
+              radius: 14,
+              backgroundColor: Colors.white,
+              child: _isUploading
+                  ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : const Icon(Icons.camera_alt_outlined, size: 16),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

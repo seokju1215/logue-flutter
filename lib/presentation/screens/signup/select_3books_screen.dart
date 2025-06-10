@@ -67,7 +67,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
 
   String generateRandomProfileUrl() {
     final random = DateTime.now().millisecondsSinceEpoch;
-    return 'log-${random.toString().substring(5)}';
+    return 'log${random.toString().substring(5)}';
   }
 
   bool _isSelected(BookModel book) {
@@ -170,7 +170,13 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
 
       if (context.mounted) {
         await FcmPermissionUtil.requestOnceIfNeeded();
-        Navigator.pushReplacementNamed(context, '/main');
+        Navigator.pushReplacementNamed(
+          context,
+          '/main',
+          arguments: {
+            'initialTabIndex': 1,
+          },
+        );
       }
     } catch (e) {
       debugPrint('❌ 책 저장 실패: $e');

@@ -8,6 +8,8 @@ import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:logue/data/datasources/aladin_book_api.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../profile/other_profile_screen.dart';
+
 class BookDetailScreen extends StatefulWidget {
   final String bookId;
 
@@ -113,6 +115,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     });
   }
 
+
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -211,9 +214,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               isFollowing: user['is_following'] ?? false,
               showActions: user['id'] != currentUserId,
               showdelete: false,
-              onTapFollow: () {},
+              onTapFollow: () {
+
+              },
               onTapProfile: () {
-                Navigator.pushNamed(context, '/other_profile', arguments: user['id']);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OtherProfileScreen(userId: user['id']),
+                  ),
+                );
               },
             );
           }).toList(),

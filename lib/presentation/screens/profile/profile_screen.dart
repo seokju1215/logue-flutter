@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/presentation/screens/profile/add_book/add_book_screen.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/domain/usecases/get_user_books.dart';
@@ -189,14 +190,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+                        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 25),
                         child: _buildProfileHeader(),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                         child: _buildActionButtons(),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 10),
                       if (books.isNotEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 0, horizontal:26),
@@ -265,7 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(fontSize: 20, color: AppColors.black900)),
                   const SizedBox(height: 6),
                   Text(profile?['job'] ?? '',
-                      style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                      style: TextStyle(fontSize: 14, color: AppColors.black500)),
                   const SizedBox(height: 9),
                   _buildBio(context),
                   const SizedBox(height: 9),
@@ -273,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             GestureDetector(
-              onLongPress: () => _showZoomedAvatar(avatarUrl),
+              onTap: () => _showZoomedAvatar(avatarUrl),
               child: Hero(
                 tag: 'profile-avatar',
                 child: Container(
@@ -386,7 +387,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Expanded(
           child: OutlinedButton(
             style: _outlinedStyle(context),
-            onPressed: () {},
+            onPressed: () {
+              final profileLink = 'https://www.logue.it.kr/u/${profile?['profile_url']}';
+              if (profileLink != null && profileLink.isNotEmpty) {
+                Share.share(profileLink);
+              }
+            },
             child: const Text("프로필 공유",
                 style: TextStyle(color: AppColors.black900, fontSize: 12)),
           ),
@@ -471,53 +477,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const maxWidth = 241.0;
     const moreText = '... 더보기';
 
-    if (_showFullBio) {
-      return Container(
-        constraints: const BoxConstraints(maxWidth: maxWidth),
-        child: Text(bio, style: textStyle),
-      );
-    }
-
     return Container(
-      constraints: const BoxConstraints(maxWidth: maxWidth),
-      child: LayoutBuilder(
+      constraints: const BoxConstraints(maxWidth: maxWidth), // ✅ 여기에 명시적으로 제한
+      child: _showFullBio
+          ? Text(bio, style: textStyle)
+          : LayoutBuilder(
         builder: (context, constraints) {
-          final fullTextPainter = TextPainter(
-            text: TextSpan(text: bio, style: textStyle),
+          final span = TextSpan(text: bio, style: textStyle);
+          final tp = TextPainter(
+            text: span,
             textDirection: TextDirection.ltr,
             maxLines: maxLines,
+            ellipsis: '...',
           )..layout(maxWidth: constraints.maxWidth);
 
-          if (!fullTextPainter.didExceedMaxLines) {
+          if (!tp.didExceedMaxLines) {
             return Text(bio, style: textStyle);
           }
 
-          // 더보기 포함한 줄 수로 자르기
-          String trimmed = bio;
-          while (trimmed.isNotEmpty) {
-            final testText = trimmed.trimRight() + moreText;
-            final tp = TextPainter(
-              text: TextSpan(text: testText, style: textStyle),
+          final words = bio.split(' ');
+          String trimmed = '';
+          for (var i = 0; i < words.length; i++) {
+            final test = (words.take(i + 1).join(' ') + moreText).trimRight();
+            final testSpan = TextSpan(text: test, style: textStyle);
+            final testTp = TextPainter(
+              text: testSpan,
               textDirection: TextDirection.ltr,
               maxLines: maxLines,
             )..layout(maxWidth: constraints.maxWidth);
 
-            if (!tp.didExceedMaxLines) break;
-            trimmed = trimmed.substring(0, trimmed.length - 1);
+            if (testTp.didExceedMaxLines) break;
+            trimmed = words.take(i + 1).join(' ');
           }
 
-          return RichText(
-            text: TextSpan(
-              style: textStyle,
-              children: [
-                TextSpan(text: trimmed.trimRight()),
-                TextSpan(
-                  text: '... 더보기',
-                  style: textStyle.copyWith(fontWeight: FontWeight.w500),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () => setState(() => _showFullBio = true),
+          return GestureDetector(
+            onTap: () => setState(() => _showFullBio = true),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: maxWidth),
+              child: RichText(
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: textStyle,
+                  children: [
+                    TextSpan(text: trimmed + ' '),
+                    TextSpan(
+                      text: moreText,
+                      style: textStyle.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.black900,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         },
@@ -529,10 +542,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       children: [
         Text(label,
-            style: const TextStyle(fontSize: 12, color: AppColors.black500)),
-        const SizedBox(height: 3),
+            style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1)),
+        const SizedBox(height: 6),
         Text('$count',
-            style: const TextStyle(fontSize: 12, color: AppColors.black500)),
+            style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1)),
       ],
     );
   }
@@ -555,11 +568,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       shape: MaterialStateProperty.all(
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       ),
-      textStyle: MaterialStateProperty.all(
-        Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w400),
-      ),
       padding: MaterialStateProperty.all(
-        const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        EdgeInsets.symmetric(horizontal: 9),
+      ),
+      minimumSize: MaterialStateProperty.all(
+        const Size(0, 34), // ✅ 원하는 높이로 강제 지정
+      ),
+      textStyle: MaterialStateProperty.all(
+        const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 1.0, // ✅ 텍스트 줄 간격 없애기
+        ),
       ),
     );
   }

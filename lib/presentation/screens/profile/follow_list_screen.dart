@@ -122,6 +122,7 @@ class _FollowListTabState extends State<FollowListTab> {
           title: Text(username, style: const TextStyle(fontSize: 14, color: AppColors.black900)),
           subtitle: Text(name, style: const TextStyle(fontSize: 12, color: AppColors.black500)),
           onTap: () {
+            print('✅ Tapped: ${user["id"]}');
             Navigator.pushNamed(context, '/other_profile', arguments: user['id']);
           },
           trailing: Row(

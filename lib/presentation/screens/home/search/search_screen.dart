@@ -333,92 +333,97 @@ class _SearchScreenState extends State<SearchScreen>
                             ],
                           ),
                         ),
-          _userResults.isEmpty
-              ? const Expanded(
-                  child: Center(
-                    child: Text(
-                      '검색 결과가 없어요.',
-                      style: TextStyle(fontSize: 14, color: AppColors.black500),
-                    ),
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
-                      child: Text("계정",
+          _query.isEmpty
+              ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
+              : _userResults.isEmpty
+                  ? const Expanded(
+                      child: Center(
+                        child: Text(
+                          '검색 결과가 없어요.',
                           style: TextStyle(
-                              fontSize: 16, color: AppColors.black900)),
-                    ),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        children: _userResults
-                            .map((e) => SearchUserItem(
-                                  user: e,
-                                  isFollowing: e.isFollowing,
-                                  onTapFollow: () {},
-                                  onTapProfile: () {
-                                    MainNavigationScreen.lastSelectedIndex = 0;
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => MainNavigationScreen(
-                                          child:
-                                              OtherProfileScreen(userId: e.id),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ))
-                            .toList(),
-                      ),
-                    ),
-                  ],
-                ),
-          _bookResults.isEmpty
-              ? const Expanded(
-                  child: Center(
-                    child: Text('검색 결과가 없어요.',
-                        style:
-                            TextStyle(fontSize: 14, color: AppColors.black500)),
-                  ),
-                )
-              : Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '책',
-                        style:
-                            TextStyle(fontSize: 16, color: AppColors.black900),
-                      ),
-                      const SizedBox(height: 8),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.7,
+                              fontSize: 14, color: AppColors.black500),
                         ),
-                        itemCount: _bookResults.length,
-                        itemBuilder: (context, index) {
-                          final book = _bookResults[index];
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: Image.network(book.image, fit: BoxFit.cover),
-                          );
-                        },
                       ),
-                    ],
-                  ),
-                )
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+                          child: Text("계정",
+                              style: TextStyle(
+                                  fontSize: 16, color: AppColors.black900)),
+                        ),
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            children: _userResults
+                                .map((e) => SearchUserItem(
+                                      user: e,
+                                      isFollowing: e.isFollowing,
+                                      onTapFollow: () {},
+                                      onTapProfile: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => OtherProfileScreen(userId: e.id),
+                                          ),
+                                        );
+                                      },
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+          _query.isEmpty
+              ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
+              : _bookResults.isEmpty
+                  ? const Center(
+                      child: Text(
+                        '검색 결과가 없어요.',
+                        style:
+                            TextStyle(fontSize: 14, color: AppColors.black500),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '책',
+                            style: TextStyle(
+                                fontSize: 16, color: AppColors.black900),
+                          ),
+                          const SizedBox(height: 8),
+                          GridView.builder(
+                            itemCount: _bookResults.length,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 0.7,
+                            ),
+                            itemBuilder: (context, index) {
+                              final book = _bookResults[index];
+                              return GestureDetector(
+                                onTap: () => _onTapBook(book),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Image.network(book.image,
+                                      fit: BoxFit.cover),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    )
         ],
       ),
     );

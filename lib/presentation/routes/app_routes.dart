@@ -60,6 +60,7 @@ Map<String, WidgetBuilder> appRoutes = {
 
   '/other_profile': (context) {
     final userId = ModalRoute.of(context)!.settings.arguments as String;
+    throw Exception('🔥 라우트 도달 확인: userId = $userId');
     return OtherProfileScreen(userId: userId);
   },
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/presentation/screens/post/my_post_screen.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/domain/usecases/get_user_books.dart';
@@ -185,8 +186,13 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                 Text(profile?['username'] ?? '사용자',
                     style: Theme.of(context).textTheme.titleMedium),
                 IconButton(
-                  icon: SvgPicture.asset('assets/share_icon.svg'),
-                  onPressed: () {},
+                  icon: SvgPicture.asset('assets/share_button.svg'),
+                  onPressed: () {
+                    final profileLink = 'https://www.logue.it.kr/u/${profile?['profile_url']}';
+                    if (profileLink != null && profileLink.isNotEmpty) {
+                      Share.share(profileLink);
+                    }
+                  },
                 ),
               ],
             ),

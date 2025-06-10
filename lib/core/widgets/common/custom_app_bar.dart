@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../themes/app_colors.dart';
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String leadingIconPath;
@@ -39,7 +41,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: TextStyle(fontSize: 18, color: AppColors.black900),
             ),
             GestureDetector(
               onTap: onTrailingTap,

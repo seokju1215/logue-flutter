@@ -7,6 +7,7 @@ import 'package:logue/domain/usecases/follows/follow_user.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../../core/widgets/follow/follow_user_tile.dart';
+import '../other_profile_screen.dart';
 
 class FollowListTab extends StatefulWidget {
   final FollowListType type;
@@ -150,10 +151,11 @@ class _FollowListTabState extends State<FollowListTab> {
           onTapFollow: () => _handleFollow(user['id']),
           onTapRemove: () => _handleRemoveFollower(user['id']),
           onTapProfile: () {
-            Navigator.pushNamed(
+            Navigator.push(
               context,
-              '/other_profile',
-              arguments: user['id'],
+              MaterialPageRoute(
+                builder: (_) => OtherProfileScreen(userId: user['id']),
+              ),
             ).then((result) {
               if (result == true) {
                 widget.onChangedCount?.call();

@@ -141,7 +141,9 @@ class PostItem extends StatelessWidget {
             else
               OutlinedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/book_detail', arguments: post.bookId);
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => BookDetailScreen(bookId: post.bookId!),
+                  ));
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.black300),
