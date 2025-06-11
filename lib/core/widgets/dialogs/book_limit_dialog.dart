@@ -65,6 +65,7 @@ class BookLimitDialog extends StatelessWidget {
                                   (_) => false,
                               arguments: {
                                 'initialTabIndex': 1, // ✅ 프로필 탭
+                                'goToMyBookPostScreen': true,
                               },
                             );
                           },

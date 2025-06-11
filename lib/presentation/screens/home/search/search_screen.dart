@@ -361,12 +361,36 @@ class _SearchScreenState extends State<SearchScreen>
                                 .map((e) => SearchUserItem(
                                       user: e,
                                       isFollowing: e.isFollowing,
-                                      onTapFollow: () {},
+                                      onTapFollow: () async {
+                                        try {
+                                          if (e.isFollowing) {
+                                            await _unfollowUser(e.id);
+                                          } else {
+                                            await _followUser(e.id);
+                                          }
+
+                                          final updatedFollow =
+                                              await _isFollowing(e.id);
+                                          setState(() {
+                                            _userResults =
+                                                _userResults.map((u) {
+                                              return u.id == e.id
+                                                  ? u.copyWith(
+                                                      isFollowing:
+                                                          updatedFollow)
+                                                  : u;
+                                            }).toList();
+                                          });
+                                        } catch (err) {
+                                          debugPrint('❌ 팔로우 실패: $err');
+                                        }
+                                      },
                                       onTapProfile: () {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (_) => OtherProfileScreen(userId: e.id),
+                                            builder: (_) => OtherProfileScreen(
+                                                userId: e.id),
                                           ),
                                         );
                                       },

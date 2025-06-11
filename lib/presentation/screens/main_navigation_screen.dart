@@ -10,11 +10,13 @@ class MainNavigationScreen extends StatefulWidget {
 
   final Widget? child;
   final int initialTabIndex; // ✅ 외부에서 초기 탭 지정
+  final bool goToMyBookPostScreen;
 
   const MainNavigationScreen({
     Key? key,
     this.child,
     this.initialTabIndex = 0,
+    this.goToMyBookPostScreen = false,
   }) : super(key: key);
 
   @override
@@ -47,15 +49,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // ✅ 최초 1회만 작동, initialTabIndex가 2일 때 MyBookPostScreen으로 이동
-    if (!_hasNavigatedToPostScreen && widget.initialTabIndex == 2) {
-      _hasNavigatedToPostScreen = true;
+    if (!_hasNavigatedToPostScreen) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map && args['goToMyBookPostScreen'] == true) {
+        _hasNavigatedToPostScreen = true;
 
-      Future.microtask(() {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
-        );
-      });
+        // ✅ 다음 프레임에서 MyBookPostScreen push
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
+          );
+        });
+      }
     }
   }
 

@@ -37,7 +37,7 @@ class PostDeleteDialog extends StatelessWidget {
                         const SizedBox(height: 10),
                         const Text(
                           '삭제',
-                          style: TextStyle(fontSize: 20, color: AppColors.black900, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 20, color: AppColors.black900),
                         ),
                         const SizedBox(height: 10),
                         const Text.rich(

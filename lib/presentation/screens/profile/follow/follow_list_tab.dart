@@ -112,8 +112,26 @@ class _FollowListTabState extends State<FollowListTab> {
   }
 
   Future<void> _handleFollow(String targetUserId) async {
+    // 1. UI 먼저 업데이트
+    setState(() {
+      final index = users.indexWhere((u) => u['id'] == targetUserId);
+      if (index != -1) {
+        users[index]['isFollowing'] = true;
+        users.sort((a, b) {
+          final aFollowing = a['isFollowing'] == true ? 0 : 1;
+          final bFollowing = b['isFollowing'] == true ? 0 : 1;
+          return aFollowing.compareTo(bFollowing);
+        });
+      }
+    });
+
+    // 2. 서버 반영
     await _followUser(targetUserId);
+
+    // 3. 카운트 업데이트
     widget.onChangedCount?.call();
+
+    // 4. 최종 동기화
     await _fetchFollowList();
   }
 
@@ -146,7 +164,7 @@ class _FollowListTabState extends State<FollowListTab> {
           name: user['name'] ?? '',
           avatarUrl: user['avatar_url'] ?? 'basic',
           isFollowing: user['isFollowing'] == true,
-          showActions: widget.type == FollowListType.followers && isMyProfile,
+          showActions: widget.type == FollowListType.followers && isMyProfile && !isFollowing,
           showdelete: true,
           onTapFollow: () => _handleFollow(user['id']),
           onTapRemove: () => _handleRemoveFollower(user['id']),

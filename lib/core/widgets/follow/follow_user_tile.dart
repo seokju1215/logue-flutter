@@ -40,8 +40,8 @@ class FollowUserTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundImage: avatarUrl == 'basic' ? null : NetworkImage(
-                      avatarUrl),
+                  backgroundImage:
+                      avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                   child: avatarUrl == 'basic'
                       ? Image.asset('assets/basic_avatar.png')
                       : null,
@@ -50,38 +50,42 @@ class FollowUserTile extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(username, style: const TextStyle(
-                        fontSize: 14, color: AppColors.black900)),
-                    Text(name, style: const TextStyle(
-                        fontSize: 12, color: AppColors.black500)),
+                    Text(username,
+                        style: const TextStyle(
+                            fontSize: 14, color: AppColors.black900)),
+                    Text(name,
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.black500)),
                   ],
                 ),
               ],
             ),
           ),
           const Spacer(),
-          if (showActions) ...[
-            if (!isFollowing)
-              OutlinedButton(
-                onPressed: onTapFollow,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.black900),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 7),
-                  minimumSize: const Size(0, 0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                  ),
+          // Follow 버튼 (조건: showActions == true && !isFollowing)
+          if (showActions && !isFollowing)
+            OutlinedButton(
+              onPressed: onTapFollow,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.black900),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                minimumSize: const Size(0, 0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
                 ),
-                child: const Text("팔로우",
-                    style: TextStyle(fontSize: 12, color: AppColors.black900)),
               ),
-            if(showdelete)
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                onPressed: onTapRemove,
+              child: const Text(
+                "팔로우",
+                style: TextStyle(fontSize: 12, color: AppColors.black900),
               ),
-          ],
+            ),
+
+          if (showdelete && isFollowing)
+            IconButton(
+              icon: const Icon(Icons.close, size: 20),
+              onPressed: onTapRemove,
+            ),
         ],
       ),
     );

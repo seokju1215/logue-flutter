@@ -8,7 +8,7 @@ Future<Map<String, dynamic>?> fetchCurrentUserProfile() async {
 
   final data = await client
       .from('profiles')
-      .select('id, username, name, avatar_url, bio, job, followers, following, visitors')
+      .select('id, username, name, avatar_url, bio, job, followers, following, visitors, profile_url')
       .eq('id', user.id)
       .maybeSingle();
 

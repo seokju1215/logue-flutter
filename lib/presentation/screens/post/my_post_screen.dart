@@ -139,9 +139,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                     _itemKeys.removeAt(index);
                     _hasDeleted = true;
                   });
-                  if (posts.isEmpty) {
-                    Navigator.pop(context, true);
-                  }
+                  Navigator.pop(context, true);
                 },
                 onEditSuccess: _fetchPosts,
                 onTap: () async {

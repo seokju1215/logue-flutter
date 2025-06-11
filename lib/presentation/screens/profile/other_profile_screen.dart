@@ -99,18 +99,43 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   }
 
   Future<void> _toggleFollow() async {
-    if (client.auth.currentUser?.id == widget.userId) return;
+    final currentUserId = client.auth.currentUser?.id;
+    if (currentUserId == widget.userId) return;
 
-    final isFollowing = profile?['isFollowing'] == true;
+    final prevFollowing = profile?['isFollowing'] == true;
+
+    // 1. UI 먼저 optimistic update
+    setState(() {
+      profile = {
+        ...?profile,
+        'isFollowing': !prevFollowing,
+      };
+    });
 
     try {
-      if (isFollowing) {
+      // 2. 서버 반영
+      if (prevFollowing) {
         await _unfollowUser(widget.userId);
       } else {
         await _followUser(widget.userId);
       }
-      await _fetchProfile();
+
+      // 3. 최종 상태 확인 (동기화)
+      final confirmed = await _isFollowing(widget.userId);
+      setState(() {
+        profile = {
+          ...?profile,
+          'isFollowing': confirmed,
+        };
+      });
     } catch (e) {
+      // 4. 실패 시 rollback
+      setState(() {
+        profile = {
+          ...?profile,
+          'isFollowing': prevFollowing,
+        };
+      });
       debugPrint('❌ 팔로우 변경 실패: $e');
     }
   }
