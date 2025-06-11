@@ -82,47 +82,57 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ? widget.child!
         : _screens[_selectedIndex];
 
-    return Scaffold(
-      body: body,
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          backgroundColor: AppColors.white500,
-          selectedItemColor: AppColors.black900,
-          unselectedItemColor: AppColors.black500,
-          selectedFontSize: 12,
-          unselectedFontSize: 12,
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          items: [
-            BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/home_bottomnavi.svg',
-                width: 30,
-                height: 30,
-                color: _selectedIndex == 0
-                    ? AppColors.black900
-                    : AppColors.black500,
+    return WillPopScope(
+      onWillPop: () async {
+        final currentNavigator = _navigatorKeys[_selectedIndex].currentState!;
+        if (currentNavigator.canPop()) {
+          currentNavigator.pop();
+          return false;
+        }
+        return true; // 더 이상 pop할 게 없으면 시스템이 앱 종료하게 함
+      },
+      child: Scaffold(
+        body: body,
+        bottomNavigationBar: Theme(
+          data: Theme.of(context).copyWith(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+          ),
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            elevation: 0,
+            backgroundColor: AppColors.white500,
+            selectedItemColor: AppColors.black900,
+            unselectedItemColor: AppColors.black500,
+            selectedFontSize: 12,
+            unselectedFontSize: 12,
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            items: [
+              BottomNavigationBarItem(
+                icon: SvgPicture.asset(
+                  'assets/home_bottomnavi.svg',
+                  width: 30,
+                  height: 30,
+                  color: _selectedIndex == 0
+                      ? AppColors.black900
+                      : AppColors.black500,
+                ),
+                label: '홈',
               ),
-              label: '홈',
-            ),
-            BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/profile_bottomnavi.svg',
-                width: 30,
-                height: 30,
-                color: _selectedIndex == 1
-                    ? AppColors.black900
-                    : AppColors.black500,
+              BottomNavigationBarItem(
+                icon: SvgPicture.asset(
+                  'assets/profile_bottomnavi.svg',
+                  width: 30,
+                  height: 30,
+                  color: _selectedIndex == 1
+                      ? AppColors.black900
+                      : AppColors.black500,
+                ),
+                label: '프로필',
               ),
-              label: '프로필',
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
