@@ -162,7 +162,11 @@ class PostItem extends StatelessWidget {
             style: const TextStyle(fontSize: 16, color: AppColors.black900),
           ),
         const SizedBox(height: 8),
-        PostContent(post: post),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: PostContent(post: post),
+        ),
       ],
     );
   }

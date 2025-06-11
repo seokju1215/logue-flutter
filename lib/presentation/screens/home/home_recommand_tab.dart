@@ -17,11 +17,11 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
   final List<BookPostModel> posts = [];
   final ScrollController _scrollController = ScrollController();
 
-  int _page = 0;
   final int _limit = 10;
   bool _hasMore = true;
   bool _isFetching = false;
   bool isInitialLoading = true;
+  int _offset = 0;
 
   @override
   void initState() {
@@ -38,12 +38,16 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
     });
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future<void> fetchPosts() async {
     if (_isFetching || !_hasMore) return;
 
-    setState(() {
-      _isFetching = true;
-    });
+    setState(() => _isFetching = true);
 
     try {
       final client = Supabase.instance.client;
@@ -51,7 +55,8 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
 
       final response = await http.get(
         Uri.parse(
-            'https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/rapid-function?page=$_page&limit=$_limit'),
+          'https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/rapid-function?startOffset=$_offset&limit=$_limit',
+        ),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -59,15 +64,16 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
       );
 
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
+        final result = jsonDecode(response.body);
+        final List data = result['posts'] ?? [];
 
         final fetchedPosts =
         data.map((e) => BookPostModel.fromMap(e)).toList();
 
         setState(() {
           posts.addAll(fetchedPosts);
-          _page += 1;
-          _hasMore = fetchedPosts.length == _limit;
+          _offset = result['nextOffset'] ?? _offset;
+          _hasMore = result['nextOffset'] != null;
           isInitialLoading = false;
           _isFetching = false;
         });
@@ -81,12 +87,6 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
         isInitialLoading = false;
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   @override
@@ -113,11 +113,7 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
         if (index == posts.length) {
           return const Center(child: CircularProgressIndicator());
         }
-
-        return PostItem(
-          post: posts[index],
-          isMyPost: false,
-        );
+        return PostItem(post: posts[index], isMyPost: false);
       },
     );
   }

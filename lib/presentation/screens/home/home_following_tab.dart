@@ -15,8 +15,8 @@ class HomeFollowingTab extends StatefulWidget {
 
 class _HomeFollowingTabState extends State<HomeFollowingTab> {
   final ScrollController _scrollController = ScrollController();
-
   List<BookPostModel> posts = [];
+
   bool isLoading = true;
   bool isFetching = false;
   bool hasMore = true;
@@ -39,6 +39,12 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
     });
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future<void> fetchFollowingPosts() async {
     setState(() {
       isFetching = true;
@@ -50,7 +56,8 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
 
       final response = await http.get(
         Uri.parse(
-            'https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/following-posts?page=$page&limit=$limit'),
+          'https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/following-posts?page=$page&limit=$limit',
+        ),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -83,12 +90,6 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
   }
 
   @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -105,6 +106,7 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
 
     return ListView.separated(
       controller: _scrollController,
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       itemCount: posts.length + (hasMore ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 40),

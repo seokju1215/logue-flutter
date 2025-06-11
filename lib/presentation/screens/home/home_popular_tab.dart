@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/core/widgets/banner/banner_slider.dart';
-import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/core/widgets/book/book_ranking_slider.dart';
 
 class HomePopularTab extends StatefulWidget {
@@ -13,8 +12,10 @@ class HomePopularTab extends StatefulWidget {
 
 class _HomePopularTabState extends State<HomePopularTab> {
   final client = Supabase.instance.client;
+  final ScrollController _scrollController = ScrollController();
+
   List<Map<String, dynamic>> banners = [];
-  List<BookPostModel> posts = [];
+  List<Map<String, dynamic>> rankedBooks = [];
   bool isLoading = true;
 
   @override
@@ -23,7 +24,11 @@ class _HomePopularTabState extends State<HomePopularTab> {
     fetchData();
   }
 
-  List<Map<String, dynamic>> rankedBooks = [];
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> fetchData() async {
     try {
@@ -45,9 +50,11 @@ class _HomePopularTabState extends State<HomePopularTab> {
       });
     } catch (e) {
       debugPrint('🔥 fetch popular data error: $e');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -55,18 +62,23 @@ class _HomePopularTabState extends State<HomePopularTab> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-      children: [
+    return CustomScrollView(
+      controller: _scrollController,
+      physics: const ClampingScrollPhysics(),
+      slivers: [
         if (banners.isNotEmpty)
-          BannerSlider(banners: banners),
-        const SizedBox(height: 12),
+          SliverToBoxAdapter(
+            child: BannerSlider(banners: banners),
+          ),
+        const SliverToBoxAdapter(child: SizedBox(height: 12)),
         if (rankedBooks.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: SizedBox(
-              height: 460,
-              child: BookRankingSlider(books: rankedBooks),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: SizedBox(
+                height: 460,
+                child: BookRankingSlider(books: rankedBooks),
+              ),
             ),
           ),
       ],

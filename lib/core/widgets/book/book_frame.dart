@@ -8,7 +8,6 @@ class BookFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('📚 BookFrame: imageUrl = $imageUrl');
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.black300, width: 0.5),
