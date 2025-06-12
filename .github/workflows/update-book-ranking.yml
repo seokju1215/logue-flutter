@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Call Supabase Edge Function
         run: |
-          curl -X POST https://tbuoutcwvalrcldajobk.supabase.co/functions/v1/user-book-ranking \
+          curl -L -X POST https://tbuoutcwvalrcldajobk.supabase.co/functions/v1/user-book-ranking \
             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
