@@ -71,36 +71,41 @@ class _TermsScreenState extends State<TermsScreen> {
     required String text,
     void Function()? onTap,
   }) {
-    final row = Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        CircleCheckbox(
-          value: value,
-          onChanged: (v) => onChanged(v),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Text(text, style: Theme.of(context).textTheme.bodySmall)),
-        if (onTap != null)
-          const Icon(Icons.chevron_right),
-      ],
-    );
-
-    // 전체 Row를 탭 가능하게
-    return onTap != null
-        ? InkWell(
-      onTap: onTap,
+    return InkWell(
+      onTap: () {
+        onChanged(!value); // ✅ 텍스트/체크박스 누르면 동의 체크
+      },
+      borderRadius: BorderRadius.circular(8),
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      hoverColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: row,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            CircleCheckbox(
+              value: value,
+              onChanged: (v) => onChanged(v),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            if (onTap != null)
+              GestureDetector(
+                onTap: onTap, // 🔗 아이콘 눌렀을 때만 링크 이동
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(Icons.chevron_right),
+                ),
+              ),
+          ],
+        ),
       ),
-    )
-        : Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: row,
     );
   }
 

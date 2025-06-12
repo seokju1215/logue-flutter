@@ -90,15 +90,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
           leadingWidth: 120,
           leading: Padding(
             padding: const EdgeInsets.only(left: 20),
-            child: GestureDetector(
-              onTap: () async {
-                await Supabase.instance.client.auth.signOut();
-                if (context.mounted) {
-                  Navigator.pushReplacementNamed(context, '/splash');
-                }
-              },
-              child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
-            ),
+            child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
           ),
           actions: [
             IconButton(

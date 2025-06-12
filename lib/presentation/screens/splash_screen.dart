@@ -5,6 +5,7 @@ import 'package:logue/presentation/screens/signup/login_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/utils/fcmPermissionUtil.dart';
+import '../../data/utils/update_check_util.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

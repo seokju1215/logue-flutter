@@ -65,6 +65,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isScrollable = isNowScrollable);
     }
   }
+  String _truncateTextToFit(
+      String text,
+      TextStyle style,
+      double maxWidth,
+      int maxLines,
+      String trailingText,
+      ) {
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      maxLines: maxLines,
+    );
+
+    String current = text;
+    int min = 0;
+    int max = text.length;
+    int mid = 0;
+
+    while (min < max) {
+      mid = (min + max) ~/ 2;
+      final testStr = text.substring(0, mid);
+      textPainter.text = TextSpan(
+        text: testStr + trailingText,
+        style: style,
+      );
+      textPainter.layout(maxWidth: maxWidth);
+      if (textPainter.didExceedMaxLines) {
+        max = mid;
+      } else {
+        min = mid + 1;
+      }
+    }
+
+    return text.substring(0, max - 1); // 최대 들어가는 위치까지 자름
+  }
 
   @override
   void dispose() {
@@ -357,7 +391,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _buildCount("팔로잉", profile?['following'] ?? 0),
             ),
             const SizedBox(width: 27),
-            _buildCount("방문자", profile?['visitors'] ?? 0),
+            _buildCount("방문자", profile?['visitors'] ?? 0, isTappable: false),
           ],
         ),
       ],
@@ -388,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: OutlinedButton(
             style: _outlinedStyle(context),
             onPressed: () {
-              final profileLink = 'https://www.logue.it.kr/u/${profile?['profile_url']}';
+              final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
               if (profileLink != null && profileLink.isNotEmpty) {
                 Share.share(profileLink);
               }
@@ -466,6 +500,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bio = profile?['bio'] ?? '';
     if (bio.isEmpty) return const SizedBox();
 
+    const maxLines = 2;
+    const maxWidth = 200.0;
     const textStyle = TextStyle(
       fontSize: 12,
       color: AppColors.black900,
@@ -473,73 +509,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
       fontWeight: FontWeight.w400,
       height: 1.2,
     );
-    const maxLines = 2;
-    const maxWidth = 241.0;
-    const moreText = '... 더보기';
 
-    return Container(
-      constraints: const BoxConstraints(maxWidth: maxWidth), // ✅ 여기에 명시적으로 제한
-      child: _showFullBio
-          ? Text(bio, style: textStyle)
-          : LayoutBuilder(
-        builder: (context, constraints) {
-          final span = TextSpan(text: bio, style: textStyle);
-          final tp = TextPainter(
-            text: span,
-            textDirection: TextDirection.ltr,
-            maxLines: maxLines,
-            ellipsis: '...',
-          )..layout(maxWidth: constraints.maxWidth);
+    if (_showFullBio) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: maxWidth, maxHeight: 150),
+        child: SingleChildScrollView(
+          child: Text(bio, style: textStyle),
+        ),
+      );
+    }
 
-          if (!tp.didExceedMaxLines) {
-            return Text(bio, style: textStyle);
-          }
+    // bio가 overflow 되는지 판단
+    final tp = TextPainter(
+      text: TextSpan(text: bio, style: textStyle),
+      maxLines: maxLines,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
 
-          final words = bio.split(' ');
-          String trimmed = '';
-          for (var i = 0; i < words.length; i++) {
-            final test = (words.take(i + 1).join(' ') + moreText).trimRight();
-            final testSpan = TextSpan(text: test, style: textStyle);
-            final testTp = TextPainter(
-              text: testSpan,
-              textDirection: TextDirection.ltr,
-              maxLines: maxLines,
-            )..layout(maxWidth: constraints.maxWidth);
+    final isOverflow = tp.didExceedMaxLines;
 
-            if (testTp.didExceedMaxLines) break;
-            trimmed = words.take(i + 1).join(' ');
-          }
+    // ...더보기를 텍스트 마지막 줄에 자연스럽게 붙이기
+    if (!isOverflow) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: maxWidth),
+        child: Text(
+          bio,
+          style: textStyle,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
 
-          return GestureDetector(
-            onTap: () => setState(() => _showFullBio = true),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: maxWidth),
-              child: RichText(
-                maxLines: maxLines,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  style: textStyle,
-                  children: [
-                    TextSpan(text: trimmed + ' '),
-                    TextSpan(
-                      text: moreText,
-                      style: textStyle.copyWith(
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.black900,
-                      ),
-                    ),
-                  ],
+    // 텍스트가 잘리는 경우 → RichText로 ...더보기 붙이기
+    final truncatedText = _truncateTextToFit(bio, textStyle, maxWidth, maxLines, "... 더보기");
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: maxWidth),
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _showFullBio = true);
+        },
+        child: RichText(
+          text: TextSpan(
+            text: truncatedText,
+            style: textStyle,
+            children: [
+              const TextSpan(
+                text: '... 더보기',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.black900,
                 ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+          maxLines: maxLines,
+          overflow: TextOverflow.clip,
+        ),
       ),
     );
   }
 
-  Widget _buildCount(String label, int count) {
-    return Column(
+  Widget _buildCount(String label, int count, {bool isTappable = true}) {
+    final content = Column(
       children: [
         Text(label,
             style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1)),
@@ -548,6 +581,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1)),
       ],
     );
+
+    return isTappable
+        ? MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: content,
+    )
+        : content;
   }
 
   ButtonStyle _outlinedStyle(BuildContext context) {

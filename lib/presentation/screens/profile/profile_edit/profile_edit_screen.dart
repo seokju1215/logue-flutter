@@ -29,7 +29,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late String name;
   late String job;
   late String bio;
-  late String profileUrl;
   bool isEdited = false;
 
   @override
@@ -42,7 +41,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     name = profile['name'] ?? '';
     job = profile['job'] ?? '';
     bio = profile['bio'] ?? '';
-    profileUrl = profile['profile_url'] ?? '';
   }
 
   void onValueChanged() {
@@ -107,7 +105,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final profileLink = 'https://www.logue.it.kr/u/${profileUrl}';
+    final profileLink = 'https://www.logue.it.kr/u/${username}';
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,

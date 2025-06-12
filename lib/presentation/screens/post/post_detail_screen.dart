@@ -8,6 +8,7 @@ import 'package:logue/data/datasources/user_book_api.dart';
 import 'package:logue/core/widgets/dialogs/post_delete_dialog.dart';
 
 import '../book/book_detail_screen.dart';
+import '../profile/other_profile_screen.dart';
 
 class PostDetailScreen extends StatelessWidget {
   final BookPostModel post;
@@ -44,19 +45,30 @@ class PostDetailScreen extends StatelessWidget {
               // 프로필 + 책 둘러보기 + 더보기 (삭제/취소)
               Row(
                 children: [
-                  (avatarUrl.isEmpty || avatarUrl == 'basic')
-                      ? CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.black100,
-                    child: Image.asset('assets/basic_avatar.png', width: 32, height: 32),
-                  )
-                      : CircleAvatar(
-                    radius: 16,
-                    backgroundImage: NetworkImage(avatarUrl),
-                    backgroundColor: Colors.grey[300],
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => OtherProfileScreen(userId: post.userId),
+                      ));
+                    },
+                    child: Row(
+                      children: [
+                        (avatarUrl.isEmpty || avatarUrl == 'basic')
+                            ? CircleAvatar(
+                          radius: 16,
+                          backgroundColor: AppColors.black100,
+                          child: Image.asset('assets/basic_avatar.png', width: 32, height: 32),
+                        )
+                            : CircleAvatar(
+                          radius: 16,
+                          backgroundImage: NetworkImage(avatarUrl),
+                          backgroundColor: Colors.grey[300],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(userName, style: const TextStyle(fontSize: 16)),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(userName, style: const TextStyle(fontSize: 16)),
                   const Spacer(),
                   OutlinedButton(
                     onPressed: () {

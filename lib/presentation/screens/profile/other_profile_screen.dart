@@ -27,6 +27,7 @@ class OtherProfileScreen extends StatefulWidget {
 }
 
 class _OtherProfileScreenState extends State<OtherProfileScreen> {
+  bool _showFullBio = false;
   final client = Supabase.instance.client;
   final ScrollController _scrollController = ScrollController();
   late final FollowRepository _followRepo;
@@ -103,37 +104,35 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     if (currentUserId == widget.userId) return;
 
     final prevFollowing = profile?['isFollowing'] == true;
+    final currentFollowers = profile?['followers'] ?? 0;
 
-    // 1. UI 먼저 optimistic update
+    // 1. optimistic UI update
     setState(() {
       profile = {
         ...?profile,
         'isFollowing': !prevFollowing,
+        'followers': prevFollowing
+            ? (currentFollowers - 1).clamp(0, currentFollowers)
+            : currentFollowers + 1,
       };
     });
 
     try {
-      // 2. 서버 반영
       if (prevFollowing) {
         await _unfollowUser(widget.userId);
       } else {
         await _followUser(widget.userId);
       }
 
-      // 3. 최종 상태 확인 (동기화)
-      final confirmed = await _isFollowing(widget.userId);
-      setState(() {
-        profile = {
-          ...?profile,
-          'isFollowing': confirmed,
-        };
-      });
+      // 동기화
+      await _fetchProfile();
     } catch (e) {
-      // 4. 실패 시 rollback
+      // rollback
       setState(() {
         profile = {
           ...?profile,
           'isFollowing': prevFollowing,
+          'followers': currentFollowers,
         };
       });
       debugPrint('❌ 팔로우 변경 실패: $e');
@@ -213,7 +212,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                 IconButton(
                   icon: SvgPicture.asset('assets/share_button.svg'),
                   onPressed: () {
-                    final profileLink = 'https://www.logue.it.kr/u/${profile?['profile_url']}';
+                    final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
                     if (profileLink != null && profileLink.isNotEmpty) {
                       Share.share(profileLink);
                     }
@@ -417,44 +416,77 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
 
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
-    final bool showMore = bio.length > 40;
+    if (bio.isEmpty) return const SizedBox();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final textSpan = TextSpan(
-          text: bio,
-          style: const TextStyle(fontSize: 12, color: AppColors.black900),
-        );
+    const textStyle = TextStyle(
+      fontSize: 12,
+      color: AppColors.black900,
+      fontFamily: 'Inter',
+      fontWeight: FontWeight.w400,
+      height: 1.2,
+    );
+    const maxLines = 2;
+    const maxWidth = 241.0;
+    const moreText = '... 더보기';
 
-        final tp = TextPainter(
-          text: textSpan,
-          textDirection: TextDirection.ltr,
-          maxLines: 2,
-          ellipsis: showMore ? '...' : null,
-        )..layout(maxWidth: constraints.maxWidth);
+    return Container(
+      constraints: const BoxConstraints(maxWidth: maxWidth),
+      child: _showFullBio
+          ? Text(bio, style: textStyle)
+          : LayoutBuilder(
+        builder: (context, constraints) {
+          final span = TextSpan(text: bio, style: textStyle);
+          final tp = TextPainter(
+            text: span,
+            textDirection: TextDirection.ltr,
+            maxLines: maxLines,
+            ellipsis: '...',
+          )..layout(maxWidth: constraints.maxWidth);
 
-        final isOverflowing = tp.didExceedMaxLines;
+          if (!tp.didExceedMaxLines) {
+            return Text(bio, style: textStyle);
+          }
 
-        return RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: isOverflowing
-                    ? bio.substring(
-                  0,
-                  tp
-                      .getPositionForOffset(
-                      Offset(constraints.maxWidth, 28 * 2))
-                      .offset,
-                ) +
-                    '...'
-                    : bio,
-                style: const TextStyle(fontSize: 12, color: AppColors.black900),
+          final words = bio.split(' ');
+          String trimmed = '';
+          for (var i = 0; i < words.length; i++) {
+            final test = (words.take(i + 1).join(' ') + moreText).trimRight();
+            final testSpan = TextSpan(text: test, style: textStyle);
+            final testTp = TextPainter(
+              text: testSpan,
+              textDirection: TextDirection.ltr,
+              maxLines: maxLines,
+            )..layout(maxWidth: constraints.maxWidth);
+
+            if (testTp.didExceedMaxLines) break;
+            trimmed = words.take(i + 1).join(' ');
+          }
+
+          return GestureDetector(
+            onTap: () => setState(() => _showFullBio = true),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: maxWidth),
+              child: Text.rich(
+                TextSpan(
+                  style: textStyle,
+                  children: [
+                    TextSpan(text: trimmed + ' '),
+                    TextSpan(
+                      text: moreText,
+                      style: textStyle.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.black900,
+                      ),
+                    ),
+                  ],
+                ),
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 }

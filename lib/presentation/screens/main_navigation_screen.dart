@@ -5,6 +5,9 @@ import 'package:logue/presentation/screens/home/home_screen.dart';
 import 'package:logue/presentation/screens/profile/profile_view.dart';
 import 'package:logue/presentation/screens/post/my_post_screen.dart';
 
+import '../../data/utils/announcement_dialog_util.dart';
+import '../../data/utils/update_check_util.dart';
+
 class MainNavigationScreen extends StatefulWidget {
   static int lastSelectedIndex = 0;
 
@@ -26,7 +29,9 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _selectedIndex;
   bool _overrideWithChild = true;
-  bool _hasNavigatedToPostScreen = false; // ✅ 중복 방지
+  bool _hasNavigatedToPostScreen = false;
+  bool _hasCheckedUpdate = false;
+  bool _hasShownAnnouncement = false;
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     GlobalKey<NavigatorState>(),
@@ -61,6 +66,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           );
         });
       }
+    }
+    if (!_hasCheckedUpdate) {
+      _hasCheckedUpdate = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        UpdateCheckUtil.checkForUpdate(context);
+      });
+    }
+    if (!_hasShownAnnouncement) {
+      _hasShownAnnouncement = true;
+      AnnouncementDialogUtil.showIfNeeded(context);
     }
   }
 

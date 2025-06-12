@@ -148,6 +148,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                     '/post_detail',
                     arguments: post,
                   );
+
                   if (result == true) {
                     await _fetchPosts();
                     setState(() => _hasDeleted = true);

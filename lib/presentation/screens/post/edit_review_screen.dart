@@ -49,12 +49,9 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
       // ✅ pop 먼저 하고, 나머지는 return
       if (mounted) {
         Navigator.of(context).pop(true);
-        Navigator.of(context).push(
+        Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => MyBookPostScreen(
-              userBookId: widget.post.id,
-              // ✅ 이걸 꼭 넘겨야 정확히 이동 가능!
-            ),
+            builder: (_) => MyBookPostScreen(userBookId: widget.post.id),
           ),
         );
         return;

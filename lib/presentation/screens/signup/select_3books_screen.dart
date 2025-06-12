@@ -65,11 +65,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     return 'log_${random.toString().substring(7)}';
   }
 
-  String generateRandomProfileUrl() {
-    final random = DateTime.now().millisecondsSinceEpoch;
-    return 'log${random.toString().substring(5)}';
-  }
-
   bool _isSelected(BookModel book) {
     return _selectedBooks.any((b) => b.image == book.image);
   }
@@ -141,7 +136,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       name: user.userMetadata?['full_name'] ?? '이름 없음',
       job: '사용자',
       bio: '',
-      profileUrl: generateRandomProfileUrl(),
       avatarUrl: 'basic',
     );
 

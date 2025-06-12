@@ -10,7 +10,6 @@ class InsertProfileUseCase {
     required String name,
     required String job,
     required String bio,
-    required String profileUrl,
     required String avatarUrl,
   }) async {
     await client.from('profiles').insert({
@@ -19,7 +18,6 @@ class InsertProfileUseCase {
       'name': name,
       'job': job,
       'bio': bio,
-      'profile_url': profileUrl,
       'avatar_url' : avatarUrl
     });
   }

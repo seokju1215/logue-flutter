@@ -42,7 +42,7 @@ class _UserNameEdit extends State<UserNameEdit> {
     final response = await client
         .from('profiles')
         .select('id')
-        .eq('username', username)
+        .eq('username', username.toLowerCase())
         .maybeSingle();
 
     return response != null;
@@ -82,7 +82,7 @@ class _UserNameEdit extends State<UserNameEdit> {
   }
 
   void _onConfirm() {
-    final newUsername = _controller.text;
+    final newUsername = _controller.text.toLowerCase();
     if (!isValidFormat || !hasChanged) return;
     Navigator.pop(context, {'username': newUsername});
   }

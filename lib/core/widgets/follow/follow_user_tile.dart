@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
+import 'package:logue/domain/entities/follow_list_type.dart';
 
 class FollowUserTile extends StatelessWidget {
   final String userId;
@@ -7,8 +8,8 @@ class FollowUserTile extends StatelessWidget {
   final String name;
   final String avatarUrl;
   final bool isFollowing;
-  final bool showActions;
-  final bool showdelete;
+  final bool isMyProfile;
+  final FollowListType? tabType;
   final VoidCallback? onTapFollow;
   final VoidCallback? onTapRemove;
   final VoidCallback? onTapProfile;
@@ -20,8 +21,8 @@ class FollowUserTile extends StatelessWidget {
     required this.name,
     required this.avatarUrl,
     required this.isFollowing,
-    required this.showActions,
-    required this.showdelete,
+    required this.isMyProfile,
+    this.tabType,
     this.onTapFollow,
     this.onTapRemove,
     this.onTapProfile,
@@ -29,6 +30,24 @@ class FollowUserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 팔로우 버튼 조건
+    final showFollowButton = () {
+      // 내가 보고 있고 아직 팔로우 안한 팔로워
+      if (isMyProfile && !isFollowing && tabType == FollowListType.followers) {
+        return true;
+      }
+
+      // 상대방 프로필인데 아직 팔로우 안 한 사용자
+      if (!isMyProfile && !isFollowing) {
+        return true;
+      }
+
+      return false;
+    }();
+
+
+    final showRemoveButton = isMyProfile && tabType == FollowListType.followers;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
       child: Row(
@@ -41,7 +60,7 @@ class FollowUserTile extends StatelessWidget {
                 CircleAvatar(
                   radius: 20,
                   backgroundImage:
-                      avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
+                  avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                   child: avatarUrl == 'basic'
                       ? Image.asset('assets/basic_avatar.png')
                       : null,
@@ -62,14 +81,14 @@ class FollowUserTile extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          // Follow 버튼 (조건: showActions == true && !isFollowing)
-          if (showActions && !isFollowing)
+
+          if (showFollowButton)
             OutlinedButton(
               onPressed: onTapFollow,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.black900),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
                 minimumSize: const Size(0, 0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(5),
@@ -81,7 +100,7 @@ class FollowUserTile extends StatelessWidget {
               ),
             ),
 
-          if (showdelete && isFollowing)
+          if (showRemoveButton)
             IconButton(
               icon: const Icon(Icons.close, size: 20),
               onPressed: onTapRemove,

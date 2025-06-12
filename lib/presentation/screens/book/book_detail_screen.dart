@@ -58,8 +58,37 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   Future<void> _handleFollow(String userId) async {
-    await _followUser(userId);
-    await _fetchBookOnly(); // 최신 팔로우 상태 반영을 위해 다시 불러오기
+    // 원래 상태 백업
+    final originalUsers = [...lifebookUsers];
+
+    // 먼저 optimistic하게 UI 업데이트
+    final updatedUsers = lifebookUsers.map((user) {
+      if (user['id'] == userId) {
+        return {
+          ...user,
+          'is_following': true,
+        };
+      }
+      return user;
+    }).toList();
+
+    setState(() {
+      lifebookUsers = updatedUsers;
+    });
+
+    try {
+      await _followUser(userId);
+      // 성공 시 추가 동작이 필요하면 여기
+    } catch (e) {
+      // 실패 시 UI 롤백
+      setState(() {
+        lifebookUsers = originalUsers;
+      });
+      debugPrint('❌ 팔로우 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('팔로우에 실패했어요. 다시 시도해 주세요.')),
+      );
+    }
   }
 
   Future<void> _fetchBookOnly() async {
@@ -244,16 +273,17 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               name: user['name'],
               avatarUrl: user['avatar_url'] ?? 'basic',
               isFollowing: user['is_following'] ?? false,
-              showActions: user['id'] != currentUserId,
-              showdelete: false,
+              isMyProfile: false,
               onTapFollow: () => _handleFollow(user['id']),
-              onTapProfile: () {
+              onTapProfile: () async {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => OtherProfileScreen(userId: user['id']),
                   ),
                 );
+                await Future.delayed(const Duration(milliseconds: 300)); // 지연 추가
+                await _fetchBookOnly();
               },
             );
           }).toList(),

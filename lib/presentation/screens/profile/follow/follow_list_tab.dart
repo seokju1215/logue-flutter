@@ -107,7 +107,30 @@ class _FollowListTabState extends State<FollowListTab> {
         }
       }
 
-      setState(() => users = rawList);
+      // 🔄 이 부분 전체를 아래로 교체
+      final idList = rawList.map((e) => e['id']).toList();
+      final followRes = await client
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', currentUserId)
+          .in_('following_id', idList);
+
+      final followingIds = (followRes as List).map((e) => e['following_id']).toSet();
+
+      final enrichedList = rawList.map((user) {
+        final isSelf = user['id'] == currentUserId;
+        return {
+          ...user,
+          'isFollowing': followingIds.contains(user['id']),
+        };
+      }).toList();
+      enrichedList.sort((a, b) {
+        final aFollowing = a['isFollowing'] == true ? 0 : 1;
+        final bFollowing = b['isFollowing'] == true ? 0 : 1;
+        return aFollowing.compareTo(bFollowing);
+      });
+
+      setState(() => users = enrichedList);
     }
   }
 
@@ -160,12 +183,12 @@ class _FollowListTabState extends State<FollowListTab> {
 
         return FollowUserTile(
           userId: user['id'],
-          username: user['username'] ?? '사용자',
-          name: user['name'] ?? '',
-          avatarUrl: user['avatar_url'] ?? 'basic',
-          isFollowing: user['isFollowing'] == true,
-          showActions: widget.type == FollowListType.followers && isMyProfile && !isFollowing,
-          showdelete: true,
+          username: username,
+          name: name,
+          avatarUrl: avatarUrl,
+          isFollowing: isFollowing,
+          isMyProfile: isMyProfile,
+          tabType: widget.type,
           onTapFollow: () => _handleFollow(user['id']),
           onTapRemove: () => _handleRemoveFollower(user['id']),
           onTapProfile: () {

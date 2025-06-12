@@ -25,7 +25,6 @@ class AladinBookApi {
       '$_baseUrl?ttbkey=$ttbKey&Query=$encodedQuery&QueryType=$queryType&MaxResults=20&start=1&SearchTarget=Book&output=js&Version=20131101&OptResult=toc,fulldescription',
     );
 
-    print('📡 Aladin API 호출: $url');
 
     final response = await http.get(url);
 
@@ -57,13 +56,6 @@ class AladinBookApi {
         final subtitle = (rawSub != null && rawSub.isNotEmpty)
             ? rawSub
             : (fallbackSubtitle ?? '');
-
-        // 디버깅 로그
-        print('🔎 rawTitle: $rawTitle');
-        print('➡️ title: $title');
-        print('📌 subInfo.subTitle: $rawSub');
-        print('🔁 fallbackSubtitle: $fallbackSubtitle');
-        print('✅ 최종 subtitle: $subtitle');
 
         // 이미지 처리
         String cover = item['cover'] ?? '';
