@@ -2,7 +2,7 @@ name: Update Book Ranking
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # 매일 12시간마다 실행 (0시, 12시)
+    - cron: '10 * * * *'   # 매일 12시간마다 실행 (0시, 12시)
   workflow_dispatch:         # 수동 실행도 허용
 
 jobs:
