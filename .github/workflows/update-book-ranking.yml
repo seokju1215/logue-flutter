@@ -3,13 +3,15 @@ name: Update Book Ranking
 on:
   schedule:
     - cron: '0 */12 * * *'  # 매일 12시간마다 실행 (0시, 12시)
-  workflow_dispatch:        # 수동 실행도 허용
+  workflow_dispatch:         # 수동 실행도 허용
 
 jobs:
   call-supabase:
     runs-on: ubuntu-latest
-
     steps:
       - name: Call Supabase Edge Function
         run: |
-          curl -X POST https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/user-book-ranking
+          curl -X POST https://tbuoutcwvalrcldajobk.supabase.co/functions/v1/user-book-ranking \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
