@@ -13,6 +13,7 @@ class FollowUserTile extends StatelessWidget {
   final VoidCallback? onTapFollow;
   final VoidCallback? onTapRemove;
   final VoidCallback? onTapProfile;
+  final String currentUserId;
 
   const FollowUserTile({
     super.key,
@@ -22,6 +23,7 @@ class FollowUserTile extends StatelessWidget {
     required this.avatarUrl,
     required this.isFollowing,
     required this.isMyProfile,
+    required this.currentUserId,
     this.tabType,
     this.onTapFollow,
     this.onTapRemove,
@@ -32,6 +34,7 @@ class FollowUserTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // 팔로우 버튼 조건
     final showFollowButton = () {
+      if (userId == currentUserId) return false;
       // 내가 보고 있고 아직 팔로우 안한 팔로워
       if (isMyProfile && !isFollowing && tabType == FollowListType.followers) {
         return true;
@@ -86,7 +89,7 @@ class FollowUserTile extends StatelessWidget {
             OutlinedButton(
               onPressed: onTapFollow,
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.black900),
+                side: const BorderSide(color: AppColors.black900, width: 1),
                 padding:
                 const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
                 minimumSize: const Size(0, 0),

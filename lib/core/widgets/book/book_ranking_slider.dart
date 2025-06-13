@@ -25,20 +25,20 @@ class BookRankingSlider extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: 22),
           child: Text(
             'Logue 인생 책 실시간 순위',
             style: TextStyle(fontSize: 22, color: AppColors.black900),
           ),
         ),
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: 22),
           child: Text(
             '새로운 인생 책을 로그에서 찾아보세요.',
             style: TextStyle(fontSize: 14, color: AppColors.black500),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 30),
         SizedBox(
           height: 360,
           child: PageView.builder(

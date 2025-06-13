@@ -17,7 +17,7 @@ class AnnouncementDialog extends StatelessWidget {
     final lines = body.replaceAll(r'\n', '\n').split('\n');
 
     return GestureDetector(
-      onTap: () => Navigator.pop(context),
+      onTap: () {},
       child: Stack(
         children: [
           Positioned.fill(

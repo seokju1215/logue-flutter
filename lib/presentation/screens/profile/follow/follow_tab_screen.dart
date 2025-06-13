@@ -93,18 +93,26 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
     );
   }
   Future<void> _refreshCounts() async {
-    final res = await Supabase.instance.client
-        .from('profiles')
-        .select('followers, following')
-        .eq('id', widget.userId)
-        .maybeSingle();
+    final client = Supabase.instance.client;
 
-    if (res != null) {
-      setState(() {
-        _followerCount = res['followers'] ?? 0;
-        _followingCount = res['following'] ?? 0;
-      });
-    }
+    // 🔹 실시간 follower count
+    final followerRes = await client
+        .from('follows')
+        .select('id', const FetchOptions(count: CountOption.exact))
+        .eq('following_id', widget.userId);
+    final followerCount = followerRes.count ?? 0;
+
+    // 🔹 실시간 following count
+    final followingRes = await client
+        .from('follows')
+        .select('id', const FetchOptions(count: CountOption.exact))
+        .eq('follower_id', widget.userId);
+    final followingCount = followingRes.count ?? 0;
+
+    setState(() {
+      _followerCount = followerCount;
+      _followingCount = followingCount;
+    });
   }
 
   Widget _buildTab(String label, int count, int index) {

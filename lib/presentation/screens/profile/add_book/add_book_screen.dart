@@ -83,6 +83,39 @@ class _AddBookScreenState extends State<AddBookScreen> {
     }
     return true;
   }
+  ButtonStyle _outlinedStyle(BuildContext context) {
+    return ButtonStyle(
+      foregroundColor: MaterialStateProperty.all(AppColors.black900),
+      backgroundColor: MaterialStateProperty.all(Colors.white),
+      overlayColor: MaterialStateProperty.resolveWith<Color?>(
+            (states) {
+          if (states.contains(MaterialState.pressed)) {
+            return AppColors.black100;
+          }
+          return null;
+        },
+      ),
+      side: MaterialStateProperty.all(
+        const BorderSide(color: AppColors.black500, width: 1),
+      ),
+      shape: MaterialStateProperty.all(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+      ),
+      padding: MaterialStateProperty.all(
+        EdgeInsets.symmetric(horizontal: 9),
+      ),
+      minimumSize: MaterialStateProperty.all(
+        const Size(0, 34), // ✅ 원하는 높이로 강제 지정
+      ),
+      textStyle: MaterialStateProperty.all(
+        const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 1.0, // ✅ 텍스트 줄 간격 없애기
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,14 +173,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                           );
                         }
                       },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.black900,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        side: const BorderSide(color: AppColors.black900),
-                        minimumSize: const Size.fromHeight(40),
-                      ),
+                      style:_outlinedStyle(context),
                       child: const Text(
                         '책 추가 +',
                         style:
@@ -178,39 +204,39 @@ class _AddBookScreenState extends State<AddBookScreen> {
             ),
             const SizedBox(height: 16),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 21),
+              padding: const EdgeInsets.symmetric(horizontal: 26),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  const spacing = 8.0;
                   const crossAxisCount = 3;
-                  final totalSpacing = spacing * (crossAxisCount - 1);
-                  final itemWidth =
-                      (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                  const crossAxisSpacing = 23.0;
+                  const mainAxisSpacing = 30.0;
+                  const itemAspectRatio = 98 / 145;
+
+                  final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
+                  final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                  final itemHeight = itemWidth / itemAspectRatio;
 
                   return ReorderableWrap(
-                    spacing: spacing,
-                    runSpacing: spacing,
+                    spacing: crossAxisSpacing,
+                    runSpacing: mainAxisSpacing,
                     needsLongPressDraggable: false,
                     onReorder: _onReorder,
                     children: books.map((book) {
                       return SizedBox(
                         key: ValueKey(book['id']),
                         width: itemWidth,
-                        child: AspectRatio(
-                          aspectRatio: 0.7,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(0),
-                            child: Image.network(
-                              book['books']?['image'] ??
-                                  'https://via.placeholder.com/150',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.broken_image),
-                                );
-                              },
-                            ),
+                        height: itemHeight,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(0),
+                          child: Image.network(
+                            book['books']?['image'] ?? 'https://via.placeholder.com/150',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image),
+                              );
+                            },
                           ),
                         ),
                       );

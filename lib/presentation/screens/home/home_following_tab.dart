@@ -107,7 +107,7 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
     return ListView.separated(
       controller: _scrollController,
       physics: const ClampingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
       itemCount: posts.length + (hasMore ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 40),
       itemBuilder: (context, index) {

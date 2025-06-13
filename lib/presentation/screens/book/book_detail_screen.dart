@@ -233,18 +233,30 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Widget _buildLifeBookSection() {
     if (lifebookUsers.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: 22),
         child: Divider(height: 40, color: AppColors.black100),
       );
     }
 
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final sortedUsers = [...lifebookUsers]..sort((a, b) {
-        if (a['id'] == currentUserId) return -1;
-        if (b['id'] == currentUserId) return 1;
-        return 0;
-      });
+      final myId = currentUserId;
+      final aId = a['id'];
+      final bId = b['id'];
 
+      // 1. 나 자신을 맨 앞으로
+      if (aId == myId) return -1;
+      if (bId == myId) return 1;
+
+      // 2. 팔로우 여부 기준 정렬
+      final aFollowing = (a['is_following'] ?? false) as bool;
+      final bFollowing = (b['is_following'] ?? false) as bool;
+
+      if (aFollowing && !bFollowing) return -1;
+      if (!aFollowing && bFollowing) return 1;
+
+      return 0; // 그대로
+    });
     final shownUsers = sortedUsers.take(3).toList();
     final moreThanThree = lifebookUsers.length > 3;
 
@@ -252,7 +264,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 22),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -268,6 +280,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         Column(
           children: shownUsers.map((user) {
             return FollowUserTile(
+              currentUserId: Supabase.instance.client.auth.currentUser?.id ?? '',
               userId: user['id'],
               username: user['username'],
               name: user['name'],
@@ -276,14 +289,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               isMyProfile: false,
               onTapFollow: () => _handleFollow(user['id']),
               onTapProfile: () async {
-                Navigator.push(
+                final result = await Navigator.push<bool>(
                   context,
                   MaterialPageRoute(
                     builder: (_) => OtherProfileScreen(userId: user['id']),
                   ),
                 );
-                await Future.delayed(const Duration(milliseconds: 300)); // 지연 추가
-                await _fetchBookOnly();
+
+                  await _fetchBookOnly(); // ✅ 변경되었을 때만 실행됨
               },
             );
           }).toList(),
@@ -331,7 +344,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 22),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -374,13 +387,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: 22),
           child: Text('저자의 다른 작품',
               style: TextStyle(fontSize: 14, color: AppColors.black900)),
         ),
         const SizedBox(height: 16),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 22),
           child: Text('${authors.first}',
               style: const TextStyle(fontSize: 16, color: AppColors.black900)),
         ),
@@ -389,7 +402,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           height: 240,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.only(left: 22, right: 10.5),
             children: authorBooks[authors.first]!
                 .map((book) => _buildBookCard(book))
                 .toList(),
@@ -438,6 +451,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   Widget _buildBookCard(Map<String, dynamic> book) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = 26.0;
+    final spacing = 23.0;
+    final itemCountPerRow = 3;
+
+    final totalSpacing = (itemCountPerRow - 1) * spacing;
+    final availableWidth = screenWidth - (2 * horizontalPadding) - totalSpacing;
+    final bookWidth = availableWidth / itemCountPerRow;
+    final bookHeight = bookWidth * 1.5;
+
     return GestureDetector(
       onTap: () {
         final bookId = book['isbn13'] ?? book['isbn'] ?? '';
@@ -451,14 +474,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         }
       },
       child: Container(
-        width: 120,
-        margin: const EdgeInsets.only(right: 12),
+        width: bookWidth,
+        margin: const EdgeInsets.only(right: 23),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 120,
-              height: 180,
+              width: bookWidth,
+              height: bookHeight,
               child: BookFrame(imageUrl: book['image'] ?? ''),
             ),
             const SizedBox(height: 8),
@@ -466,7 +489,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               book['title'] ?? '',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: AppColors.black900),
+              style: const TextStyle(fontSize: 12, color: AppColors.black500),
             ),
           ],
         ),

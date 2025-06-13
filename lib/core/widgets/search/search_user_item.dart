@@ -20,7 +20,7 @@ class SearchUserItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: GestureDetector(
         onTap: onTapProfile, // ✅ 전체 영역 클릭시
         child: Row(

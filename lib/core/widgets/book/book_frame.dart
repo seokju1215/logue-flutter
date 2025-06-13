@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:logue/core/themes/app_colors.dart';
 
 class BookFrame extends StatelessWidget {
@@ -8,6 +9,10 @@ class BookFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final safeUrl = imageUrl.startsWith('http://')
+        ? imageUrl.replaceFirst('http://', 'https://')
+        : imageUrl;
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.black300, width: 0.5),
@@ -15,20 +20,21 @@ class BookFrame extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(0),
         child: imageUrl.isNotEmpty
-            ? Image.network(
-                imageUrl.startsWith('http://')
-                    ? imageUrl.replaceFirst('http://', 'https://')
-                    : imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.broken_image),
-                ),
-              )
+            ? CachedNetworkImage(
+          imageUrl: safeUrl,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            color: Colors.grey[200],
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: Colors.grey[300],
+            child: const Icon(Icons.broken_image),
+          ),
+        )
             : Container(
-                color: Colors.grey[300],
-                child: const Icon(Icons.broken_image),
-              ),
+          color: Colors.grey[300],
+          child: const Icon(Icons.broken_image),
+        ),
       ),
     );
   }

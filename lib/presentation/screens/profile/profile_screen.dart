@@ -39,10 +39,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final GetUserBooks _getUserBooks;
   bool _showFullBio = false;
   List<Map<String, dynamic>> books = [];
+  bool _hasUnreadNotifications = false;
 
   @override
   void initState() {
     super.initState();
+    _checkUnreadNotifications();
     _getUserBooks = GetUserBooks(UserBookApi(client));
     _fetchProfile();
     _loadBooks();
@@ -55,6 +57,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     client.auth.onAuthStateChange.listen((_) {
       if (mounted) setState(() {});
+    });
+  }
+  Future<void> _checkUnreadNotifications() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final res = await Supabase.instance.client
+        .from('notifications')
+        .select('id')
+        .eq('recipient_id', userId)
+        .eq('is_read', false)
+        .limit(1);
+
+    setState(() {
+      _hasUnreadNotifications = res.isNotEmpty;
     });
   }
 
@@ -77,19 +94,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       maxLines: maxLines,
     );
 
-    String current = text;
     int min = 0;
     int max = text.length;
-    int mid = 0;
 
     while (min < max) {
-      mid = (min + max) ~/ 2;
-      final testStr = text.substring(0, mid);
-      textPainter.text = TextSpan(
-        text: testStr + trailingText,
-        style: style,
-      );
+      final mid = (min + max) ~/ 2;
+      final testStr = text.substring(0, mid) + trailingText;
+      textPainter.text = TextSpan(text: testStr, style: style);
       textPainter.layout(maxWidth: maxWidth);
+
       if (textPainter.didExceedMaxLines) {
         max = mid;
       } else {
@@ -97,7 +110,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     }
 
-    return text.substring(0, max - 1); // 최대 들어가는 위치까지 자름
+    final safeIndex = (max - trailingText.length).clamp(0, text.length);
+    return text.substring(0, safeIndex);
   }
 
   @override
@@ -190,11 +204,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         preferredSize: const Size.fromHeight(40),
         child: CustomAppBar(
           title: profile?['username'] ?? '사용자',
-          leadingIconPath: 'assets/bell_icon.svg',
+          leadingIconPath: _hasUnreadNotifications
+              ? 'assets/noticed_alarm_icon.svg'
+              : 'assets/bell_icon.svg',
           onLeadingTap: () {
             Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(builder: (_) => const NotificationScreen()),
             );
+            _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
             setState(() => _showFullBio = false);
           },
           trailingIconPath: 'assets/edit_icon.svg',
@@ -319,7 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     border: Border.all(color: AppColors.black100, width: 1),
                   ),
                   child: CircleAvatar(
-                    radius: 81,
+                    radius: 40.5,
                     backgroundImage:
                     avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                     child: avatarUrl == 'basic'
@@ -495,81 +512,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
     if (bio.isEmpty) return const SizedBox();
 
+    const avatarSize = 40.0; // 아바타 가로 크기
+    const horizontalPadding = 22.0; // 아바타 오른쪽 여백
     const maxLines = 2;
-    const maxWidth = 200.0;
     const textStyle = TextStyle(
       fontSize: 12,
       color: AppColors.black900,
       fontFamily: 'Inter',
       fontWeight: FontWeight.w400,
-      height: 1.2,
+      height: 1.0,
     );
 
-    if (_showFullBio) {
-      return ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: maxWidth, maxHeight: 150),
-        child: SingleChildScrollView(
-          child: Text(bio, style: textStyle),
-        ),
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth - avatarSize - horizontalPadding;
 
-    // bio가 overflow 되는지 판단
-    final tp = TextPainter(
-      text: TextSpan(text: bio, style: textStyle),
-      maxLines: maxLines,
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: maxWidth);
+        if (_showFullBio) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: availableWidth, maxHeight: 150),
+            child: SingleChildScrollView(
+              child: Text(bio, style: textStyle),
+            ),
+          );
+        }
 
-    final isOverflow = tp.didExceedMaxLines;
+        final tp = TextPainter(
+          text: TextSpan(text: bio, style: textStyle),
+          maxLines: maxLines,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: availableWidth);
 
-    // ...더보기를 텍스트 마지막 줄에 자연스럽게 붙이기
-    if (!isOverflow) {
-      return ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: maxWidth),
-        child: Text(
+        final isOverflow = tp.didExceedMaxLines;
+
+        if (!isOverflow) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: availableWidth),
+            child: Text(
+              bio,
+              style: textStyle,
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+            ),
+          );
+        }
+
+        final truncatedText = _truncateTextToFit(
           bio,
-          style: textStyle,
-          maxLines: maxLines,
-          overflow: TextOverflow.ellipsis,
-        ),
-      );
-    }
+          textStyle,
+          availableWidth,
+          maxLines,
+          '... 더보기',
+        );
 
-    // 텍스트가 잘리는 경우 → RichText로 ...더보기 붙이기
-    final truncatedText = _truncateTextToFit(bio, textStyle, maxWidth, maxLines, "... 더보기");
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: maxWidth),
-      child: GestureDetector(
-        onTap: () {
-          setState(() => _showFullBio = true);
-        },
-        child: RichText(
-          text: TextSpan(
-            text: truncatedText,
-            style: textStyle,
-            children: [
-              const TextSpan(
-                text: '... 더보기',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.black900,
-                ),
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: availableWidth),
+          child: GestureDetector(
+            onTap: () => setState(() => _showFullBio = true),
+            child: Text.rich(
+              TextSpan(
+                style: textStyle,
+                children: [
+                  TextSpan(text: truncatedText),
+                  const TextSpan(text: '... 더보기'),
+                ],
               ),
-            ],
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          maxLines: maxLines,
-          overflow: TextOverflow.clip,
-        ),
-      ),
+        );
+      },
     );
   }
+
 
   Widget _buildCount(String label, int count, {bool isTappable = true}) {
     final content = Column(

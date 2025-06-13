@@ -93,50 +93,22 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
       await client.rpc('increment_all_order_indices', params: {'uid': user.id});
 
-      await client.from('user_books').insert({
+// ✅ Edge Function 호출
+      final FunctionResponse response = await client.functions.invoke('add-user-book-and-notify', body: {
         'user_id': user.id,
         'book_id': bookId,
         'isbn': widget.book.isbn,
-        'order_index': 0,
         'review_title': reviewTitle,
         'review_content': reviewContent,
       });
 
-      final response = await client
-          .from('follows')
-          .select('follower_id')
-          .eq('following_id', user.id);
-
-      if (response is List && response.isNotEmpty) {
-        final followers = List<Map<String, dynamic>>.from(response);
-
-        final notifications = followers.map((f) => {
-          'recipient_id': f['follower_id'],
-          'sender_id': user.id,
-          'type': 'post',
-          'book_id': bookId,
-          'is_read': false,
-        }).toList();
-
-        try {
-          await client.from('notifications').insert(notifications);
-          debugPrint('✅ 알림 저장 성공');
-
-          for (final f in followers) {
-            final result = await client.functions.invoke('send-notification', body: {
-              'recipient_id': f['follower_id'],
-              'sender_id': user.id,
-              'type': 'post',
-              'book_id': bookId,
-            });
-            debugPrint('📨 FCM 응답: ${result.data}');
-          }
-        } catch (e) {
-          debugPrint('❌ 알림 저장 또는 전송 중 예외 발생: $e');
-        }
-      } else {
-        debugPrint('ℹ️ 팔로워 없음. 알림 건너뜀');
+      if (response.status != 200) {
+        final errorMessage = response.data['error'] ?? '알 수 없는 오류';
+        debugPrint('❌ 함수 오류: $errorMessage');
+        throw Exception(errorMessage);
       }
+
+      debugPrint('✅ 책 저장 + 알림 처리 완료');
 
 
         if (context.mounted) {

@@ -27,7 +27,7 @@ class _PostContentState extends State<PostContent> {
 
   void _truncateToFitWithButton() {
     final fullText = widget.post.reviewContent ?? '';
-    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500);
+    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500, letterSpacing: -0.32);
 
     final span = TextSpan(text: fullText, style: textStyle);
     final tp = TextPainter(
@@ -55,7 +55,7 @@ class _PostContentState extends State<PostContent> {
         text: testSpan,
         maxLines: 6,
         textDirection: TextDirection.ltr,
-      )..layout(maxWidth: MediaQuery.of(context).size.width - 44);
+      )..layout(maxWidth: MediaQuery.of(context).size.width - 56);
 
       if (!testTp.didExceedMaxLines) break;
       endIndex--;
@@ -69,7 +69,7 @@ class _PostContentState extends State<PostContent> {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500);
+    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500, letterSpacing: -0.32);
 
     return shouldShowMoreButton
         ? RichText(
@@ -97,6 +97,8 @@ class _PostContentState extends State<PostContent> {
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.black500,
+                  height: 1,
+                  letterSpacing: -0.32
                 ),
               ),
             ),

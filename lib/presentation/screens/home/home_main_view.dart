@@ -47,7 +47,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
               setState(() {});
             },
             child: Padding(
-              padding: EdgeInsets.only(left: index == 0 ? 11 : 0, right: 20),
+              padding: EdgeInsets.only(left: index == 0 ? 11 : 0, right: 15),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -55,7 +55,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
                   Text(
                     labels[index],
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w400,
                       color: isSelected ? AppColors.black900 : AppColors.black500,
                       fontSize: 14,
                     ),
@@ -82,29 +82,40 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
       length: labels.length,
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          surfaceTintColor: Colors.white,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          titleSpacing: 0,
-          leadingWidth: 120,
-          leading: Padding(
-            padding: const EdgeInsets.only(left: 20),
-            child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
-          ),
-          actions: [
-            IconButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SearchScreen()),
-                );
-              },
-              icon: const Icon(Icons.search, color: Colors.black, size: 28),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(88),
+          child: SafeArea( // ⛑️ 상태바 아래로 여백 자동 확보
+            child: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              titleSpacing: 0,
+              leadingWidth: 120,
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 22),
+                child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SearchScreen()),
+                      );
+                    },
+                    icon: SvgPicture.asset(
+                      'assets/search_icon.svg',
+                      width: 28,
+                      height: 28,
+                    ),
+                  ),
+                ),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(38),
+                child: _buildTabBar(),
+              ),
             ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(40),
-            child: _buildTabBar(),
           ),
         ),
         body: SafeArea( // ⛑️ 오버플로 방지

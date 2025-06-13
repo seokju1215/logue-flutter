@@ -91,6 +91,7 @@ class _NameEdit extends State<NameEdit> {
                 enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
                 focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: borderColor)),
                 isDense: true,
+                counter: const SizedBox.shrink(),
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
             ),

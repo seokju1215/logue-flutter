@@ -22,6 +22,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
   void initState() {
     super.initState();
     _getNotifications = GetNotifications(client);
+    _markAllAsRead();
     _loadNotifications();
     _checkNotificationPermission();
     WidgetsBinding.instance.addObserver(this); // 앱으로 복귀 시 권한 재확인
@@ -45,6 +46,20 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     setState(() {
       isNotificationOn = status.isGranted;
     });
+  }
+  Future<void> _markAllAsRead() async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      await client
+          .from('notifications')
+          .update({'is_read': true})
+          .eq('recipient_id', userId)
+          .eq('is_read', false); // 안 읽은 것만 true로
+    } catch (e) {
+      debugPrint('❌ 알림 읽음 처리 실패: $e');
+    }
   }
 
   Future<void> _loadNotifications() async {
@@ -78,7 +93,9 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButton(),
+        leading: BackButton(
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
         title: const Text('알림', style: TextStyle(fontSize: 16, color: AppColors.black900),),
         centerTitle: true,
       ),
@@ -127,6 +144,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
                     : '$username님이 새로운 인생 책을 추가했어요.';
 
                 return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 22),
                   title: Text(
                     content,
                     style: const TextStyle(fontSize: 14, color: AppColors.black500),

@@ -12,6 +12,7 @@ import 'package:logue/data/repositories/follow_repository.dart';
 import 'package:logue/domain/usecases/follows/follow_user.dart';
 import 'package:logue/domain/usecases/follows/unfollow_user.dart';
 import 'package:logue/domain/usecases/follows/is_following.dart';
+import '../../../../core/widgets/follow/follow_user_tile.dart';
 import '../../book/book_detail_screen.dart';
 import '../../main_navigation_screen.dart';
 import '../../profile/other_profile_screen.dart';
@@ -245,21 +246,29 @@ class _SearchScreenState extends State<SearchScreen>
                         )
                       : SingleChildScrollView(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 20, horizontal: 20),
+                              vertical: 19, horizontal: 0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (_userResults.isNotEmpty) ...[
-                                Text(
-                                  "계정",
-                                  style: TextStyle(
-                                      fontSize: 16, color: AppColors.black900),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                                  child: Text(
+                                    "계정",
+                                    style: TextStyle(
+                                        fontSize: 16, color: AppColors.black900),
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 ..._userResults.take(6).map(
-                                      (e) => SearchUserItem(
-                                        user: e,
+                                      (e) => FollowUserTile(
+                                        userId: e.id,
+                                        username: e.username,
+                                        name: e.name,
+                                        avatarUrl: e.avatarUrl ?? 'basic',
                                         isFollowing: e.isFollowing,
+                                        isMyProfile: false,
+                                        currentUserId: Supabase.instance.client.auth.currentUser!.id,
                                         onTapFollow: () async {
                                           try {
                                             if (e.isFollowing) {
@@ -268,16 +277,10 @@ class _SearchScreenState extends State<SearchScreen>
                                               await _followUser(e.id);
                                             }
 
-                                            final updatedFollow =
-                                                await _isFollowing(e.id);
+                                            final updatedFollow = await _isFollowing(e.id);
                                             setState(() {
-                                              _userResults =
-                                                  _userResults.map((u) {
-                                                return u.id == e.id
-                                                    ? u.copyWith(
-                                                        isFollowing:
-                                                            updatedFollow)
-                                                    : u;
+                                              _userResults = _userResults.map((u) {
+                                                return u.id == e.id ? u.copyWith(isFollowing: updatedFollow) : u;
                                               }).toList();
                                             });
                                           } catch (err) {
@@ -288,9 +291,7 @@ class _SearchScreenState extends State<SearchScreen>
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) =>
-                                                  OtherProfileScreen(
-                                                      userId: e.id),
+                                              builder: (_) => OtherProfileScreen(userId: e.id),
                                             ),
                                           );
                                         },
@@ -299,35 +300,37 @@ class _SearchScreenState extends State<SearchScreen>
                                 const SizedBox(height: 26),
                               ],
                               if (_bookResults.isNotEmpty) ...[
-                                Text(
-                                  "책",
-                                  style: TextStyle(
-                                      fontSize: 16, color: AppColors.black900),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                                  child: Text(
+                                    "책",
+                                    style: TextStyle(
+                                        fontSize: 16, color: AppColors.black900),
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
-                                GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    mainAxisSpacing: 12,
-                                    crossAxisSpacing: 12,
-                                    childAspectRatio: 0.7,
-                                  ),
-                                  itemCount: _bookResults.length,
-                                  itemBuilder: (context, index) {
-                                    final book = _bookResults[index];
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                                  child: GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 3,
+                                          crossAxisSpacing: 23,
+                                          mainAxisSpacing: 30,
+                                          childAspectRatio: 98 / 145,
+                                        ),
+                                    itemCount: _bookResults.length,
+                                    itemBuilder: (context, index) {
+                                      final book = _bookResults[index];
 
-                                    return GestureDetector(
-                                      onTap: () => _onTapBook(book),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: Image.network(book.image,
-                                            fit: BoxFit.cover),
-                                      ),
-                                    );
-                                  },
+                                      return GestureDetector(
+                                        onTap: () => _onTapBook(book),
+                                        child: BookFrame(imageUrl: book.image),
+                                      );
+                                    },
+                                  ),
                                 )
                               ],
                             ],
@@ -336,65 +339,62 @@ class _SearchScreenState extends State<SearchScreen>
           _query.isEmpty
               ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
               : _userResults.isEmpty
-                  ? const Expanded(
-                      child: Center(
-                        child: Text(
-                          '검색 결과가 없어요.',
-                          style: TextStyle(
-                              fontSize: 14, color: AppColors.black500),
-                        ),
+                  ? Container(
+                      color: Colors.white,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        '검색 결과가 없어요.',
+                        style:
+                            TextStyle(fontSize: 14, color: AppColors.black500),
                       ),
                     )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(
-                          padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+                          padding: EdgeInsets.fromLTRB(22, 19, 22, 19),
                           child: Text("계정",
                               style: TextStyle(
                                   fontSize: 16, color: AppColors.black900)),
                         ),
                         Expanded(
                           child: ListView(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
                             children: _userResults
-                                .map((e) => SearchUserItem(
-                                      user: e,
-                                      isFollowing: e.isFollowing,
-                                      onTapFollow: () async {
-                                        try {
-                                          if (e.isFollowing) {
-                                            await _unfollowUser(e.id);
-                                          } else {
-                                            await _followUser(e.id);
-                                          }
+                                .map((e) => FollowUserTile(
+                              userId: e.id,
+                              username: e.username,
+                              name: e.name,
+                              avatarUrl: e.avatarUrl ?? 'basic',
+                              isFollowing: e.isFollowing,
+                              isMyProfile: false,
+                              currentUserId: Supabase.instance.client.auth.currentUser!.id,
+                              onTapFollow: () async {
+                                try {
+                                  if (e.isFollowing) {
+                                    await _unfollowUser(e.id);
+                                  } else {
+                                    await _followUser(e.id);
+                                  }
 
-                                          final updatedFollow =
-                                              await _isFollowing(e.id);
-                                          setState(() {
-                                            _userResults =
-                                                _userResults.map((u) {
-                                              return u.id == e.id
-                                                  ? u.copyWith(
-                                                      isFollowing:
-                                                          updatedFollow)
-                                                  : u;
-                                            }).toList();
-                                          });
-                                        } catch (err) {
-                                          debugPrint('❌ 팔로우 실패: $err');
-                                        }
-                                      },
-                                      onTapProfile: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => OtherProfileScreen(
-                                                userId: e.id),
-                                          ),
-                                        );
-                                      },
-                                    ))
+                                  final updatedFollow = await _isFollowing(e.id);
+                                  setState(() {
+                                    _userResults = _userResults.map((u) {
+                                      return u.id == e.id ? u.copyWith(isFollowing: updatedFollow) : u;
+                                    }).toList();
+                                  });
+                                } catch (err) {
+                                  debugPrint('❌ 팔로우 실패: $err');
+                                }
+                              },
+                              onTapProfile: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => OtherProfileScreen(userId: e.id),
+                                  ),
+                                );
+                              },
+                            ),)
                                 .toList(),
                           ),
                         ),
@@ -412,7 +412,7 @@ class _SearchScreenState extends State<SearchScreen>
                     )
                   : SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 20),
+                          horizontal: 19, vertical: 22),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -422,28 +422,27 @@ class _SearchScreenState extends State<SearchScreen>
                                 fontSize: 16, color: AppColors.black900),
                           ),
                           const SizedBox(height: 8),
-                          GridView.builder(
-                            itemCount: _bookResults.length,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.7,
+                          Padding(
+                            padding: const EdgeInsets.only(left:4),
+                            child: GridView.builder(
+                              itemCount: _bookResults.length,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 23,
+                                mainAxisSpacing: 30,
+                                childAspectRatio: 98 / 145,
+                              ),
+                              itemBuilder: (context, index) {
+                                final book = _bookResults[index];
+                                return GestureDetector(
+                                  onTap: () => _onTapBook(book),
+                                  child: BookFrame(imageUrl: book.image),
+                                );
+                              },
                             ),
-                            itemBuilder: (context, index) {
-                              final book = _bookResults[index];
-                              return GestureDetector(
-                                onTap: () => _onTapBook(book),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Image.network(book.image,
-                                      fit: BoxFit.cover),
-                                ),
-                              );
-                            },
                           ),
                         ],
                       ),

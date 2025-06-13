@@ -119,15 +119,21 @@ class _FollowListTabState extends State<FollowListTab> {
 
       final enrichedList = rawList.map((user) {
         final isSelf = user['id'] == currentUserId;
+
         return {
           ...user,
           'isFollowing': followingIds.contains(user['id']),
+          'isSelf': isSelf, // 이거 꼭 넣어야 정렬할 수 있어
         };
       }).toList();
       enrichedList.sort((a, b) {
-        final aFollowing = a['isFollowing'] == true ? 0 : 1;
-        final bFollowing = b['isFollowing'] == true ? 0 : 1;
-        return aFollowing.compareTo(bFollowing);
+        int sortKey(Map<String, dynamic> user) {
+          if (user['isSelf'] == true) return 0;
+          if (user['isFollowing'] == true) return 1;
+          return 2;
+        }
+
+        return sortKey(a).compareTo(sortKey(b));
       });
 
       setState(() => users = enrichedList);
@@ -191,6 +197,7 @@ class _FollowListTabState extends State<FollowListTab> {
           tabType: widget.type,
           onTapFollow: () => _handleFollow(user['id']),
           onTapRemove: () => _handleRemoveFollower(user['id']),
+          currentUserId: Supabase.instance.client.auth.currentUser?.id ?? '',
           onTapProfile: () {
             Navigator.push(
               context,

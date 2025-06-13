@@ -6,6 +6,8 @@ import 'package:logue/core/widgets/follow/follow_user_tile.dart';
 import 'package:logue/data/repositories/follow_repository.dart';
 import 'package:logue/domain/usecases/follows/follow_user.dart';
 
+import '../profile/other_profile_screen.dart';
+
 class LifebookUsersScreen extends StatefulWidget {
   final List<Map<String, dynamic>> users;
 
@@ -37,9 +39,19 @@ class _LifebookUsersScreenState extends State<LifebookUsersScreen> {
 
     userList = [...widget.users];
     userList.sort((a, b) {
-      if (a['id'] == currentUserId) return -1;
-      if (b['id'] == currentUserId) return 1;
-      return 0;
+      final aIsMe = a['id'] == currentUserId;
+      final bIsMe = b['id'] == currentUserId;
+
+      if (aIsMe) return -1; // 내가 a면 a를 앞으로
+      if (bIsMe) return 1;  // 내가 b면 b를 뒤로
+
+      final aIsFollowing = a['is_following'] == true;
+      final bIsFollowing = b['is_following'] == true;
+
+      if (aIsFollowing && !bIsFollowing) return -1; // 팔로우한 사람이 앞으로
+      if (!aIsFollowing && bIsFollowing) return 1;
+
+      return 0; // 나머지는 그대로
     });
   }
 
@@ -54,6 +66,26 @@ class _LifebookUsersScreenState extends State<LifebookUsersScreen> {
         }
         return user;
       }).toList();
+    });
+  }
+  void _refreshUserList() {
+    setState(() {
+      userList = [...widget.users];
+      userList.sort((a, b) {
+        final aIsMe = a['id'] == currentUserId;
+        final bIsMe = b['id'] == currentUserId;
+
+        if (aIsMe) return -1;
+        if (bIsMe) return 1;
+
+        final aIsFollowing = a['is_following'] == true;
+        final bIsFollowing = b['is_following'] == true;
+
+        if (aIsFollowing && !bIsFollowing) return -1;
+        if (!aIsFollowing && bIsFollowing) return 1;
+
+        return 0;
+      });
     });
   }
 
@@ -87,12 +119,12 @@ class _LifebookUsersScreenState extends State<LifebookUsersScreen> {
             isFollowing: user['is_following'] ?? false,
             isMyProfile: user['id'] == currentUserId,
             onTapFollow: () => _handleFollow(user['id']),
-            onTapProfile: () {
-              Navigator.pushNamed(
-                context,
-                '/other_profile',
-                arguments: user['id'],
-              );
+            currentUserId: Supabase.instance.client.auth.currentUser?.id ?? '',
+            onTapProfile: () async{
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => OtherProfileScreen(userId: user['id']),
+              ));
+              _refreshUserList();
             },
           );
         },

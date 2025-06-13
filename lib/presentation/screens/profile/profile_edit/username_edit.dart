@@ -50,7 +50,7 @@ class _UserNameEdit extends State<UserNameEdit> {
 
   void _onChanged() {
     final text = _controller.text;
-    final changed = text != widget.currentUsername;
+    final changed = text.toLowerCase() != widget.currentUsername.toLowerCase();
     final validFormat = RegExp(r'^[a-zA-Z0-9._]{1,20}$').hasMatch(text);
 
     setState(() {
@@ -140,6 +140,7 @@ class _UserNameEdit extends State<UserNameEdit> {
                 focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: borderColor)),
                 isDense: true,
+                counter: const SizedBox.shrink(),
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
             ),

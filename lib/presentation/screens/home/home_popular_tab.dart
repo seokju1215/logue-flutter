@@ -70,7 +70,7 @@ class _HomePopularTabState extends State<HomePopularTab> {
           SliverToBoxAdapter(
             child: BannerSlider(banners: banners),
           ),
-        const SliverToBoxAdapter(child: SizedBox(height: 12)),
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
         if (rankedBooks.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(

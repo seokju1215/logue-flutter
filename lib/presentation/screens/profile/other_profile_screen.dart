@@ -35,6 +35,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   late final UnfollowUser _unfollowUser;
   late final IsFollowing _isFollowing;
   bool _isScrollable = false;
+  bool _isFollowProcessing = false;
 
   Map<String, dynamic>? profile;
   late final GetUserBooks _getUserBooks;
@@ -83,23 +84,42 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   }
 
   Future<void> _fetchProfile() async {
+    final userId = widget.userId;
+
     final data = await client
         .from('profiles')
         .select()
-        .eq('id', widget.userId)
+        .eq('id', userId)
         .maybeSingle();
 
-    final following = await _isFollowing(widget.userId);
+    final following = await _isFollowing(userId);
+
+    final followerRes = await client
+        .from('follows')
+        .select('*', const FetchOptions(count: CountOption.exact))
+        .eq('following_id', userId);
+    final followerCount = followerRes.count ?? 0;
+
+    final followingRes = await client
+        .from('follows')
+        .select('*', const FetchOptions(count: CountOption.exact))
+        .eq('follower_id', userId);
+    final followingCount = followingRes.count ?? 0;
 
     setState(() {
       profile = {
         ...?data,
         'isFollowing': following,
+        'followers': followerCount,
+        'following': followingCount,
       };
     });
   }
 
   Future<void> _toggleFollow() async {
+    if (_isFollowProcessing) return; // 연타 방지
+    _isFollowProcessing = true;
+
     final currentUserId = client.auth.currentUser?.id;
     if (currentUserId == widget.userId) return;
 
@@ -136,7 +156,40 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
         };
       });
       debugPrint('❌ 팔로우 변경 실패: $e');
+    } finally {
+      _isFollowProcessing = false;
     }
+  }
+  String _truncateTextToFit(
+      String text,
+      TextStyle style,
+      double maxWidth,
+      int maxLines,
+      String trailingText,
+      ) {
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      maxLines: maxLines,
+    );
+
+    int min = 0;
+    int max = text.length;
+
+    while (min < max) {
+      final mid = (min + max) ~/ 2;
+      final testStr = text.substring(0, mid) + trailingText;
+      textPainter.text = TextSpan(text: testStr, style: style);
+      textPainter.layout(maxWidth: maxWidth);
+
+      if (textPainter.didExceedMaxLines) {
+        max = mid;
+      } else {
+        min = mid + 1;
+      }
+    }
+
+    final safeIndex = (max - trailingText.length).clamp(0, text.length);
+    return text.substring(0, safeIndex);
   }
 
   Future<void> _loadBooks() async {
@@ -226,7 +279,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           controller: _scrollController,
-          padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -263,40 +316,42 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(profile?['name'] ?? '',
-                      style: Theme.of(context).textTheme.bodyLarge),
+                      style: TextStyle(fontSize: 20, color: AppColors.black900)),
+                  const SizedBox(height: 6),
                   Text(profile?['job'] ?? '',
-                      style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 10),
+                      style: TextStyle(fontSize: 14, color: AppColors.black500)),
+                  const SizedBox(height: 9),
                   _buildBio(context),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 9),
                 ],
               ),
             ),
             GestureDetector(
-              onLongPress: () => _showZoomedAvatar(avatarUrl),
+              onTap: () => _showZoomedAvatar(avatarUrl),
               child: Hero(
                 tag: 'profile-avatar',
                 child: Container(
-                  width: 71,
-                  height: 71,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.black100, width: 1),
                   ),
                   child: CircleAvatar(
-                    radius: 70,
+                    radius: 40.5,
                     backgroundImage: avatarUrl == 'basic'
                         ? null
                         : NetworkImage(avatarUrl),
                     child: avatarUrl == 'basic'
                         ? Image.asset('assets/basic_avatar.png',
-                        width: 70, height: 70)
+                        width: 80, height: 80)
                         : null,
                   ),
                 ),
@@ -304,6 +359,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
             ),
           ],
         ),
+        SizedBox(height: 20,),
         Row(
           children: [
             GestureDetector(
@@ -331,7 +387,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
               },
               child: _buildCount("팔로워", profile?['followers'] ?? 0),
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: 27),
             GestureDetector(
               onTap: () {
                 final userId = profile?['id'];
@@ -361,26 +417,47 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
             const Spacer(),
             if (!isMyProfile)
               OutlinedButton(
-                onPressed: _toggleFollow,
+                onPressed: _isFollowProcessing ? null : _toggleFollow,
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+                  padding:profile?['isFollowing'] == true ? EdgeInsets.symmetric(horizontal: 43, vertical: 9) :EdgeInsets.symmetric(horizontal: 35, vertical: 9),
                   side: BorderSide(
                     color: profile?['isFollowing'] == true
                         ? AppColors.black300
-                        : AppColors.black900,
+                        : AppColors.black500,
+                    width: 1,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
-                child: Text(
-                  profile?['isFollowing'] == true ? '팔로잉' : '팔로우',
-                  style: TextStyle(
+                child: profile?['isFollowing'] == true
+                    ? Text(
+                  '팔로잉',
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: profile?['isFollowing'] == true
-                        ? AppColors.black500
-                        : AppColors.black900,
+                    color: AppColors.black500,
                   ),
+                )
+                    : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Text(
+                      '팔로우',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.black900,
+                      ),
+                    ),
+                    SizedBox(width: 1.8), // 텍스트와 아이콘 사이 여백
+                    Padding(
+                      padding: EdgeInsets.only(top: 1.4),
+                      child: Icon(
+                        Icons.add,
+                        size: 14,
+                        color: AppColors.black900,
+                      ),
+                    ),
+                  ],
                 ),
               ),
           ],
@@ -418,75 +495,76 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     final bio = profile?['bio'] ?? '';
     if (bio.isEmpty) return const SizedBox();
 
+    const avatarSize = 40.0; // 아바타 가로 크기
+    const horizontalPadding = 22.0; // 아바타 오른쪽 여백
+    const maxLines = 2;
     const textStyle = TextStyle(
       fontSize: 12,
       color: AppColors.black900,
       fontFamily: 'Inter',
       fontWeight: FontWeight.w400,
-      height: 1.2,
+      height: 1.0,
     );
-    const maxLines = 2;
-    const maxWidth = 241.0;
-    const moreText = '... 더보기';
 
-    return Container(
-      constraints: const BoxConstraints(maxWidth: maxWidth),
-      child: _showFullBio
-          ? Text(bio, style: textStyle)
-          : LayoutBuilder(
-        builder: (context, constraints) {
-          final span = TextSpan(text: bio, style: textStyle);
-          final tp = TextPainter(
-            text: span,
-            textDirection: TextDirection.ltr,
-            maxLines: maxLines,
-            ellipsis: '...',
-          )..layout(maxWidth: constraints.maxWidth);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth - avatarSize - horizontalPadding;
 
-          if (!tp.didExceedMaxLines) {
-            return Text(bio, style: textStyle);
-          }
-
-          final words = bio.split(' ');
-          String trimmed = '';
-          for (var i = 0; i < words.length; i++) {
-            final test = (words.take(i + 1).join(' ') + moreText).trimRight();
-            final testSpan = TextSpan(text: test, style: textStyle);
-            final testTp = TextPainter(
-              text: testSpan,
-              textDirection: TextDirection.ltr,
-              maxLines: maxLines,
-            )..layout(maxWidth: constraints.maxWidth);
-
-            if (testTp.didExceedMaxLines) break;
-            trimmed = words.take(i + 1).join(' ');
-          }
-
-          return GestureDetector(
-            onTap: () => setState(() => _showFullBio = true),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: maxWidth),
-              child: Text.rich(
-                TextSpan(
-                  style: textStyle,
-                  children: [
-                    TextSpan(text: trimmed + ' '),
-                    TextSpan(
-                      text: moreText,
-                      style: textStyle.copyWith(
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.black900,
-                      ),
-                    ),
-                  ],
-                ),
-                maxLines: maxLines,
-                overflow: TextOverflow.ellipsis,
-              ),
+        if (_showFullBio) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: availableWidth, maxHeight: 150),
+            child: SingleChildScrollView(
+              child: Text(bio, style: textStyle),
             ),
           );
-        },
-      ),
+        }
+
+        final tp = TextPainter(
+          text: TextSpan(text: bio, style: textStyle),
+          maxLines: maxLines,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: availableWidth);
+
+        final isOverflow = tp.didExceedMaxLines;
+
+        if (!isOverflow) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: availableWidth),
+            child: Text(
+              bio,
+              style: textStyle,
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+            ),
+          );
+        }
+
+        final truncatedText = _truncateTextToFit(
+          bio,
+          textStyle,
+          availableWidth,
+          maxLines,
+          '... 더보기',
+        );
+
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: availableWidth),
+          child: GestureDetector(
+            onTap: () => setState(() => _showFullBio = true),
+            child: Text.rich(
+              TextSpan(
+                style: textStyle,
+                children: [
+                  TextSpan(text: truncatedText),
+                  const TextSpan(text: '... 더보기'),
+                ],
+              ),
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        );
+      },
     );
   }
 }

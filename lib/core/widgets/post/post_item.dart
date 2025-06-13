@@ -42,8 +42,8 @@ class PostItem extends StatelessWidget {
         Center(
           child: imageUrl.isEmpty
               ? Container(
-            width: 200,
-            height: 300,
+            width: 206,
+            height: 306,
             color: Colors.grey[300],
             child: const Icon(Icons.broken_image, size: 50),
           )
@@ -66,19 +66,19 @@ class PostItem extends StatelessWidget {
                     backgroundColor: Colors.grey[300],
                     child: Image.asset(
                       'assets/basic_avatar.png',
-                      width: 32,
-                      height: 32,
+                      width: 45,
+                      height: 45,
                       fit: BoxFit.cover,
                     ),
                   )
                       : CircleAvatar(
-                    radius: 16,
+                    radius: 22.5,
                     backgroundImage: NetworkImage(avatarUrl),
                     backgroundColor: Colors.grey[300],
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 9),
                   Text(userName,
-                      style: const TextStyle(fontSize: 16, color: AppColors.black900)),
+                      style: const TextStyle(fontSize: 14, color: AppColors.black900, height: 1.5, letterSpacing: -0.32)),
                 ],
               ),
             ),
@@ -98,7 +98,7 @@ class PostItem extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 8),
                     ),
                     child: const Text('책 둘러보기 →',
-                        style: TextStyle(fontSize: 14, color: AppColors.black500)),
+                        style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1)),
                   ),
                   IconButton(
                     icon: const Icon(Icons.more_vert),
@@ -146,20 +146,21 @@ class PostItem extends StatelessWidget {
                   ));
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.black300),
+                  side: const BorderSide(color: AppColors.black300, width: 1),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
                   padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 8),
                 ),
+
                 child: const Text('책 둘러보기 →',
                     style: TextStyle(fontSize: 14, color: AppColors.black500)),
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 18),
         if (reviewTitle.isNotEmpty)
           Text(
             reviewTitle,
-            style: const TextStyle(fontSize: 16, color: AppColors.black900),
+            style: const TextStyle(fontSize: 16, color: AppColors.black900, height: 1.5, letterSpacing: -0.32),
           ),
         const SizedBox(height: 8),
         AnimatedSize(
