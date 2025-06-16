@@ -69,7 +69,9 @@ class _SearchScreenState extends State<SearchScreen>
 
       // ✅ AladinBookApi 사용
       final booksRaw = await AladinBookApi().searchBooks(query);
-      final books = booksRaw.map((data) => BookModel.fromJson(data)).toList();
+      final books = booksRaw
+          .map((data) => BookModel.fromJson(data))
+          .toList();
 
       setState(() {
         _userResults = users;
@@ -84,13 +86,6 @@ class _SearchScreenState extends State<SearchScreen>
 
   Future<void> _onTapBook(BookModel book) async {
     final client = Supabase.instance.client;
-
-    if (book.isbn == null || book.isbn.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ISBN이 유효하지 않아요.')),
-      );
-      return;
-    }
 
     try {
       final res = await client.functions.invoke(

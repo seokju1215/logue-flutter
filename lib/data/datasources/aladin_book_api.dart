@@ -25,17 +25,20 @@ class AladinBookApi {
       '$_baseUrl?ttbkey=$ttbKey&Query=$encodedQuery&QueryType=$queryType&MaxResults=20&start=1&SearchTarget=Book&output=js&Version=20131101&OptResult=toc,fulldescription',
     );
 
-
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       final List items = decoded['item'] ?? [];
 
+      final RegExp excludePattern = RegExp(r'(세[\s\-]*트|\+|스[\s\-]*티[\s\-]*커)', caseSensitive: false);
+
       return items
           .where((item) {
-        final cover = item['cover'] ?? '';
-        return cover.trim().isNotEmpty;
+        final cover = item['cover']?.toString().trim() ?? '';
+        final rawTitle = item['title']?.toString().toLowerCase() ?? '';
+
+        return cover.isNotEmpty && !excludePattern.hasMatch(rawTitle);
       })
           .map<Map<String, dynamic>>((item) {
         final subInfo = item['subInfo'] ?? {};

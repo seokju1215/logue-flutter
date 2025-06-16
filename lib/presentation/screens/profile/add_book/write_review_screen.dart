@@ -109,14 +109,18 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         throw Exception(errorMessage);
       }
 
-      debugPrint('✅ 책 저장 + 알림 처리 완료');
 
 
-        if (context.mounted) {
-          Navigator.pop(context);
-          Navigator.pop(context);
-          Navigator.pop(context, true);
+      if (!mounted) return;
+
+      Navigator.pop(context);
+      Navigator.pop(context);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pop(true);
         }
+      });
 
     } catch (e) {
       debugPrint('❌ 저장 실패: $e');

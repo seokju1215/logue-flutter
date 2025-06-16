@@ -540,6 +540,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     );
   }
 
+  String cleanToc(String? rawToc) {
+    if (rawToc == null || rawToc.trim().isEmpty) return '';
+
+    return rawToc
+        .replaceAll(RegExp(r'<[^>]+>'), '') // 나머지 HTML 태그 제거
+        .trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -578,9 +586,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             book?['toc'] == ''
                 ? const SizedBox(height: 37)
                 : const SizedBox.shrink(),
-            _buildExpandableText("목차", book?['toc'], 7, showFullToc, () {
-              setState(() => showFullToc = true);
-            }),
+            _buildExpandableText(
+              "목차",
+              cleanToc(book?['toc']),
+              7,
+              showFullToc,
+                  () => setState(() => showFullToc = true),
+            ),
             const SizedBox(height: 37),
             _buildOtherWorksSection(),
             const SizedBox(height: 40),
