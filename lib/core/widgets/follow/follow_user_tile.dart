@@ -101,7 +101,7 @@ class FollowUserTile extends StatelessWidget {
               ),
               child: const Text(
                 "팔로우",
-                style: TextStyle(fontSize: 12, color: AppColors.black900),
+                style: TextStyle(fontSize: 12, color: AppColors.black900,fontWeight: FontWeight.w400),
               ),
             )
           else

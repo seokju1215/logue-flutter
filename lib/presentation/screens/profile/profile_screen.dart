@@ -248,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                         child: _buildActionButtons(),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 20),
                       if (books.isNotEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 0, horizontal:26),
@@ -256,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 20),
                       ] else ...[
-                        const SizedBox(height: 95),
+                        const SizedBox(height: 55),
                         Center(
                           child: Column(
                             children: [
@@ -280,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     },
                                     child: const Text(
                                       "책 추가 +",
-                                      style: TextStyle(fontSize: 12, color: AppColors.black900),
+                                      style: TextStyle(fontSize: 12, color: AppColors.black900, fontWeight: FontWeight.w400),
                                     ),
                                   );
                                 },
@@ -432,7 +432,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
             },
             child: const Text("책 추가 +",
-                style: TextStyle(color: AppColors.black900, fontSize: 12)),
+                style: TextStyle(color: AppColors.black900, fontSize: 13)),
           ),
         ),
         const SizedBox(width: 12),
@@ -446,7 +446,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
             },
             child: const Text("프로필 공유",
-                style: TextStyle(color: AppColors.black900, fontSize: 12)),
+                style: TextStyle(color: AppColors.black900, fontSize: 13)),
           ),
         ),
       ],
@@ -516,17 +516,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
 
-    const avatarSize = 40.0; // 아바타 크기
-    const horizontalPadding = 22.0; // 아바타 오른쪽 여백
+    const avatarSize = 40.0;
+    const horizontalPadding = 22.0;
     const maxLines = 2;
     const lineHeight = 1.2;
     const fontSize = 12.0;
     const textStyle = TextStyle(
-      fontSize: 12,
+      fontSize: fontSize,
       color: AppColors.black900,
       fontFamily: 'Inter',
       fontWeight: FontWeight.w400,
-      height: 1.2,
+      height: lineHeight,
     );
 
     final fixedHeight = fontSize * lineHeight * maxLines;
@@ -535,46 +535,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth - avatarSize - horizontalPadding;
 
-        // bio 전체 보기 모드
-        if (_showFullBio && bio.isNotEmpty) {
-          return SizedBox(
-            height: fixedHeight,
-            child: SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: availableWidth),
-                child: Text(bio, style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.black900,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w400,
-                  height: 1.2,
-                )),
-              ),
+        if (bio.isEmpty) {
+          return SizedBox(height: fixedHeight);
+        }
+
+        // 전체 보기 모드
+        if (_showFullBio) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: availableWidth),
+            child: Text(
+              bio,
+              style: textStyle,
+              softWrap: true,
             ),
           );
         }
 
-        // bio 없을 경우도 fixedHeight 확보
-        if (bio.isEmpty) {
-          return SizedBox(height: fixedHeight); // ✅ 공간 확보
-        }
-
-        // overflow 여부 확인
+        // overflow 판단용
         final tp = TextPainter(
-          text: TextSpan(text: bio, style: TextStyle(
-            fontSize: 12,
-            color: AppColors.black900,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w400,
-            height: 1.2,
-          )),
-          maxLines: maxLines,
+          text: TextSpan(text: bio, style: textStyle),
           textDirection: TextDirection.ltr,
+          maxLines: maxLines,
+          ellipsis: '...',
         )..layout(maxWidth: availableWidth);
 
         final isOverflow = tp.didExceedMaxLines;
 
-        // 잘리지 않는 경우
         if (!isOverflow) {
           return SizedBox(
             height: fixedHeight,
@@ -582,13 +568,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               constraints: BoxConstraints(maxWidth: availableWidth),
               child: Text(
                 bio,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.black900,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w400,
-                  height: 1.2,
-                ),
+                style: textStyle,
                 maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
                 textHeightBehavior: const TextHeightBehavior(
@@ -600,35 +580,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        // 잘리는 경우 + ...더보기 표시
-        final truncatedText = _truncateTextToFit(
-          bio,
-          TextStyle(
-            fontSize: 12,
-            color: AppColors.black900,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w400,
-            height: 1.2,
-          ),
-          availableWidth,
-          maxLines,
-          '... 더보기',
-        );
-
         return SizedBox(
-          height: fixedHeight, // ✅ 항상 높이 확보
+          height: fixedHeight,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: availableWidth),
             child: GestureDetector(
               onTap: () => setState(() => _showFullBio = true),
-              child: Text(
-                '$truncatedText... 더보기',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.black900,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w400,
-                  height: 1.2,
+              child: Text.rich(
+                TextSpan(
+                  text: bio,
+                  style: textStyle,
+                  children: const [
+                    TextSpan(
+                      text: '... 더보기',
+                      style: TextStyle(
+                        color: AppColors.black500,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ),
                 maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
@@ -683,16 +653,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       ),
       padding: MaterialStateProperty.all(
-        EdgeInsets.symmetric(horizontal: 9),
+        EdgeInsets.symmetric(vertical: 8),
       ),
       minimumSize: MaterialStateProperty.all(
-        const Size(0, 34), // ✅ 원하는 높이로 강제 지정
+          const Size.fromHeight(34)
       ),
       textStyle: MaterialStateProperty.all(
         const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w400,
-          height: 1.0, // ✅ 텍스트 줄 간격 없애기
+          height: 1.25,
         ),
       ),
     );

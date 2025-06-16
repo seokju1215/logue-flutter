@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/data/models/book_model.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
@@ -134,13 +135,14 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          '후기 작성',
-          style: TextStyle(fontSize: 18, color: AppColors.black900),
+          '책 추가',
+          style: TextStyle(fontSize: 16, color: AppColors.black900),
         ),
         actions: [
           TextButton(
@@ -172,8 +174,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('후기 제목',
-                        style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                    Padding(
+                      padding: const EdgeInsets.only(left:9),
+                      child: const Text('후기 제목',
+                          style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                    ),
                     Text(
                       '${_titleController.text.length}/50',
                       style: const TextStyle(fontSize: 12, color: AppColors.black500),
@@ -199,8 +204,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('후기 내용',
-                        style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                    Padding(
+                      padding: const EdgeInsets.only(left:9),
+                      child: const Text('후기 내용',
+                          style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                    ),
                     Text(
                       '${_contentController.text.length}/1000',
                       style: const TextStyle(fontSize: 12, color: AppColors.black500),

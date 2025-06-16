@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -27,6 +28,9 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
     super.initState();
     _titleController.text = widget.post.reviewTitle ?? '';
     _contentController.text = widget.post.reviewContent ?? '';
+
+    _titleController.addListener(() => setState(() {}));
+    _contentController.addListener(() => setState(() {}));
   }
 
   Future<void> _updateReview() async {
@@ -76,11 +80,12 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
     print('🛠️ EditReviewScreen: ${widget.post.id}, ${widget.post.reviewTitle}');
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),// 👈 또는 null, 원하는 값으로
         ),
-        title: const Text('수정', style: TextStyle(fontSize: 18, color: AppColors.black900)),
+        title: const Text('수정', style: TextStyle(fontSize: 16, color: AppColors.black900)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _updateReview,
@@ -106,9 +111,24 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Padding(
-              padding: EdgeInsets.only(left: 13),
-              child: Text('후기 제목', style: TextStyle(fontSize: 12, color: AppColors.black500)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 9),
+                  child: Text(
+                    '후기 제목',
+                    style: TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 9),
+                  child: Text(
+                    '${_titleController.text.length}/50',
+                    style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                ),
+              ],
             ),
             TextField(
               controller: _titleController,
@@ -117,12 +137,31 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
               maxLines: null,
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
               decoration: InputDecoration(
+                counterText: '', // 기본 글자 수 숨김
                 contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(5)),
               ),
             ),
             const SizedBox(height: 16),
-            const Text('후기 내용', style: TextStyle(fontSize: 12, color: AppColors.black500)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 9),
+                  child: Text(
+                    '후기 내용',
+                    style: TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 9),
+                  child: Text(
+                    '${_contentController.text.length}/1000',
+                    style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                ),
+              ],
+            ),
             TextField(
               controller: _contentController,
               maxLength: 1000,
@@ -132,6 +171,7 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
               textInputAction: TextInputAction.newline,
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
               decoration: InputDecoration(
+                counterText: '', // 기본 카운터 제거
                 contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(5)),
               ),

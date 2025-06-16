@@ -54,7 +54,7 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
         centerTitle: true,
         title: Text(
           widget.username,
-          style: const TextStyle(color: AppColors.black900, fontSize: 18),
+          style: const TextStyle(color: AppColors.black900, fontSize: 16),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),

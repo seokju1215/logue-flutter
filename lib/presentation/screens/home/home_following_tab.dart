@@ -96,18 +96,24 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
     }
 
     if (posts.isEmpty) {
-      return const Center(
-        child: Text(
-          '친구를 추가해 서로의 인생 책을 공유해보세요',
-          style: TextStyle(color: AppColors.black500, fontSize: 12),
-        ),
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: const [
+          Text(
+            "친구를 추가해 서로의 인생 책을 공유해보세요",
+            style:
+            TextStyle(fontSize: 12, color: AppColors.black500),
+          ),
+          SizedBox(height: 50,)
+        ],
       );
     }
 
     return ListView.separated(
       controller: _scrollController,
       physics: const ClampingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 50),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
       itemCount: posts.length + (hasMore ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 40),
       itemBuilder: (context, index) {

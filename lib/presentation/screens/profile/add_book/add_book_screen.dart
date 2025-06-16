@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/presentation/screens/profile/add_book/search_book_screen.dart';
 import 'package:reorderables/reorderables.dart';
@@ -123,9 +124,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('책 추가', style: const TextStyle(color: AppColors.black900, fontSize: 18),),
+        title: const Text('책 추가', style: const TextStyle(color: AppColors.black900, fontSize: 16),),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [

@@ -190,10 +190,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 onPressed: canSubmit ? _onSubmit : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                  canSubmit ? Colors.red : Colors.red.withOpacity(0.4),
+                  canSubmit ? AppColors.red500 : AppColors.red500.withOpacity(0.4),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('계정탈퇴', style: TextStyle(fontSize: 14)),
+                child: const Text('계정탈퇴', style: TextStyle(fontSize: 14,color: AppColors.white500)),
               ),
             ),
             const SizedBox(height: 32),

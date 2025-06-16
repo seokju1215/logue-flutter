@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import '../../../../data/datasources/aladin_book_api.dart';
 import '../../../../data/models/book_model.dart';
@@ -65,7 +66,7 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
           title: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.black900),
+                icon: SvgPicture.asset('assets/back_arrow.svg'),
                 onPressed: () => Navigator.pop(context),
               ),
               Expanded(

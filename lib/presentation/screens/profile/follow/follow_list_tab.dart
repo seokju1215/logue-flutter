@@ -175,7 +175,18 @@ class _FollowListTabState extends State<FollowListTab> {
   @override
   Widget build(BuildContext context) {
     if (users.isEmpty) {
-      return const Center(child: Text('친구를 추가해 서로의 인생 책을 공유해보세요.', style: TextStyle(color: AppColors.black500, fontSize: 12),));
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: const [
+          Text(
+            "친구를 추가해 서로의 인생 책을 공유해보세요.",
+            style:
+            TextStyle(fontSize: 12, color: AppColors.black500),
+          ),
+          SizedBox(height: 50,)
+        ],
+      );
     }
 
     return ListView.builder(

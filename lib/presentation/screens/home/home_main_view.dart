@@ -85,37 +85,52 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(88),
           child: SafeArea( // ⛑️ 상태바 아래로 여백 자동 확보
-            child: AppBar(
-              backgroundColor: Colors.white,
-              elevation: 0,
-              titleSpacing: 0,
-              leadingWidth: 120,
-              leading: Padding(
-                padding: const EdgeInsets.only(left: 22),
-                child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
-              ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: IconButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const SearchScreen()),
-                      );
-                    },
-                    icon: SvgPicture.asset(
-                      'assets/search_icon.svg',
-                      width: 28,
-                      height: 28,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 7),
+              child: AppBar(
+                backgroundColor: Colors.white,
+                elevation: 0,
+                titleSpacing: 0,
+                leadingWidth: 120,
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 22),
+                  child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
+                ),
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SearchScreen()),
+                        );
+                      },
+                      icon: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const SearchScreen()),
+                          );
+                        },
+                        icon: Transform.scale(
+                          scale: 1.6, // 👈 원하는 배율로 조정
+                          child: SvgPicture.asset(
+                            'assets/search_icon.svg',
+                            width: 28, // 아이콘 자체 크기
+                            height: 28,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(38),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 0), // 👈 간격 줄이고 싶으면 이걸 줄이기
-                  child: _buildTabBar(),
+                ],
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(38),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 0), // 👈 간격 줄이고 싶으면 이걸 줄이기
+                    child: _buildTabBar(),
+                  ),
                 ),
               ),
             ),

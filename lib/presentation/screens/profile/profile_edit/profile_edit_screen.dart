@@ -113,7 +113,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         centerTitle: true,
         actions: [SaveButton(enabled: isEdited, onPressed: onSave)],
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
       ),

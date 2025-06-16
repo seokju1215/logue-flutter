@@ -273,7 +273,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildProfileHeader(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               if (books.isNotEmpty)
                 _buildBookGrid()
               else
@@ -384,7 +384,6 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
             ),
           ],
         ),
-        SizedBox(height: 20,),
         Row(
           children: [
             GestureDetector(
@@ -449,9 +448,9 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                   '팔로잉',
                   style: TextStyle(
                     color: AppColors.black500,
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w400,
-                    height: 1.0,
+                    height: 1.25,
                   ),
                 )
                     : Row(
@@ -461,9 +460,9 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                       '팔로우',
                       style: TextStyle(
                         color: AppColors.black900,
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w400,
-                        height: 1.0,
+                        height: 1.25,
                       ),
                     ),
                     SizedBox(width: 1.8),

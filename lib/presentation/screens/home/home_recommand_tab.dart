@@ -96,17 +96,23 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
     }
 
     if (posts.isEmpty) {
-      return const Center(
-        child: Text(
-          '추천할 후기가 아직 없어요',
-          style: TextStyle(color: AppColors.black500, fontSize: 16),
-        ),
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: const [
+          Text(
+            "추천할 후기가 아직 없어요",
+            style:
+            TextStyle(fontSize: 12, color: AppColors.black500),
+          ),
+          SizedBox(height: 50,)
+        ],
       );
     }
 
     return ListView.separated(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 50),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
       itemCount: posts.length + (_hasMore ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 40),
       itemBuilder: (context, index) {

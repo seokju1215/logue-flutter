@@ -38,7 +38,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     try {
       final rawResults = await AladinBookApi().searchBooks(query);
       final results =
-      rawResults.map((data) => BookModel.fromJson(data)).toList();
+          rawResults.map((data) => BookModel.fromJson(data)).toList();
 
       setState(() => _results = results);
     } catch (e) {
@@ -140,7 +140,8 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     );
 
     try {
-      await client.rpc('increment_job_tag_count', params: {'input_job_name': '사용자'});
+      await client
+          .rpc('increment_job_tag_count', params: {'input_job_name': '사용자'});
     } catch (e) {
       debugPrint('job_tags 증가 실패: $e');
     }
@@ -239,15 +240,19 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                 hintStyle: TextStyle(fontSize: 14, color: AppColors.black500),
                 filled: true,
                 fillColor: AppColors.black200,
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.black200, width: 1.0),
-                  borderRadius: BorderRadius.circular(5),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                border: const OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.black200),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.black200, width: 1.0),
-                  borderRadius: BorderRadius.circular(5),
+                enabledBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.black200),
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.black200),
+                ),
+                isDense: true,
+                counter: const SizedBox.shrink(),
               ),
             ),
           ),
@@ -272,45 +277,55 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           ),
           Expanded(
             child: isQueryEmpty
-                ? const Center(
-              child: Text(
-                "프로필에서 언제든 수정이 가능해요.",
-                style: TextStyle(fontSize: 12, color: AppColors.black500),
-              ),
-            )
-                : _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _results.isEmpty
-                ? const Center(child: Text("검색 결과가 없습니다."))
-                : GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 21, vertical: 20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.7,
-              ),
-              itemCount: _results.length,
-              itemBuilder: (context, index) {
-                final book = _results[index];
-                final isSelected = _isSelected(book);
-
-                return GestureDetector(
-                  onTap: () => _toggleSelection(book),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: isSelected ? Colors.blue : Colors.transparent,
-                        width: 3,
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: const [
+                      Text(
+                        "프로필에서 언제든 수정이 가능해요.",
+                        style:
+                            TextStyle(fontSize: 12, color: AppColors.black500),
                       ),
-                    ),
-                    child: ClipRRect(
-                      child: BookFrame(imageUrl: book.image),
-                    ),
-                  ),
-                );
-              },
-            ),
+                      SizedBox(height: 140,)
+                    ],
+                  )
+                : _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _results.isEmpty
+                        ? const Center(child: Text("검색 결과가 없습니다."))
+                        : GridView.builder(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 21, vertical: 20),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 0.7,
+                            ),
+                            itemCount: _results.length,
+                            itemBuilder: (context, index) {
+                              final book = _results[index];
+                              final isSelected = _isSelected(book);
+
+                              return GestureDetector(
+                                onTap: () => _toggleSelection(book),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.blue
+                                          : Colors.transparent,
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    child: BookFrame(imageUrl: book.image),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
           ),
         ],
       ),

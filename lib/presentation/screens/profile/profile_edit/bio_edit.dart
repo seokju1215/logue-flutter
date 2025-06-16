@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 
 class BioEdit extends StatefulWidget {
@@ -50,7 +51,7 @@ class _BioEdit extends State<BioEdit> {
         title: const Text('소개', style: TextStyle(color: AppColors.black900, fontSize: 16)),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [

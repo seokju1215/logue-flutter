@@ -135,12 +135,12 @@ class _SearchScreenState extends State<SearchScreen>
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
         title: Padding(
-          padding: const EdgeInsets.only(right: 0),
+          padding: const EdgeInsets.only(right: 22),
           child: SizedBox(
             height: 38,
             child : TextField(
@@ -149,7 +149,7 @@ class _SearchScreenState extends State<SearchScreen>
             decoration: InputDecoration(
               hintText: '사용자 이름 또는 책 이름을 검색해주세요.',
               hintStyle:
-                  const TextStyle(color: AppColors.black500, fontSize: 14),
+                  const TextStyle(color: AppColors.black500, fontSize: 14, fontWeight: FontWeight.w400),
               border: InputBorder.none,
               contentPadding:
                   const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -168,7 +168,7 @@ class _SearchScreenState extends State<SearchScreen>
           ),)
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(40),
+          preferredSize: const Size.fromHeight(33),
           child: Stack(
             children: [
               const Positioned(
@@ -197,11 +197,11 @@ class _SearchScreenState extends State<SearchScreen>
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const SizedBox(height: 19),
+                          const SizedBox(height: 12),
                           Text(
                             labels[index],
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w400,
                               color: isSelected
                                   ? AppColors.black900
                                   : AppColors.black500,

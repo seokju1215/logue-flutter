@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -106,7 +107,7 @@ class _UserNameEdit extends State<UserNameEdit> {
             style: TextStyle(color: AppColors.black900, fontSize: 16)),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [

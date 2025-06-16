@@ -91,6 +91,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       );
     }
   }
+
   Future<void> _fetchLifebookUsersOnly() async {
     try {
       final body = {
@@ -208,7 +209,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 Text(book?['title'] ?? '',
                     style: const TextStyle(
                         fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 if (book?['subtitle'] != null &&
                     (book?['subtitle'] ?? '').toString().trim().isNotEmpty) ...[
                   Text(book?['subtitle'],
@@ -220,20 +221,21 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 Text(book?['author'] ?? '',
                     style: const TextStyle(
                         fontSize: 12, color: AppColors.black500)),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 Text(
                     '${book?['publisher'] ?? ''} | ${book?['published_date']?.toString().split("-").take(2).join(". ") ?? ''}',
                     style: const TextStyle(
                         fontSize: 12, color: AppColors.black500)),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 if (book?['page_count'] != null)
                   Text('${book?['page_count']} P',
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.black500)),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 Text('도서 정보: 알라딘 제공',
                     style: const TextStyle(
                         fontSize: 12, color: AppColors.black500)),
+                const SizedBox(height: 2),
                 TextButton(
                   onPressed: () => _launchAladinLink(book?['link']),
                   style: TextButton.styleFrom(
@@ -249,7 +251,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             ),
           ),
           const SizedBox(width: 20),
-          SizedBox(width: 103, height : 153, child: BookFrame(imageUrl: book?['image'] ?? '',)),
+          SizedBox(
+              width: 103,
+              height: 153,
+              child: BookFrame(
+                imageUrl: book?['image'] ?? '',
+              )),
         ],
       ),
     );
@@ -258,30 +265,29 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Widget _buildLifeBookSection() {
     if (lifebookUsers.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 22),
-        child: Divider(height: 40, color: AppColors.black100),
+        padding: EdgeInsets.symmetric(horizontal: 0),
       );
     }
 
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final sortedUsers = [...lifebookUsers]..sort((a, b) {
-      final myId = currentUserId;
-      final aId = a['id'];
-      final bId = b['id'];
+        final myId = currentUserId;
+        final aId = a['id'];
+        final bId = b['id'];
 
-      // 1. 나 자신을 맨 앞으로
-      if (aId == myId) return -1;
-      if (bId == myId) return 1;
+        // 1. 나 자신을 맨 앞으로
+        if (aId == myId) return -1;
+        if (bId == myId) return 1;
 
-      // 2. 팔로우 여부 기준 정렬
-      final aFollowing = (a['is_following'] ?? false) as bool;
-      final bFollowing = (b['is_following'] ?? false) as bool;
+        // 2. 팔로우 여부 기준 정렬
+        final aFollowing = (a['is_following'] ?? false) as bool;
+        final bFollowing = (b['is_following'] ?? false) as bool;
 
-      if (aFollowing && !bFollowing) return -1;
-      if (!aFollowing && bFollowing) return 1;
+        if (aFollowing && !bFollowing) return -1;
+        if (!aFollowing && bFollowing) return 1;
 
-      return 0; // 그대로
-    });
+        return 0; // 그대로
+      });
     final shownUsers = sortedUsers.take(3).toList();
     final moreThanThree = lifebookUsers.length > 3;
 
@@ -305,7 +311,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         Column(
           children: shownUsers.map((user) {
             return FollowUserTile(
-              currentUserId: Supabase.instance.client.auth.currentUser?.id ?? '',
+              currentUserId:
+                  Supabase.instance.client.auth.currentUser?.id ?? '',
               userId: user['id'],
               username: user['username'],
               name: user['name'],
@@ -350,10 +357,15 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     },
                     child: const Text("더보기",
                         style:
-                            TextStyle(color: AppColors.black900, fontSize: 12)),
+                            TextStyle(color: AppColors.black900, fontSize: 12,fontWeight: FontWeight.w400)),
                   ),
                 ),
-              const Spacer(),
+              lifebookUsers.length>=3?
+              SizedBox(
+                height: 0,
+              ):SizedBox(
+                height: 30,
+              ),
               const Divider(height: 1, color: AppColors.black300),
             ],
           ),
@@ -374,10 +386,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22),
+          padding: const EdgeInsets.symmetric(horizontal: 22,),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height : 22),
               Text(title,
                   style:
                       const TextStyle(color: AppColors.black900, fontSize: 14)),
@@ -397,7 +410,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     onPressed: onToggle,
                     child: const Text("더보기",
                         style:
-                            TextStyle(color: AppColors.black900, fontSize: 12)),
+                            TextStyle(color: AppColors.black900, fontSize: 12, fontWeight: FontWeight.w400)),
                   ),
                 ),
               const SizedBox(height: 10),
@@ -443,7 +456,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             child: TextButton(
               onPressed: () => setState(() => showAllAuthors = true),
               child: const Text("더보기",
-                  style: TextStyle(color: AppColors.black900, fontSize: 12)),
+                  style: TextStyle(color: AppColors.black900, fontSize: 12,fontWeight: FontWeight.w400)),
             ),
           ),
         if (showAllAuthors && authors.length > 1)
@@ -544,7 +557,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         title: '책 정보',
         leadingIconPath: 'assets/back_arrow.svg',
         onLeadingTap: () => Navigator.pop(context),
-        trailingIconPath: '', // ❌ 안 씀
+        trailingIconPath: '',
+        // ❌ 안 씀
         onTrailingTap: () {}, // ❌ 안 씀
       ),
       body: SingleChildScrollView(
@@ -552,9 +566,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            const SizedBox(height: 37),
+            lifebookUsers.isEmpty? const SizedBox(height:0): const SizedBox(height: 37),
             _buildLifeBookSection(),
-            const SizedBox(height: 37),
+            lifebookUsers.length >= 3
+                ? const SizedBox(height: 37)
+                : const SizedBox(height: 0),
             _buildExpandableText(
                 "책 정보", book?['description'], 5, showFullDescription, () {
               setState(() => showFullDescription = true);

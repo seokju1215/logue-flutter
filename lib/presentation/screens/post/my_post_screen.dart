@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/core/widgets/post/post_item.dart';
@@ -101,12 +102,13 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         : '사용자';
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.white,
-        title: Text(appBarTitle, style: const TextStyle(fontSize: 18, color: AppColors.black900)),
+        title: Text(appBarTitle, style: const TextStyle(fontSize: 16, color: AppColors.black900)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context, _hasDeleted),
         ),
       ),

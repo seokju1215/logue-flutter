@@ -99,7 +99,7 @@ class PostItem extends StatelessWidget {
                       minimumSize: const Size(0, 34),
                     ),
                     child: const Text('책 둘러보기 →',
-                        style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1)),
+                        style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1, fontWeight: FontWeight.w400)),
                   ),
                   IconButton(
                     icon: const Icon(Icons.more_vert),
@@ -154,7 +154,7 @@ class PostItem extends StatelessWidget {
                 ),
 
                 child: const Text('책 둘러보기 →',
-                    style: TextStyle(fontSize: 14, color: AppColors.black500)),
+                    style: TextStyle(fontSize: 14, color: AppColors.black500, fontWeight: FontWeight.w400)),
               ),
           ],
         ),
@@ -164,7 +164,7 @@ class PostItem extends StatelessWidget {
             reviewTitle,
             style: const TextStyle(fontSize: 16, color: AppColors.black900, height: 1.4, letterSpacing: -0.32),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         AnimatedSize(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,

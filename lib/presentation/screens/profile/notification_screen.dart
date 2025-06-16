@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -93,8 +94,9 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(
-          onPressed: () => Navigator.of(context).pop(true),
+        leading: IconButton(
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text('알림', style: TextStyle(fontSize: 16, color: AppColors.black900),),
         centerTitle: true,

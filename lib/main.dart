@@ -11,6 +11,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'data/utils/fcm_token_util.dart';
 
+import 'package:flutter/services.dart'; // 맨 위에 추가돼 있어야 함
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // ✅ 백그라운드 메시지 핸들러
@@ -104,6 +106,13 @@ void main() async {
       navigatorKey.currentState?.pushNamed('/post_detail', arguments: targetId);
     }
   });
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.white, // 상단 상태바 배경
+    statusBarIconBrightness: Brightness.dark, // 상태바 아이콘(시계, 배터리 등) 색상
+
+    systemNavigationBarColor: Colors.white, // 하단 네비게이션 바 배경
+    systemNavigationBarIconBrightness: Brightness.dark, // 하단 아이콘 색상
+  ));
 
   runApp(const MyApp());
 }
