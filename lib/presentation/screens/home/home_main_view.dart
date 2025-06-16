@@ -113,7 +113,10 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
               ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(38),
-                child: _buildTabBar(),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 0), // 👈 간격 줄이고 싶으면 이걸 줄이기
+                  child: _buildTabBar(),
+                ),
               ),
             ),
           ),

@@ -55,74 +55,66 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
     final isQueryEmpty = _searchController.text.isEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56), // 일반 AppBar 높이
+        child: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.black900),
+                onPressed: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: SizedBox(
+                  height: 38,
+                  child: TextField(
+                    controller: _searchController,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: _search,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF191A1C),
+                      fontWeight: FontWeight.w400,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: "책 이름을 검색해주세요.",
+                      hintStyle: const TextStyle(fontSize: 14, color: AppColors.black500),
+                      filled: true,
+                      fillColor: AppColors.black200,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: AppColors.black200, width: 1.0),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: AppColors.black200, width: 1.0),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 9),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
         ),
-        centerTitle: true,
-        title: const Text("책 추가", style: TextStyle(fontSize: 18, color: AppColors.black900),),
       ),
       body: Column(
         children: [
-          const Padding(
-            padding: const EdgeInsets.fromLTRB(31, 20, 0, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "책 이름",
-                style: const TextStyle(fontSize: 14, color: AppColors.black500),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 3, 22, 12),
-            child: TextField(
-              controller: _searchController,
-              textInputAction: TextInputAction.search,
-              onSubmitted: _search,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF191A1C),
-                fontWeight: FontWeight.w400,
-              ),
-              decoration: InputDecoration(
-                hintText: "책 이름을 검색해주세요.",
-                hintStyle: TextStyle(fontSize: 14, color: AppColors.black500),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.black500, width: 1.0),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: AppColors.black500, width: 1.0),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 9),
-              ),
-            ),
-          ),
-          if (!isQueryEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 31, bottom: 8),
-              child: Row(
-                children: [
-                  Text(
-                    '“$_currentQuery” 검색결과',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-
+          if (_searchController.text.isNotEmpty)
           Expanded(
-            child: isQueryEmpty
+            child: _searchController.text.isEmpty
                 ? const SizedBox.shrink()
                 : _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _results.isEmpty
                 ? const Center(child: Text("검색 결과가 없습니다."))
                 : GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 mainAxisSpacing: 12,
@@ -132,8 +124,6 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
               itemCount: _results.length,
               itemBuilder: (context, index) {
                 final book = _results[index];
-                final isSelected = _selectedBook == book;
-
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -143,17 +133,8 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                       ),
                     );
                   },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: isSelected ? Colors.blue : Colors.transparent,
-                        width: 2,
-                      ),
-                      borderRadius: BorderRadius.circular(0),
-                    ),
-                    child: ClipRRect(
-                      child: BookFrame(imageUrl: book.image),
-                    ),
+                  child: ClipRRect(
+                    child: BookFrame(imageUrl: book.image),
                   ),
                 );
               },

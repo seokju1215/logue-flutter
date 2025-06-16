@@ -27,7 +27,7 @@ class _PostContentState extends State<PostContent> {
 
   void _truncateToFitWithButton() {
     final fullText = widget.post.reviewContent ?? '';
-    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500, letterSpacing: -0.32);
+    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500, height : 2, letterSpacing: -0.32);
 
     final span = TextSpan(text: fullText, style: textStyle);
     final tp = TextPainter(
@@ -69,7 +69,7 @@ class _PostContentState extends State<PostContent> {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500, letterSpacing: -0.32);
+    final textStyle = const TextStyle(fontSize: 12, color: AppColors.black500, height : 2,letterSpacing: -0.32);
 
     return shouldShowMoreButton
         ? RichText(

@@ -241,7 +241,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 25),
+                        padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
                         child: _buildProfileHeader(),
                       ),
                       Padding(
@@ -306,6 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SizedBox(height: 6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -320,7 +321,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(fontSize: 14, color: AppColors.black500)),
                   const SizedBox(height: 9),
                   _buildBio(context),
-                  const SizedBox(height: 9),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -514,74 +515,128 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
-    if (bio.isEmpty) return const SizedBox();
 
-    const avatarSize = 40.0; // 아바타 가로 크기
+    const avatarSize = 40.0; // 아바타 크기
     const horizontalPadding = 22.0; // 아바타 오른쪽 여백
     const maxLines = 2;
+    const lineHeight = 1.2;
+    const fontSize = 12.0;
     const textStyle = TextStyle(
       fontSize: 12,
       color: AppColors.black900,
       fontFamily: 'Inter',
       fontWeight: FontWeight.w400,
-      height: 1.0,
+      height: 1.2,
     );
+
+    final fixedHeight = fontSize * lineHeight * maxLines;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth - avatarSize - horizontalPadding;
 
-        if (_showFullBio) {
-          return ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: availableWidth, maxHeight: 150),
+        // bio 전체 보기 모드
+        if (_showFullBio && bio.isNotEmpty) {
+          return SizedBox(
+            height: fixedHeight,
             child: SingleChildScrollView(
-              child: Text(bio, style: textStyle),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: availableWidth),
+                child: Text(bio, style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.black900,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                )),
+              ),
             ),
           );
         }
 
+        // bio 없을 경우도 fixedHeight 확보
+        if (bio.isEmpty) {
+          return SizedBox(height: fixedHeight); // ✅ 공간 확보
+        }
+
+        // overflow 여부 확인
         final tp = TextPainter(
-          text: TextSpan(text: bio, style: textStyle),
+          text: TextSpan(text: bio, style: TextStyle(
+            fontSize: 12,
+            color: AppColors.black900,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w400,
+            height: 1.2,
+          )),
           maxLines: maxLines,
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: availableWidth);
 
         final isOverflow = tp.didExceedMaxLines;
 
+        // 잘리지 않는 경우
         if (!isOverflow) {
-          return ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: availableWidth),
-            child: Text(
-              bio,
-              style: textStyle,
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
+          return SizedBox(
+            height: fixedHeight,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: availableWidth),
+              child: Text(
+                bio,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.black900,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                ),
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
+              ),
             ),
           );
         }
 
+        // 잘리는 경우 + ...더보기 표시
         final truncatedText = _truncateTextToFit(
           bio,
-          textStyle,
+          TextStyle(
+            fontSize: 12,
+            color: AppColors.black900,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w400,
+            height: 1.2,
+          ),
           availableWidth,
           maxLines,
           '... 더보기',
         );
 
-        return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: availableWidth),
-          child: GestureDetector(
-            onTap: () => setState(() => _showFullBio = true),
-            child: Text.rich(
-              TextSpan(
-                style: textStyle,
-                children: [
-                  TextSpan(text: truncatedText),
-                  const TextSpan(text: '... 더보기'),
-                ],
+        return SizedBox(
+          height: fixedHeight, // ✅ 항상 높이 확보
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: availableWidth),
+            child: GestureDetector(
+              onTap: () => setState(() => _showFullBio = true),
+              child: Text(
+                '$truncatedText... 더보기',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.black900,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                ),
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
               ),
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
         );

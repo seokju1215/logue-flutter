@@ -15,6 +15,7 @@ import 'package:logue/domain/usecases/follows/unfollow_user.dart';
 import 'package:logue/domain/usecases/follows/is_following.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../../../core/widgets/common/custom_app_bar.dart';
 import 'follow/follow_tab_screen.dart';
 
 class OtherProfileScreen extends StatefulWidget {
@@ -202,6 +203,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     });
   }
 
+
   void _showZoomedAvatar(String avatarUrl) {
     showDialog(
       context: context,
@@ -249,31 +251,18 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(90),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 7),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () => Navigator.pop(context, true),
-                ),
-                Text(profile?['username'] ?? '사용자',
-                    style: Theme.of(context).textTheme.titleMedium),
-                IconButton(
-                  icon: SvgPicture.asset('assets/share_button.svg'),
-                  onPressed: () {
-                    final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
-                    if (profileLink != null && profileLink.isNotEmpty) {
-                      Share.share(profileLink);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
+        preferredSize: const Size.fromHeight(40),
+        child: CustomAppBar(
+          title: profile?['username'] ?? '사용자',
+          leadingIconPath: 'assets/back_arrow.svg', // 👈 원하는 백 아이콘 경로로 수정해줘
+          onLeadingTap: () => Navigator.pop(context, true),
+          trailingIconPath: 'assets/share_button.svg',
+          onTrailingTap: () {
+            final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
+            if (profileLink.isNotEmpty) {
+              Share.share(profileLink);
+            }
+          },
         ),
       ),
       body: SafeArea(
@@ -305,7 +294,42 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
       ),
     );
   }
-
+  ButtonStyle _outlinedStyle(BuildContext context, {required bool isFollowing}) {
+    return ButtonStyle(
+      foregroundColor: MaterialStateProperty.all(AppColors.black900),
+      backgroundColor: MaterialStateProperty.all(Colors.white),
+      overlayColor: MaterialStateProperty.resolveWith<Color?>(
+            (states) {
+          if (states.contains(MaterialState.pressed)) {
+            return AppColors.black100;
+          }
+          return null;
+        },
+      ),
+      side: MaterialStateProperty.all(
+        BorderSide(
+          color: isFollowing ? AppColors.black300 : AppColors.black500,
+          width: 1,
+        ),
+      ),
+      shape: MaterialStateProperty.all(
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+      ),
+      padding: MaterialStateProperty.all(
+        const EdgeInsets.symmetric(horizontal: 9),
+      ),
+      minimumSize: MaterialStateProperty.all(
+        const Size(120, 34),
+      ),
+      textStyle: MaterialStateProperty.all(
+        const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 1.0,
+        ),
+      ),
+    );
+  }
   Widget _buildProfileHeader() {
     final avatarUrl = profile?['avatar_url'] ?? 'basic';
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
@@ -315,6 +339,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SizedBox(height: 6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -329,7 +354,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                       style: TextStyle(fontSize: 14, color: AppColors.black500)),
                   const SizedBox(height: 9),
                   _buildBio(context),
-                  const SizedBox(height: 9),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -418,24 +443,15 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
             if (!isMyProfile)
               OutlinedButton(
                 onPressed: _isFollowProcessing ? null : _toggleFollow,
-                style: OutlinedButton.styleFrom(
-                  padding:profile?['isFollowing'] == true ? EdgeInsets.symmetric(horizontal: 43, vertical: 9) :EdgeInsets.symmetric(horizontal: 35, vertical: 9),
-                  side: BorderSide(
-                    color: profile?['isFollowing'] == true
-                        ? AppColors.black300
-                        : AppColors.black500,
-                    width: 1,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
+                style: _outlinedStyle(context, isFollowing: profile?['isFollowing'] == true),
                 child: profile?['isFollowing'] == true
-                    ? Text(
+                    ? const Text(
                   '팔로잉',
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
                     color: AppColors.black500,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.0,
                   ),
                 )
                     : Row(
@@ -444,11 +460,13 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                     Text(
                       '팔로우',
                       style: TextStyle(
-                        fontSize: 12,
                         color: AppColors.black900,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        height: 1.0,
                       ),
                     ),
-                    SizedBox(width: 1.8), // 텍스트와 아이콘 사이 여백
+                    SizedBox(width: 1.8),
                     Padding(
                       padding: EdgeInsets.only(top: 1.4),
                       child: Icon(
@@ -493,74 +511,128 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
 
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
-    if (bio.isEmpty) return const SizedBox();
 
-    const avatarSize = 40.0; // 아바타 가로 크기
+    const avatarSize = 40.0; // 아바타 크기
     const horizontalPadding = 22.0; // 아바타 오른쪽 여백
     const maxLines = 2;
+    const lineHeight = 1.2;
+    const fontSize = 12.0;
     const textStyle = TextStyle(
       fontSize: 12,
       color: AppColors.black900,
       fontFamily: 'Inter',
       fontWeight: FontWeight.w400,
-      height: 1.0,
+      height: 1.2,
     );
+
+    final fixedHeight = fontSize * lineHeight * maxLines;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth - avatarSize - horizontalPadding;
 
-        if (_showFullBio) {
-          return ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: availableWidth, maxHeight: 150),
+        // bio 전체 보기 모드
+        if (_showFullBio && bio.isNotEmpty) {
+          return SizedBox(
+            height: fixedHeight,
             child: SingleChildScrollView(
-              child: Text(bio, style: textStyle),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: availableWidth),
+                child: Text(bio, style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.black900,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                )),
+              ),
             ),
           );
         }
 
+        // bio 없을 경우도 fixedHeight 확보
+        if (bio.isEmpty) {
+          return SizedBox(height: fixedHeight); // ✅ 공간 확보
+        }
+
+        // overflow 여부 확인
         final tp = TextPainter(
-          text: TextSpan(text: bio, style: textStyle),
+          text: TextSpan(text: bio, style: TextStyle(
+            fontSize: 12,
+            color: AppColors.black900,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w400,
+            height: 1.2,
+          )),
           maxLines: maxLines,
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: availableWidth);
 
         final isOverflow = tp.didExceedMaxLines;
 
+        // 잘리지 않는 경우
         if (!isOverflow) {
-          return ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: availableWidth),
-            child: Text(
-              bio,
-              style: textStyle,
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
+          return SizedBox(
+            height: fixedHeight,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: availableWidth),
+              child: Text(
+                bio,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.black900,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                ),
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
+              ),
             ),
           );
         }
 
+        // 잘리는 경우 + ...더보기 표시
         final truncatedText = _truncateTextToFit(
           bio,
-          textStyle,
+          TextStyle(
+            fontSize: 12,
+            color: AppColors.black900,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w400,
+            height: 1.2,
+          ),
           availableWidth,
           maxLines,
           '... 더보기',
         );
 
-        return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: availableWidth),
-          child: GestureDetector(
-            onTap: () => setState(() => _showFullBio = true),
-            child: Text.rich(
-              TextSpan(
-                style: textStyle,
-                children: [
-                  TextSpan(text: truncatedText),
-                  const TextSpan(text: '... 더보기'),
-                ],
+        return SizedBox(
+          height: fixedHeight, // ✅ 항상 높이 확보
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: availableWidth),
+            child: GestureDetector(
+              onTap: () => setState(() => _showFullBio = true),
+              child: Text(
+                '$truncatedText... 더보기',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.black900,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                ),
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
               ),
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
         );

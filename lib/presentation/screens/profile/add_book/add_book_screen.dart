@@ -4,6 +4,7 @@ import 'package:logue/presentation/screens/profile/add_book/search_book_screen.d
 import 'package:reorderables/reorderables.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/widgets/book/book_frame.dart';
 import '../../../../core/widgets/dialogs/book_limit_dialog.dart';
 
 class AddBookScreen extends StatefulWidget {
@@ -121,7 +122,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('내 책장'),
+        centerTitle: true,
+        title: const Text('책 추가', style: const TextStyle(color: AppColors.black900, fontSize: 18),),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -228,15 +230,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                         height: itemHeight,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(0),
-                          child: Image.network(
-                            book['books']?['image'] ?? 'https://via.placeholder.com/150',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.broken_image),
-                              );
-                            },
+                          child: BookFrame(
+                            imageUrl: book['books']?['image'] ?? 'https://via.placeholder.com/150',
                           ),
                         ),
                       );

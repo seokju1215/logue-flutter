@@ -52,7 +52,9 @@ class FollowUserTile extends StatelessWidget {
     final showRemoveButton = isMyProfile && tabType == FollowListType.followers;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+        padding: showRemoveButton
+            ? const EdgeInsets.fromLTRB(22, 8, 10, 8)
+            : const EdgeInsets.fromLTRB(22, 8, 22, 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -61,7 +63,7 @@ class FollowUserTile extends StatelessWidget {
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 20,
+                  radius: 27,
                   backgroundImage:
                   avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                   child: avatarUrl == 'basic'
@@ -101,7 +103,9 @@ class FollowUserTile extends StatelessWidget {
                 "팔로우",
                 style: TextStyle(fontSize: 12, color: AppColors.black900),
               ),
-            ),
+            )
+          else
+            const SizedBox(height : 26),
 
           if (showRemoveButton)
             IconButton(

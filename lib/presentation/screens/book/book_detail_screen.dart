@@ -5,6 +5,7 @@ import 'package:logue/presentation/screens/book/life_book_users_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/themes/app_colors.dart';
 import '../../../core/widgets/book/book_frame.dart';
+import '../../../core/widgets/common/custom_app_bar.dart';
 import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:logue/data/datasources/aladin_book_api.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -88,6 +89,38 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('팔로우에 실패했어요. 다시 시도해 주세요.')),
       );
+    }
+  }
+  Future<void> _fetchLifebookUsersOnly() async {
+    try {
+      final body = {
+        if (widget.bookId.length == 36) 'book_id': widget.bookId,
+        if (widget.bookId.length != 36) 'isbn': widget.bookId,
+      };
+
+      final res = await Supabase.instance.client.functions.invoke(
+        'get-book-detail',
+        body: body,
+      );
+
+      final decoded = res.data as Map<String, dynamic>;
+      final rawUsers = decoded['lifebooks'] ?? [];
+      final seenIds = <String>{};
+      final uniqueUsers = <dynamic>[];
+
+      for (final u in rawUsers) {
+        if (u is Map && seenIds.add(u['id'])) {
+          uniqueUsers.add(u);
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        lifebookUsers = uniqueUsers;
+      });
+    } catch (e) {
+      debugPrint('❌ 인생책 유저 조회 실패: $e');
     }
   }
 
@@ -216,15 +249,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             ),
           ),
           const SizedBox(width: 20),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(0),
-            child: Image.network(
-              book?['image'] ?? '',
-              width: 120,
-              height: 180,
-              fit: BoxFit.cover,
-            ),
-          ),
+          SizedBox(width: 103, height : 153, child: BookFrame(imageUrl: book?['image'] ?? '',)),
         ],
       ),
     );
@@ -296,7 +321,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   ),
                 );
 
-                  await _fetchBookOnly(); // ✅ 변경되었을 때만 실행됨
+                if (mounted) {
+                  await _fetchLifebookUsersOnly();
+                }
               },
             );
           }).toList(),
@@ -308,7 +335,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               if (moreThanThree)
                 Center(
                   child: TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -317,6 +344,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                           ),
                         ),
                       );
+                      if (mounted) {
+                        await _fetchLifebookUsersOnly();
+                      }
                     },
                     child: const Text("더보기",
                         style:
@@ -510,16 +540,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        title: const Text('책 정보',
-            style: TextStyle(fontSize: 18, color: AppColors.black900)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.black900),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: CustomAppBar(
+        title: '책 정보',
+        leadingIconPath: 'assets/back_arrow.svg',
+        onLeadingTap: () => Navigator.pop(context),
+        trailingIconPath: '', // ❌ 안 씀
+        onTrailingTap: () {}, // ❌ 안 씀
       ),
       body: SingleChildScrollView(
         child: Column(

@@ -51,9 +51,10 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: Text(
           widget.username,
-          style: const TextStyle(color: AppColors.black900, fontSize: 16),
+          style: const TextStyle(color: AppColors.black900, fontSize: 18),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),

@@ -1,130 +1,147 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/core/widgets/follow/follow_user_tile.dart';
-import 'package:logue/data/repositories/follow_repository.dart';
-import 'package:logue/domain/usecases/follows/follow_user.dart';
+import 'package:logue/presentation/screens/profile/other_profile_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../profile/other_profile_screen.dart';
+import '../../../core/widgets/common/custom_app_bar.dart';
 
 class LifebookUsersScreen extends StatefulWidget {
   final List<Map<String, dynamic>> users;
 
-  const LifebookUsersScreen({
-    super.key,
-    required this.users,
-  });
+  const LifebookUsersScreen({super.key, required this.users});
 
   @override
   State<LifebookUsersScreen> createState() => _LifebookUsersScreenState();
 }
 
 class _LifebookUsersScreenState extends State<LifebookUsersScreen> {
-  late final String? currentUserId;
-  late final FollowRepository _followRepo;
-  late final FollowUser _followUser;
-  late List<Map<String, dynamic>> userList;
+  late List<Map<String, dynamic>> lifebookUsers;
+  late String currentUserId;
 
   @override
   void initState() {
     super.initState();
-    currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    lifebookUsers = _sortUsers(widget.users);
+  }
 
-    _followRepo = FollowRepository(
-      client: Supabase.instance.client,
-      functionBaseUrl: dotenv.env['FUNCTION_BASE_URL']!,
-    );
-    _followUser = FollowUser(_followRepo);
+  List<Map<String, dynamic>> _sortUsers(List<Map<String, dynamic>> users) {
+    final sorted = [...users];
+    sorted.sort((a, b) {
+      if (a['id'] == currentUserId) return -1;
+      if (b['id'] == currentUserId) return 1;
 
-    userList = [...widget.users];
-    userList.sort((a, b) {
-      final aIsMe = a['id'] == currentUserId;
-      final bIsMe = b['id'] == currentUserId;
+      final aFollowing = (a['is_following'] ?? false) as bool;
+      final bFollowing = (b['is_following'] ?? false) as bool;
 
-      if (aIsMe) return -1; // 내가 a면 a를 앞으로
-      if (bIsMe) return 1;  // 내가 b면 b를 뒤로
+      if (aFollowing && !bFollowing) return -1;
+      if (!aFollowing && bFollowing) return 1;
 
-      final aIsFollowing = a['is_following'] == true;
-      final bIsFollowing = b['is_following'] == true;
-
-      if (aIsFollowing && !bIsFollowing) return -1; // 팔로우한 사람이 앞으로
-      if (!aIsFollowing && bIsFollowing) return 1;
-
-      return 0; // 나머지는 그대로
+      return 0;
     });
+    return sorted;
   }
 
   Future<void> _handleFollow(String userId) async {
-    await _followUser(userId);
+    final index = lifebookUsers.indexWhere((u) => u['id'] == userId);
+    if (index == -1) return;
 
-    // 팔로우 상태 최신화
+    final prev = [...lifebookUsers];
     setState(() {
-      userList = userList.map((user) {
-        if (user['id'] == userId) {
-          return {...user, 'is_following': true};
-        }
-        return user;
-      }).toList();
+      lifebookUsers[index] = {
+        ...lifebookUsers[index],
+        'is_following': true,
+      };
     });
-  }
-  void _refreshUserList() {
-    setState(() {
-      userList = [...widget.users];
-      userList.sort((a, b) {
-        final aIsMe = a['id'] == currentUserId;
-        final bIsMe = b['id'] == currentUserId;
 
-        if (aIsMe) return -1;
-        if (bIsMe) return 1;
+    final res = await Supabase.instance.client.functions.invoke(
+      'follow-user',
+      body: {'target_user_id': userId},
+      headers: {
+        'Authorization':
+        'Bearer ${Supabase.instance.client.auth.currentSession?.accessToken}'
+      },
+    );
 
-        final aIsFollowing = a['is_following'] == true;
-        final bIsFollowing = b['is_following'] == true;
-
-        if (aIsFollowing && !bIsFollowing) return -1;
-        if (!aIsFollowing && bIsFollowing) return 1;
-
-        return 0;
+    if (res.status == null || res.status! >= 400) {
+      // ❌ 실패했으니 롤백 + 안내
+      setState(() {
+        lifebookUsers = prev;
       });
-    });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('팔로우에 실패했어요.')),
+      );
+    } else {
+      // ✅ 성공 시 UI가 잘 반영된 상태 유지
+      print('✅ 팔로우 성공: ${res.data}');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        title: const Text('인생책 설정한 사람들',
-            style: TextStyle(color: AppColors.black900, fontSize: 16)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.black900),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: CustomAppBar(
+        title: '인생 책으로 설정한 사람',
+        leadingIconPath: 'assets/back_arrow.svg',
+        onLeadingTap: () => Navigator.pop(context),
+        trailingIconPath: '', // ❌ 안 씀
+        onTrailingTap: () {}, // ❌ 안 씀
       ),
-      body: userList.isEmpty
-          ? const Center(
-          child: Text('아직 인생책으로 설정한 사람이 없어요.',
-              style: TextStyle(color: AppColors.black500)))
-          : ListView.builder(
-        itemCount: userList.length,
+      backgroundColor: Colors.white,
+      body: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 0),
+        itemCount: lifebookUsers.length,
         itemBuilder: (context, index) {
-          final user = userList[index];
+          final user = lifebookUsers[index];
           return FollowUserTile(
+            currentUserId: currentUserId,
             userId: user['id'],
-            username: user['username'] ?? '사용자',
-            name: user['name'] ?? '',
+            username: user['username'],
+            name: user['name'],
             avatarUrl: user['avatar_url'] ?? 'basic',
             isFollowing: user['is_following'] ?? false,
-            isMyProfile: user['id'] == currentUserId,
+            isMyProfile: false,
             onTapFollow: () => _handleFollow(user['id']),
-            currentUserId: Supabase.instance.client.auth.currentUser?.id ?? '',
-            onTapProfile: () async{
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => OtherProfileScreen(userId: user['id']),
-              ));
-              _refreshUserList();
+            onTapProfile: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OtherProfileScreen(userId: user['id']),
+                ),
+              );
+
+              if (mounted && result == true) {
+                final profileRes = await Supabase.instance.client
+                    .from('profiles')
+                    .select('id, username, name, avatar_url')
+                    .eq('id', user['id'])
+                    .maybeSingle();
+
+                final followRes = await Supabase.instance.client
+                    .from('follows')
+                    .select('id')
+                    .eq('follower_id', currentUserId)
+                    .eq('following_id', user['id'])
+                    .maybeSingle();
+
+                final profile = profileRes;
+                final isFollowing = followRes != null;
+
+                if (profile != null) {
+                  setState(() {
+                    final index = lifebookUsers
+                        .indexWhere((u) => u['id'] == user['id']);
+                    if (index != -1) {
+                      lifebookUsers[index] = {
+                        ...profile,
+                        'is_following': isFollowing,
+                      };
+                      lifebookUsers = _sortUsers(lifebookUsers);
+                    }
+                  });
+                }
+              }
             },
           );
         },

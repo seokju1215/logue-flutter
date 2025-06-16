@@ -24,43 +24,46 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     return SafeArea(
       child: SizedBox(
         height: preferredSize.height,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            GestureDetector(
-              onTap: onLeadingTap,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22.73),
-                child: SvgPicture.asset(
-                  leadingIconPath,
-                  width: 24,
-                  height: 24,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: onLeadingTap,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22.73),
+                  child: SvgPicture.asset(
+                    leadingIconPath,
+                    width: 24,
+                    height: 24,
+                  ),
                 ),
               ),
-            ),
-            Text(
-              title,
-              style: TextStyle(fontSize: 18, color: AppColors.black900),
-            ),
-            GestureDetector(
-              onTap: onTrailingTap,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22.73),
-                child: SvgPicture.asset(
-                  trailingIconPath,
-                  width: 24,
-                  height: 24,
+              Text(
+                title,
+                style: TextStyle(fontSize: 16, color: AppColors.black900),
+              ),
+              GestureDetector(
+                onTap: onTrailingTap,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22.73),
+                  child: SvgPicture.asset(
+                    trailingIconPath,
+                    width: 24,
+                    height: 24,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(40);
+  Size get preferredSize => const Size.fromHeight(56);
 }

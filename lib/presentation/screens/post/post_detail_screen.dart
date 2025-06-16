@@ -27,6 +27,7 @@ class PostDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -55,12 +56,12 @@ class PostDetailScreen extends StatelessWidget {
                       children: [
                         (avatarUrl.isEmpty || avatarUrl == 'basic')
                             ? CircleAvatar(
-                          radius: 16,
+                          radius: 22.5,
                           backgroundColor: AppColors.black100,
-                          child: Image.asset('assets/basic_avatar.png', width: 32, height: 32),
+                          child: Image.asset('assets/basic_avatar.png', width: 45, height: 45),
                         )
                             : CircleAvatar(
-                          radius: 16,
+                          radius: 22.5,
                           backgroundImage: NetworkImage(avatarUrl),
                           backgroundColor: Colors.grey[300],
                         ),
@@ -81,7 +82,8 @@ class PostDetailScreen extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.black300),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 7),
+                      padding: const EdgeInsets.symmetric(horizontal: 19),
+                      minimumSize: const Size(0, 34),
                     ),
                     child: const Text('책 둘러보기 →', style: TextStyle(color: AppColors.black500, fontSize: 14)),
                   ),
@@ -97,15 +99,13 @@ class PostDetailScreen extends StatelessWidget {
                 Text(
                   reviewTitle,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black900,
+                      fontSize: 16, color: AppColors.black900, height: 1.4, letterSpacing: -0.32
                   ),
                 ),
               const SizedBox(height: 12),
               Text(
                 reviewContent,
-                style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                style: const TextStyle(fontSize: 12, color: AppColors.black500, height : 2,letterSpacing: -0.32),
               ),
             ],
           ),

@@ -22,7 +22,7 @@ class ProfileEditButton extends StatelessWidget {
           padding: EdgeInsets.only(left: 9),
           child:Text(
             label,
-            style: TextStyle(fontSize: 12, color: AppColors.black500),
+            style: TextStyle(fontSize: 12, color: AppColors.black500, fontWeight: FontWeight.w400,),
           ),),
         Stack(
           children: [
@@ -45,7 +45,7 @@ class ProfileEditButton extends StatelessWidget {
                       username,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.black900, fontSize: 14),
+                      style: const TextStyle(color: AppColors.black900, fontSize: 14, fontWeight: FontWeight.w400,),
                     ),
                   ),
                 ],

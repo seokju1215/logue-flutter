@@ -62,7 +62,7 @@ class PostItem extends StatelessWidget {
                 children: [
                   (avatarUrl.isEmpty || avatarUrl == 'basic')
                       ? CircleAvatar(
-                    radius: 16,
+                    radius: 22.5,
                     backgroundColor: Colors.grey[300],
                     child: Image.asset(
                       'assets/basic_avatar.png',
@@ -95,7 +95,8 @@ class PostItem extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppColors.black300),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 19),
+                      minimumSize: const Size(0, 34),
                     ),
                     child: const Text('책 둘러보기 →',
                         style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1)),
@@ -148,7 +149,8 @@ class PostItem extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.black300, width: 1),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                  padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 19),
+                  minimumSize: const Size(0, 34),
                 ),
 
                 child: const Text('책 둘러보기 →',
@@ -156,11 +158,11 @@ class PostItem extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 10),
         if (reviewTitle.isNotEmpty)
           Text(
             reviewTitle,
-            style: const TextStyle(fontSize: 16, color: AppColors.black900, height: 1.5, letterSpacing: -0.32),
+            style: const TextStyle(fontSize: 16, color: AppColors.black900, height: 1.4, letterSpacing: -0.32),
           ),
         const SizedBox(height: 8),
         AnimatedSize(

@@ -141,7 +141,9 @@ class _SearchScreenState extends State<SearchScreen>
         titleSpacing: 0,
         title: Padding(
           padding: const EdgeInsets.only(right: 0),
-          child: TextField(
+          child: SizedBox(
+            height: 38,
+            child : TextField(
             controller: _searchController,
             style: const TextStyle(color: AppColors.black900, fontSize: 14),
             decoration: InputDecoration(
@@ -163,7 +165,7 @@ class _SearchScreenState extends State<SearchScreen>
               ),
             ),
             onSubmitted: _search,
-          ),
+          ),)
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(40),
@@ -352,7 +354,7 @@ class _SearchScreenState extends State<SearchScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(
-                          padding: EdgeInsets.fromLTRB(22, 19, 22, 19),
+                          padding: EdgeInsets.fromLTRB(22, 19, 22, 6),
                           child: Text("계정",
                               style: TextStyle(
                                   fontSize: 16, color: AppColors.black900)),
