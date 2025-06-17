@@ -263,7 +263,6 @@ class _SearchScreenState extends State<SearchScreen>
                                         username: e.username,
                                         name: e.name,
                                         avatarUrl: e.avatarUrl ?? 'basic',
-                                        isFollowing: e.isFollowing,
                                         isMyProfile: false,
                                         currentUserId: Supabase.instance.client.auth.currentUser!.id,
                                         onTapFollow: () async {
@@ -362,7 +361,6 @@ class _SearchScreenState extends State<SearchScreen>
                               username: e.username,
                               name: e.name,
                               avatarUrl: e.avatarUrl ?? 'basic',
-                              isFollowing: e.isFollowing,
                               isMyProfile: false,
                               currentUserId: Supabase.instance.client.auth.currentUser!.id,
                               onTapFollow: () async {

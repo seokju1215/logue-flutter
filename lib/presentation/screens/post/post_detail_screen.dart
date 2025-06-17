@@ -94,7 +94,7 @@ class PostDetailScreen extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
               if (reviewTitle.isNotEmpty)
                 Text(
                   reviewTitle,

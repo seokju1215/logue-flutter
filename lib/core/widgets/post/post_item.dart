@@ -13,6 +13,8 @@ import 'package:logue/core/widgets/dialogs/post_action_dialog.dart';
 import 'package:logue/core/widgets/dialogs/post_delete_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../data/utils/amplitude_util.dart';
+
 class PostItem extends StatelessWidget {
   final BookPostModel post;
   final bool isMyPost;
@@ -54,9 +56,12 @@ class PostItem extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
+                final result = Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => OtherProfileScreen(userId: post.userId),
                 ));
+                if (result == true) {
+                  onEditSuccess?.call(); // 여기를 onRefresh? 로 바꿔도 좋음
+                }
               },
               child: Row(
                 children: [
@@ -125,6 +130,12 @@ class PostItem extends StatelessWidget {
                               final userBookApi = UserBookApi(Supabase.instance.client);
                               try {
                                 await userBookApi.deleteBook(post.id);
+                                AmplitudeUtil.log('book_deleted', props: {
+                                  'book_id': post.bookId,
+                                  'post_id': post.id,
+                                  'timestamp': DateTime.now().toIso8601String(),
+                                });
+
                                 onDeleteSuccess?.call();
                               } catch (_) {
                                 ScaffoldMessenger.of(context).showSnackBar(

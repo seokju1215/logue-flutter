@@ -5,6 +5,12 @@ import '../../core/widgets/dialogs/update_required_dialog.dart';
 
 
 class UpdateCheckUtil {
+  static Future<String> getCurrentAppVersion() async {
+  final packageInfo = await PackageInfo.fromPlatform();
+  return packageInfo.version;
+  }
+
+
   static Future<void> checkForUpdate(BuildContext context) async {
     final client = Supabase.instance.client;
     final packageInfo = await PackageInfo.fromPlatform();

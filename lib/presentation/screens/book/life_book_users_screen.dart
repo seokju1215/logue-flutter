@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/core/widgets/follow/follow_user_tile.dart';
 import 'package:logue/presentation/screens/profile/other_profile_screen.dart';
@@ -81,12 +82,22 @@ class _LifebookUsersScreenState extends State<LifebookUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: '인생 책으로 설정한 사람',
-        leadingIconPath: 'assets/back_arrow.svg',
-        onLeadingTap: () => Navigator.pop(context),
-        trailingIconPath: '', // ❌ 안 씀
-        onTrailingTap: () {}, // ❌ 안 씀
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          '인생 책으로 설정한 사람',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.black900,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        leading: IconButton(
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       backgroundColor: Colors.white,
       body: ListView.builder(
@@ -100,7 +111,6 @@ class _LifebookUsersScreenState extends State<LifebookUsersScreen> {
             username: user['username'],
             name: user['name'],
             avatarUrl: user['avatar_url'] ?? 'basic',
-            isFollowing: user['is_following'] ?? false,
             isMyProfile: false,
             onTapFollow: () => _handleFollow(user['id']),
             onTapProfile: () async {

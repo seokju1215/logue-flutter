@@ -9,7 +9,8 @@ import '../../../../core/widgets/book/book_frame.dart';
 import '../../../../core/widgets/dialogs/book_limit_dialog.dart';
 
 class AddBookScreen extends StatefulWidget {
-  const AddBookScreen({Key? key}) : super(key: key);
+  final bool isLimitReached;
+  const AddBookScreen({Key? key, required this.isLimitReached, }) : super(key: key);
 
   @override
   State<AddBookScreen> createState() => _AddBookScreenState();
@@ -164,7 +165,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        if (books.length >= 9) {
+                        if (widget.isLimitReached) {
                           showDialog(
                             context: context,
                             builder: (_) => const BookLimitDialog(),
@@ -180,7 +181,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       child: const Text(
                         '책 추가 +',
                         style:
-                        TextStyle(fontSize: 12, color: AppColors.black900),
+                        TextStyle(fontSize: 13, color: AppColors.black900, height: 1.25),
                       ),
                     ),
                   ),

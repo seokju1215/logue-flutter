@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/domain/usecases/get_notifications.dart';
 
+import '../../../core/widgets/common/custom_app_bar.dart';
+
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
 
@@ -94,12 +96,21 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          '알림',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.black900,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('알림', style: TextStyle(fontSize: 16, color: AppColors.black900),),
-        centerTitle: true,
       ),
       body: Column(
         children: [

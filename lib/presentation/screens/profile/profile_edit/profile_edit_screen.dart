@@ -11,6 +11,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/widgets/dialogs/delete_account_dialog.dart';
 import '../../../../core/widgets/dialogs/logout_dialog.dart';
+import '../../../../data/utils/amplitude_util.dart';
+import 'bio_edit.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   final Map<String, dynamic> initialProfile;
@@ -61,10 +63,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
 
-    final oldJob = widget.initialProfile['job'] ?? '';
+    final oldProfile = widget.initialProfile;
+
+    final oldUsername = oldProfile['username'] ?? '';
+    final oldName = oldProfile['name'] ?? '';
+    final oldJob = oldProfile['job'] ?? '';
+    final oldBio = oldProfile['bio'] ?? '';
+    final oldAvatarUrl = oldProfile['avatar_url'] ?? 'basic';
 
     try {
-      // 프로필 업데이트
       await client.from('profiles').update({
         'username': username,
         'name': name,
@@ -73,7 +80,24 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         'avatar_url': avatarUrl,
       }).eq('id', userId);
 
-      // job이 변경되었을 경우 job_tags 업데이트
+      // ✅ 변경된 필드만 Amplitude 로그
+      if (username != oldUsername) {
+        AmplitudeUtil.log('profile_edited', props: {'field': 'username'});
+      }
+      if (name != oldName) {
+        AmplitudeUtil.log('profile_edited', props: {'field': 'name'});
+      }
+      if (job != oldJob) {
+        AmplitudeUtil.log('profile_edited', props: {'field': 'job'});
+      }
+      if (bio != oldBio) {
+        AmplitudeUtil.log('profile_edited', props: {'field': 'bio'});
+      }
+      if (avatarUrl != oldAvatarUrl) {
+        AmplitudeUtil.log('profile_edited', props: {'field': 'avatar'});
+      }
+
+      // 직업 태그 업데이트
       if (oldJob != job) {
         final res = await client.functions.invoke(
           'quick-endpoint',
@@ -82,15 +106,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             'newJob': job,
           },
         );
-        debugPrint('📡 Supabase 함수 호출 결과 status: ${res.status}');
-        debugPrint('📡 Supabase 함수 호출 결과 data: ${res.data}');
         if (res.status != 200) {
           throw Exception('직업 태그 업데이트 실패');
         }
       }
 
       if (mounted) {
-
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -196,10 +217,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     label: '소개',
                     username: bio,
                     onTap: () async {
-                      final result = await Navigator.pushNamed(
+                      final result = await Navigator.push(
                         context,
-                        '/bio_edit',
-                        arguments: {'currentBio': bio},
+                        MaterialPageRoute(
+                          builder: (_) => BioEdit(currentBio: bio),
+                        ),
                       );
 
                       if (result != null && result is Map<String, dynamic>) {
@@ -225,9 +247,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               child: Column(
                 children: [
                   _buildMenuItem(context, '고객센터', () {
+                    AmplitudeUtil.log('link_clicked', props: {
+                      'type': 'customer_support',
+                      'screen': 'profile_edit',
+                    });
                     _launchUrl('https://general-spatula-561.notion.site/LOGUE-2024e6fb980480dfb0e8d5908dec40bb');
                   }),
                   _buildMenuItem(context, '법적 고지사항', () {
+                    AmplitudeUtil.log('link_clicked', props: {
+                      'type': 'legal_notice',
+                      'screen': 'profile_edit',
+                    });
                     _launchUrl('https://general-spatula-561.notion.site/2024e6fb980481589b15c74214c83718');
                   }),
                   _buildMenuItem(context, '로그아웃', () {
@@ -266,7 +296,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 22),
                     child: Text(
-                      '로그퍼블릭(주)는 개인정보처리방침, 이용약관, 환불정책, 사업자정보 등을 법적 고지사항 링크에서 통합하여 안내합니다.',
+                      '(주)로그퍼블릭은 개인정보 처리방침, 이용약관, 환불정책,\n사업자정보 등을 법적 고지사항 링크에서 통합하여 안내합니다.',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 12, color: AppColors.black500),
                     ),

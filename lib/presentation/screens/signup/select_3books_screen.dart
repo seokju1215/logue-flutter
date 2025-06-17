@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import '../../../data/datasources/aladin_book_api.dart';
 import '../../../data/models/book_model.dart';
+import '../../../data/utils/amplitude_util.dart';
 import '../../../data/utils/fcmPermissionUtil.dart';
 import '../../../domain/usecases/add_book.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -160,6 +161,11 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           'order_index': i,
           'review_title': '',
           'review_content': '',
+        });
+        AmplitudeUtil.log('book_added', props: {
+          'source': 'select_3books',
+          'review_length': 0,
+          'timestamp': DateTime.now().toIso8601String(),
         });
       }
 

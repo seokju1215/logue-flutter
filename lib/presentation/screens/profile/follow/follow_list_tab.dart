@@ -180,7 +180,7 @@ class _FollowListTabState extends State<FollowListTab> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: const [
           Text(
-            "친구를 추가해 서로의 인생 책을 공유해보세요.",
+            "친구를 팔로우해 서로의 인생 책을 공유해보세요.",
             style:
             TextStyle(fontSize: 12, color: AppColors.black500),
           ),
@@ -203,7 +203,6 @@ class _FollowListTabState extends State<FollowListTab> {
           username: username,
           name: name,
           avatarUrl: avatarUrl,
-          isFollowing: isFollowing,
           isMyProfile: isMyProfile,
           tabType: widget.type,
           onTapFollow: () => _handleFollow(user['id']),

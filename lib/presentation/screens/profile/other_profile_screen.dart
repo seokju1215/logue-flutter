@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/presentation/screens/post/my_post_screen.dart';
@@ -15,19 +16,21 @@ import 'package:logue/domain/usecases/follows/unfollow_user.dart';
 import 'package:logue/domain/usecases/follows/is_following.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../../../core/providers/follow_state_provider.dart';
 import '../../../core/widgets/common/custom_app_bar.dart';
+import '../../../data/utils/amplitude_util.dart';
 import 'follow/follow_tab_screen.dart';
 
-class OtherProfileScreen extends StatefulWidget {
+class OtherProfileScreen extends ConsumerStatefulWidget {
   final String userId;
 
   const OtherProfileScreen({Key? key, required this.userId}) : super(key: key);
 
   @override
-  State<OtherProfileScreen> createState() => _OtherProfileScreenState();
+  ConsumerState<OtherProfileScreen> createState() => _OtherProfileScreenState();
 }
 
-class _OtherProfileScreenState extends State<OtherProfileScreen> {
+class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   bool _showFullBio = false;
   final client = Supabase.instance.client;
   final ScrollController _scrollController = ScrollController();
@@ -37,6 +40,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   late final IsFollowing _isFollowing;
   bool _isScrollable = false;
   bool _isFollowProcessing = false;
+
 
   Map<String, dynamic>? profile;
   late final GetUserBooks _getUserBooks;
@@ -55,6 +59,10 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     _getUserBooks = GetUserBooks(UserBookApi(client));
 
     _increaseVisitors();
+    AmplitudeUtil.log('profile_visited', props: {
+      'profile_type': 'other',
+      'source_page': 'other_profile_screen', // 필요 시 매개변수로 받기
+    });
     _fetchProfile();
     _loadBooks();
 
@@ -245,6 +253,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     if (profile == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -254,13 +263,16 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
         preferredSize: const Size.fromHeight(40),
         child: CustomAppBar(
           title: profile?['username'] ?? '사용자',
-          leadingIconPath: 'assets/back_arrow.svg', // 👈 원하는 백 아이콘 경로로 수정해줘
+          leadingIconPath: 'assets/back_arrow.svg',
           onLeadingTap: () => Navigator.pop(context, true),
           trailingIconPath: 'assets/share_button.svg',
           onTrailingTap: () {
             final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
             if (profileLink.isNotEmpty) {
               Share.share(profileLink);
+              AmplitudeUtil.log('profile_shared', props: {
+                'target_type': 'other',
+              });
             }
           },
         ),
@@ -335,6 +347,8 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final profileUserId = profile?['id'];
     final isMyProfile = currentUserId == profileUserId;
+    final isFollowing = ref.watch(followStateProvider(widget.userId));
+    final followNotifier = ref.read(followStateProvider(widget.userId).notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,23 +455,29 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
             const Spacer(),
             if (!isMyProfile)
               OutlinedButton(
-                onPressed: _isFollowProcessing ? null : _toggleFollow,
-                style: _outlinedStyle(context, isFollowing: profile?['isFollowing'] == true),
-                child: profile?['isFollowing'] == true
+                onPressed: () {
+                  if (isFollowing) {
+                    followNotifier.unfollow();
+                  } else {
+                    followNotifier.follow();
+                  }
+                },
+                style: _outlinedStyle(context, isFollowing: isFollowing),
+                child: isFollowing
                     ? const Text(
                   '팔로잉',
                   style: TextStyle(
                     color: AppColors.black500,
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
-                    height: 1.25,
+                    height: 1,
                   ),
                 )
                     : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: const [
                     Text(
-                      '팔로우',
+                      '팔로우 +',
                       style: TextStyle(
                         color: AppColors.black900,
                         fontSize: 13,
@@ -466,17 +486,10 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                       ),
                     ),
                     SizedBox(width: 1.8),
-                    Padding(
-                      padding: EdgeInsets.only(top: 1.4),
-                      child: Icon(
-                        Icons.add,
-                        size: 14,
-                        color: AppColors.black900,
-                      ),
-                    ),
+
                   ],
                 ),
-              ),
+              )
           ],
         ),
       ],

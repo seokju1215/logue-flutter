@@ -13,6 +13,8 @@ import 'package:logue/presentation/screens/profile/profile_edit/profile_edit_scr
 import 'dart:ui'; // 맨 위에 추가
 
 import '../../../core/widgets/common/custom_app_bar.dart';
+import '../../../core/widgets/profile/bio_content.dart';
+import '../../../data/utils/amplitude_util.dart';
 import '../../../domain/entities/follow_list_type.dart';
 import '../main_navigation_screen.dart';
 import '../post/my_post_screen.dart';
@@ -44,6 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _logProfileVisited();
     _checkUnreadNotifications();
     _getUserBooks = GetUserBooks(UserBookApi(client));
     _fetchProfile();
@@ -57,6 +60,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     client.auth.onAuthStateChange.listen((_) {
       if (mounted) setState(() {});
+    });
+  }
+  void _logProfileVisited() {
+    AmplitudeUtil.log('profile_visited', props: {
+      'profile_type': 'my',
+      'source_page': 'profile',
     });
   }
   Future<void> _checkUnreadNotifications() async {
@@ -112,6 +121,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final safeIndex = (max - trailingText.length).clamp(0, text.length);
     return text.substring(0, safeIndex);
+  }
+  String formatCount(int count) {
+    if (count >= 1000) {
+      double divided = count / 1000;
+      double floored = (divided * 10).floorToDouble() / 10;
+      return '${floored.toStringAsFixed(1)}k';
+    } else {
+      return count.toString();
+    }
   }
 
   @override
@@ -215,13 +233,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             setState(() => _showFullBio = false);
           },
           trailingIconPath: 'assets/edit_icon.svg',
-          onTrailingTap: () {
+          onTrailingTap: () async {
             setState(() => _showFullBio = false);
-            Navigator.of(context, rootNavigator: true).push(
+            final result = await Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (_) => ProfileEditScreen(initialProfile: profile!),
               ),
             );
+            print('👈 result 받음: $result');
+            if (result == true) {
+              _fetchProfile();
+            }
           },
         ),
       ),
@@ -272,7 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   return TextButton(
                                     onPressed: () async {
                                       final result = await Navigator.of(context, rootNavigator: true).push(
-                                        MaterialPageRoute(builder: (_) => const AddBookScreen()),
+                                        MaterialPageRoute(builder: (_) => AddBookScreen(isLimitReached: books.length >= 9,)),
                                       );
                                       if (result == true) {
                                         _loadBooks(); // ✅ 책 목록 다시 불러오기
@@ -425,7 +447,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () async {
               setState(() => _showFullBio = false);
               final result = await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AddBookScreen()),
+                MaterialPageRoute(builder: (_) => AddBookScreen(isLimitReached: books.length >= 9,)),
               );
               if (result == true) {
                 _loadBooks(); // ✅ 변경사항 반영
@@ -443,6 +465,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
               if (profileLink != null && profileLink.isNotEmpty) {
                 Share.share(profileLink);
+                AmplitudeUtil.log('profile_shared', props: {
+                  'target_type': 'my',
+                  'source_page' : 'profile page'
+                });
               }
             },
             child: const Text("프로필 공유",
@@ -515,101 +541,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
-
     const avatarSize = 40.0;
-    const horizontalPadding = 22.0;
-    const maxLines = 2;
-    const lineHeight = 1.2;
-    const fontSize = 12.0;
-    const textStyle = TextStyle(
-      fontSize: fontSize,
-      color: AppColors.black900,
-      fontFamily: 'Inter',
-      fontWeight: FontWeight.w400,
-      height: lineHeight,
-    );
-
-    final fixedHeight = fontSize * lineHeight * maxLines;
+    const horizontalPadding = 11.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth - avatarSize - horizontalPadding;
-
-        if (bio.isEmpty) {
-          return SizedBox(height: fixedHeight);
-        }
-
-        // 전체 보기 모드
-        if (_showFullBio) {
-          return ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: availableWidth),
-            child: Text(
-              bio,
-              style: textStyle,
-              softWrap: true,
-            ),
-          );
-        }
-
-        // overflow 판단용
-        final tp = TextPainter(
-          text: TextSpan(text: bio, style: textStyle),
-          textDirection: TextDirection.ltr,
-          maxLines: maxLines,
-          ellipsis: '...',
-        )..layout(maxWidth: availableWidth);
-
-        final isOverflow = tp.didExceedMaxLines;
-
-        if (!isOverflow) {
-          return SizedBox(
-            height: fixedHeight,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: availableWidth),
-              child: Text(
-                bio,
-                style: textStyle,
-                maxLines: maxLines,
-                overflow: TextOverflow.ellipsis,
-                textHeightBehavior: const TextHeightBehavior(
-                  applyHeightToFirstAscent: false,
-                  applyHeightToLastDescent: false,
-                ),
-              ),
-            ),
-          );
-        }
-
-        return SizedBox(
-          height: fixedHeight,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: availableWidth),
-            child: GestureDetector(
-              onTap: () => setState(() => _showFullBio = true),
-              child: Text.rich(
-                TextSpan(
-                  text: bio,
-                  style: textStyle,
-                  children: const [
-                    TextSpan(
-                      text: '... 더보기',
-                      style: TextStyle(
-                        color: AppColors.black500,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-                maxLines: maxLines,
-                overflow: TextOverflow.ellipsis,
-                textHeightBehavior: const TextHeightBehavior(
-                  applyHeightToFirstAscent: false,
-                  applyHeightToLastDescent: false,
-                ),
-              ),
-            ),
-          ),
-        );
+        return BioContent(bio: bio, maxWidth: availableWidth);
       },
     );
   }
@@ -621,7 +559,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(label,
             style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1)),
         const SizedBox(height: 6),
-        Text('$count',
+        Text(formatCount(count),
             style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1)),
       ],
     );

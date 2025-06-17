@@ -1,20 +1,25 @@
 
 import 'dart:io' show Platform;
+import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logue/presentation/routes/on_generate_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/observers/screen_tracking_observer.dart';
 import 'core/themes/app_colors.dart';
 import 'core/themes/text_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'presentation/routes/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'data/utils/fcm_token_util.dart';
-
-import 'package:flutter/services.dart'; // 맨 위에 추가돼 있어야 함
+import 'package:amplitude_flutter/amplitude.dart';
+import 'package:flutter/services.dart';
+import 'presentation/routes/on_generate_route.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
+final Amplitude amplitude = Amplitude.getInstance(instanceName: "default");
+const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: false);
 // ✅ 백그라운드 메시지 핸들러
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -32,6 +37,10 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
     authFlowType: AuthFlowType.pkce,
   );
+
+  amplitude.init(dotenv.env['AMPLITUDE_API_KEY']!);
+  final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? 'anonymous';
+  amplitude.setUserId(currentUserId);
   FcmTokenUtil.listenTokenRefresh();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -113,16 +122,49 @@ void main() async {
     systemNavigationBarColor: Colors.white, // 하단 네비게이션 바 배경
     systemNavigationBarIconBrightness: Brightness.dark, // 하단 아이콘 색상
   ));
-
-  runApp(const MyApp());
+  amplitude.logEvent('app_opened');
+  runApp(
+    DevicePreview(
+      enabled: isQA,
+      builder: (context) => const ProviderScope(child: MyApp()),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    amplitude.logEvent('session_started');
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      amplitude.logEvent('session_ended');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      useInheritedMediaQuery: isQA,
+      locale: isQA ? DevicePreview.locale(context) : null,
+      builder: isQA ? DevicePreview.appBuilder : null,
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       title: 'Logue',
@@ -131,11 +173,14 @@ class MyApp extends StatelessWidget {
           backgroundColor: AppColors.white500,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
-        appBarTheme: const AppBarTheme(backgroundColor: AppColors.white500,surfaceTintColor: Colors.transparent,),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.white500,
+          surfaceTintColor: Colors.transparent,
+        ),
         scaffoldBackgroundColor: AppColors.white500,
-        canvasColor: AppColors.white500, // ✅ 추가: 전체적으로 하얗게 고정
+        canvasColor: AppColors.white500,
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: AppColors.white500, // ✅ 바텀바 배경 흰색
+          backgroundColor: AppColors.white500,
           elevation: 0,
         ),
         textTheme: GoogleFonts.interTextTheme().apply(
@@ -163,7 +208,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       initialRoute: '/splash',
-      routes: appRoutes,
+      onGenerateRoute: onGenerateRoute,
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/data/models/book_post_model.dart';
 import 'package:logue/presentation/screens/main_navigation_screen.dart';
 
+import '../../../data/utils/amplitude_util.dart';
 import 'my_post_screen.dart';
 
 class EditReviewScreen extends StatefulWidget {
@@ -49,6 +50,13 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
         'review_title': newTitle,
         'review_content': newContent,
       }).eq('id', widget.post.id);
+      AmplitudeUtil.log('review_edited', props: {
+        'book_id': widget.post.bookId,
+        'post_id': widget.post.id,
+        'original_length': (widget.post.reviewContent ?? '').length,
+        'new_length': newContent.length,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
 
       // ✅ pop 먼저 하고, 나머지는 return
       if (mounted) {

@@ -54,25 +54,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    if (!_hasNavigatedToPostScreen) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is Map && args['goToMyBookPostScreen'] == true) {
-        _hasNavigatedToPostScreen = true;
+    if (!_hasNavigatedToPostScreen && widget.goToMyBookPostScreen == true) {
+      _hasNavigatedToPostScreen = true;
 
-        // ✅ 다음 프레임에서 MyBookPostScreen push
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
-          );
-        });
-      }
+      // ✅ 다음 프레임에서 MyBookPostScreen push
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
+        );
+      });
     }
+
     if (!_hasCheckedUpdate) {
       _hasCheckedUpdate = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         UpdateCheckUtil.checkForUpdate(context);
       });
     }
+
     if (!_hasShownAnnouncement) {
       _hasShownAnnouncement = true;
       AnnouncementDialogUtil.showIfNeeded(context);

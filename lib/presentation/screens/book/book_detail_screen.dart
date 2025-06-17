@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/presentation/screens/book/life_book_users_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/themes/app_colors.dart';
@@ -317,7 +318,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               username: user['username'],
               name: user['name'],
               avatarUrl: user['avatar_url'] ?? 'basic',
-              isFollowing: user['is_following'] ?? false,
               isMyProfile: false,
               onTapFollow: () => _handleFollow(user['id']),
               onTapProfile: () async {
@@ -347,7 +347,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => LifebookUsersScreen(
-                            users: lifebookUsers.cast<Map<String, dynamic>>(),
+                            users: lifebookUsers.map((e) => Map<String, dynamic>.from(e)).toList(),
                           ),
                         ),
                       );
@@ -561,13 +561,22 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: CustomAppBar(
-        title: '책 정보',
-        leadingIconPath: 'assets/back_arrow.svg',
-        onLeadingTap: () => Navigator.pop(context),
-        trailingIconPath: '',
-        // ❌ 안 씀
-        onTrailingTap: () {}, // ❌ 안 씀
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          '책 정보',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.black900,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        leading: IconButton(
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(

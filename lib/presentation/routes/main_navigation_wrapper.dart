@@ -24,6 +24,7 @@ class MainNavigationWrapper extends StatelessWidget {
     MainNavigationScreen.lastSelectedIndex = getTabIndex(); // ✅ 명시적으로 설정
     return MainNavigationScreen(
       child: child,
+        goToMyBookPostScreen: false
     );
   }
 }

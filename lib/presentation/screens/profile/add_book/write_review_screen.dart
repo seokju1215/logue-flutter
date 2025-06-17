@@ -6,6 +6,8 @@ import 'package:logue/core/widgets/book/book_frame.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logue/presentation/screens/main_navigation_screen.dart';
 
+import '../../../../data/utils/amplitude_util.dart';
+
 class WriteReviewScreen extends StatefulWidget {
   final BookModel book;
 
@@ -108,6 +110,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         debugPrint('❌ 함수 오류: $errorMessage');
         throw Exception(errorMessage);
       }
+      AmplitudeUtil.log('book_added', props: {
+        'source': 'search', // 현재 이 화면은 Search → WriteReviewScreen 기준이므로 'search'
+        'review_length': reviewTitle.length + reviewContent.length,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
 
 
 

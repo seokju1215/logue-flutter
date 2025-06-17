@@ -3,7 +3,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/data/repositories/agreement_repository.dart';
 import 'package:logue/presentation/screens/signup/login_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'dart:io' show Platform;
+import 'package:amplitude_flutter/amplitude.dart';
+import '../../data/utils/amplitude_util.dart';
 import '../../data/utils/fcmPermissionUtil.dart';
 import '../../data/utils/update_check_util.dart';
 
@@ -18,6 +20,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    AmplitudeUtil.log('session_started', props: {
+      'platform': Platform.operatingSystem,
+    });
     _startSplashFlow();
   }
 
@@ -69,6 +74,7 @@ class _SplashScreenState extends State<SplashScreen> {
         .eq('id', user.id)
         .maybeSingle();
 
+
     if (!mounted) return;
 
     // 약관 동의 여부 확인
@@ -92,6 +98,17 @@ class _SplashScreenState extends State<SplashScreen> {
     if (profile == null || profile.isEmpty) {
       Navigator.pushReplacementNamed(context, '/select-3books');
     } else {
+      if (profile != null) {
+        AmplitudeUtil.setUserProperties({
+          'username': profile['username'],
+          'full_name': profile['full_name'],
+          'job': profile['job'],
+          'joined_at': profile['created_at'],
+          'platform': Platform.isIOS ? 'iOS' : 'Android',
+          'app_version': await UpdateCheckUtil.getCurrentAppVersion(), // 예: 1.0.2
+        });
+      }
+
       await FcmPermissionUtil.requestOnceIfNeeded();
       Navigator.pushReplacementNamed(context, '/main');
     }

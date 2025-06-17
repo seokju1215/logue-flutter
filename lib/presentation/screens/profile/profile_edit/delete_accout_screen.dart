@@ -19,7 +19,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     '인생 책을 9권밖에 설정할 수 없어서',
     '앱이 느리거나 오류가 많아서',
     '팔로우/댓글/좋아요 등 소통이 없어서',
-    '독서 기록용으로 쓰기 부족해서',
+    '독서 기록용으로 쓰기 부적합해서',
     '사용빈도가 낮아서',
     '재밌는 콘텐츠가 없어서',
     '기타',
@@ -149,8 +149,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             const Center(
               child: Text(
                 '계정 탈퇴 유의사항 (반드시 확인해 주세요)\n\n'
-                    '계정을 탈퇴 후 30일이 지나면 계정이 완전히 삭제되며,\n삭제된 정보는 복구가 불가합니다.\n\n'
-                    '30일 이내에 해당 구글 계정으로 로그인 시\n계정 탈퇴가 취소됩니다.',
+                    '탈퇴 즉시 계정 및 모든 데이터가\n완전히 삭제되며 복구가 불가능합니다.\n\n'
+                    '탈퇴에 사용된 구글 계정은 14일간\n재가입에 사용할 수 없습니다.',
                 style: TextStyle(fontSize: 12, color: AppColors.black500),
                 textAlign: TextAlign.center,
               ),

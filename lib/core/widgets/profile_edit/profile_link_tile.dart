@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 
+import '../../../data/utils/amplitude_util.dart';
+
 class ProfileLinkTile extends StatefulWidget {
   final String link;
 
@@ -18,6 +20,10 @@ class _ProfileLinkTileState extends State<ProfileLinkTile> {
   void _copyToClipboard() async {
     await Clipboard.setData(ClipboardData(text: widget.link));
     setState(() => _copied = true);
+    AmplitudeUtil.log('profile_shared', props: {
+      'target_type': 'my',
+      'source_page' : 'profile_edit_screen'
+    });
 
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {

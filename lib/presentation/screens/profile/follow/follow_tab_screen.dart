@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:logue/core/themes/app_colors.dart';
 import 'package:logue/domain/entities/follow_list_type.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -55,6 +56,10 @@ class _FollowTabScreenState extends State<FollowTabScreen> {
         title: Text(
           widget.username,
           style: const TextStyle(color: AppColors.black900, fontSize: 16),
+        ),
+        leading: IconButton(
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
+          onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
