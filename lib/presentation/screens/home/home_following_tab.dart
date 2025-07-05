@@ -22,6 +22,7 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
   bool isLoading = true;
   bool isFetching = false;
   bool hasMore = true;
+  bool _isLoadingMore = false;
 
   int page = 0;
   final int limit = 10;
@@ -31,14 +32,25 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
     super.initState();
     fetchFollowingPosts();
 
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200 &&
-          !isFetching &&
-          hasMore) {
-        fetchFollowingPosts();
-      }
-    });
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 500 &&
+        !isFetching &&
+        !_isLoadingMore &&
+        hasMore) {
+      _loadMorePosts();
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (isFetching || _isLoadingMore || !hasMore) return;
+
+    setState(() => _isLoadingMore = true);
+    await fetchFollowingPosts();
+    setState(() => _isLoadingMore = false);
   }
 
   @override
@@ -71,23 +83,27 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
         final List<BookPostModel> fetched =
         data.map((e) => BookPostModel.fromMap(e)).toList();
 
-        setState(() {
-          posts.addAll(fetched);
-          page += 1;
-          hasMore = fetched.length == limit;
-          isLoading = false;
-          isFetching = false;
-        });
+        if (mounted) {
+          setState(() {
+            posts.addAll(fetched);
+            page += 1;
+            hasMore = fetched.length == limit;
+            isLoading = false;
+            isFetching = false;
+          });
+        }
       } else {
         throw Exception('Edge Function error ${response.statusCode}');
       }
     } catch (e, stack) {
       print('🔥 fetchFollowingPosts error: $e');
       print(stack);
-      setState(() {
-        isLoading = false;
-        isFetching = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          isFetching = false;
+        });
+      }
     }
   }
 
@@ -126,11 +142,16 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
           controller: _scrollController,
           physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.symmetric(vertical: 16),
+          cacheExtent: 1000,
           itemCount: filteredPosts.length + (hasMore ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == filteredPosts.length) {
               // 로딩 인디케이터 (무한 스크롤)
-              return const Center(child: CircularProgressIndicator());
+              return Container(
+                height: 60,
+                alignment: Alignment.center,
+                child: const CircularProgressIndicator(),
+              );
             }
 
             final post = filteredPosts[index];

@@ -114,11 +114,12 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
+          : ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        cacheExtent: 5000,
-        children: List.generate(posts.length, (index) {
+        cacheExtent: 2000,
+        itemCount: posts.length,
+        itemBuilder: (context, index) {
           final post = posts[index];
           final currentUserId = client.auth.currentUser?.id;
           final isMyPost = currentUserId != null && currentUserId == post.userId;
@@ -159,7 +160,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
               ),
             ),
           );
-        }),
+        },
       ),
     );
   }

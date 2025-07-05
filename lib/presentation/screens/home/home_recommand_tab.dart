@@ -22,20 +22,32 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
   bool _isFetching = false;
   bool isInitialLoading = true;
   int _offset = 0;
+  bool _isLoadingMore = false;
 
   @override
   void initState() {
     super.initState();
     fetchPosts();
 
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 300 &&
-          !_isFetching &&
-          _hasMore) {
-        fetchPosts();
-      }
-    });
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 500 &&
+        !_isFetching &&
+        !_isLoadingMore &&
+        _hasMore) {
+      _loadMorePosts();
+    }
+  }
+
+  Future<void> _loadMorePosts() async {
+    if (_isFetching || _isLoadingMore || !_hasMore) return;
+
+    setState(() => _isLoadingMore = true);
+    await fetchPosts();
+    setState(() => _isLoadingMore = false);
   }
 
   @override
@@ -70,22 +82,26 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
         final fetchedPosts =
         data.map((e) => BookPostModel.fromMap(e)).toList();
 
-        setState(() {
-          posts.addAll(fetchedPosts);
-          _offset = result['nextOffset'] ?? _offset;
-          _hasMore = result['nextOffset'] != null;
-          isInitialLoading = false;
-          _isFetching = false;
-        });
+        if (mounted) {
+          setState(() {
+            posts.addAll(fetchedPosts);
+            _offset = result['nextOffset'] ?? _offset;
+            _hasMore = result['nextOffset'] != null;
+            isInitialLoading = false;
+            _isFetching = false;
+          });
+        }
       } else {
         throw Exception('Edge Function error ${response.statusCode}');
       }
     } catch (e) {
       print('🔥 fetchPosts error: $e');
-      setState(() {
-        _isFetching = false;
-        isInitialLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isFetching = false;
+          isInitialLoading = false;
+        });
+      }
     }
   }
 
@@ -113,10 +129,15 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 16),
+      cacheExtent: 1000,
       itemCount: posts.length + (_hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == posts.length) {
-          return const Center(child: CircularProgressIndicator());
+          return Container(
+            height: 60,
+            alignment: Alignment.center,
+            child: const CircularProgressIndicator(),
+          );
         }
         return Padding(
           padding: const EdgeInsets.only(

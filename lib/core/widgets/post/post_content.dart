@@ -16,16 +16,48 @@ class PostContent extends StatefulWidget {
 class _PostContentState extends State<PostContent> {
   late String truncatedText;
   bool shouldShowMoreButton = false;
+  bool _hasCalculated = false; // 추가: 계산 완료 플래그
 
   @override
   void initState() {
     super.initState();
+    _calculateText();
+  }
+
+  @override
+  void didUpdateWidget(PostContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // post가 변경된 경우에만 다시 계산
+    if (oldWidget.post.reviewContent != widget.post.reviewContent) {
+      _hasCalculated = false;
+      _calculateText();
+    }
+  }
+
+  void _calculateText() {
+    if (_hasCalculated) return; // 이미 계산된 경우 스킵
+
+    final fullText = widget.post.reviewContent ?? '';
+    if (fullText.isEmpty) {
+      setState(() {
+        truncatedText = '';
+        shouldShowMoreButton = false;
+        _hasCalculated = true;
+      });
+      return;
+    }
+
+    // 비동기로 계산하여 UI 블로킹 방지
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
       _truncateToFitWithButton();
     });
   }
 
   void _truncateToFitWithButton() {
+    if (_hasCalculated) return;
+
     final fullText = widget.post.reviewContent ?? '';
     final textStyle = const TextStyle(fontSize: 14, color: AppColors.black500, height: 2, letterSpacing: -0.32);
 
@@ -45,6 +77,7 @@ class _PostContentState extends State<PostContent> {
       setState(() {
         truncatedText = fullText;
         shouldShowMoreButton = false;
+        _hasCalculated = true;
       });
       return;
     }
@@ -68,6 +101,7 @@ class _PostContentState extends State<PostContent> {
     setState(() {
       truncatedText = fullText.substring(0, endIndex) + '... ';
       shouldShowMoreButton = true;
+      _hasCalculated = true;
     });
   }
 
