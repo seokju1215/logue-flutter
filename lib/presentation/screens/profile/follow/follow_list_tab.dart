@@ -40,7 +40,17 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
   void initState() {
     super.initState();
     currentUserId = client.auth.currentUser?.id;
-    _fetchFollowList();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Provider가 완전히 초기화된 후에 데이터 로드
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (users.isEmpty) {
+        _fetchFollowList();
+      }
+    });
   }
 
   @override
@@ -101,16 +111,53 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
       }
     }
 
-    // Provider 기반으로 팔로우 상태 확인 및 정렬
+    // 팔로잉 탭인 경우 실제 팔로우 상태를 DB에서 직접 확인하고 Provider 업데이트
     List<Map<String, dynamic>> sortedList = [];
     
-    for (final user in rawList) {
-      final userId = user['id'] as String;
-      final isFollowing = ref.read(followStateProvider(userId));
-      sortedList.add({
-        ...user,
-        'isFollowing': isFollowing,
-      });
+    if (widget.type == FollowListType.followings && isMyProfile && currentUserId != null) {
+      // 팔로잉 탭에서는 실제 팔로우 상태를 DB에서 확인
+      for (final user in rawList) {
+        final userId = user['id'] as String;
+        try {
+          final followRes = await client
+              .from('follows')
+              .select('id')
+              .eq('follower_id', currentUserId!)
+              .eq('following_id', userId)
+              .maybeSingle();
+          
+          final isFollowing = followRes != null;
+          sortedList.add({
+            ...user,
+            'isFollowing': isFollowing,
+          });
+          
+          // Provider 상태도 업데이트
+          ref.read(followStateProvider(userId).notifier).safeSet(isFollowing);
+        } catch (e) {
+          debugPrint('⚠️ 팔로우 상태 확인 실패: $e');
+          sortedList.add({
+            ...user,
+            'isFollowing': false,
+          });
+        }
+      }
+    } else {
+      // 팔로워 탭에서는 Provider 상태 사용
+      for (final user in rawList) {
+        final userId = user['id'] as String;
+        bool isFollowing = false;
+        try {
+          isFollowing = ref.read(followStateProvider(userId));
+        } catch (e) {
+          debugPrint('⚠️ Provider 초기화 중 - 기본값 false 사용: $e');
+          isFollowing = false;
+        }
+        sortedList.add({
+          ...user,
+          'isFollowing': isFollowing,
+        });
+      }
     }
 
     // 팔로잉 탭일 때는 팔로우하지 않은 사용자 제거
