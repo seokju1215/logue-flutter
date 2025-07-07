@@ -623,7 +623,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
             _buildHeader(),
             lifebookUsers.isEmpty? const SizedBox(height:0): const SizedBox(height: 37),
             _buildLifeBookSection(),
-            lifebookUsers.length >= 3
+            lifebookUsers.length > 3
                 ? const SizedBox(height: 37)
                 : const SizedBox(height: 0),
             _buildExpandableText(
