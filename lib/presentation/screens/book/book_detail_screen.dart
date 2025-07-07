@@ -346,7 +346,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                             TextStyle(color: AppColors.black900, fontSize: 12,fontWeight: FontWeight.w400)),
                   ),
                 ),
-              lifebookUsers.length>=3?
+              lifebookUsers.length>3?
               SizedBox(
                 height: 0,
               ):SizedBox(
