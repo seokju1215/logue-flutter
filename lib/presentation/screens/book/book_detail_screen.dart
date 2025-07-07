@@ -387,7 +387,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(line,
                             style: const TextStyle(
-                                fontSize: 14, color: AppColors.black500)),
+                                fontSize: 14, color: AppColors.black500, height : 2)),
                       )),
               const SizedBox(height: 30),
               if (showMore && !expanded)

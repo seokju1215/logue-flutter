@@ -5,7 +5,7 @@ class MixpanelUtil {
   static Mixpanel? _mixpanel;
   
   static Future<void> initialize() async {
-    final token = dotenv.env['MIXPANEL_TOKEN'];
+    final token = dotenv.env['MIXPANEL_PROJECT_TOKEN'];
     if (token == null) {
       print('⚠️ MIXPANEL_TOKEN이 설정되지 않았습니다.');
       return;
