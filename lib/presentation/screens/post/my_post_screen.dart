@@ -38,12 +38,12 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
     try {
       final response = await client
-          .rpc('get_user_books_with_profiles', params: {'target_user_id': userId})
-          .select();
+          .rpc('get_user_books_with_profiles', params: {'target_user_id': userId});
 
-      if (!mounted) return; // 🔐 여기서도 체크
+      if (!mounted) return;
 
-      if (response == null) throw Exception('데이터를 불러올 수 없습니다.');
+      // response 자체가 List<dynamic>
+      if (response.isEmpty) throw Exception('데이터를 불러올 수 없습니다.');
 
       final fetched = List<Map<String, dynamic>>.from(response);
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
@@ -114,12 +114,11 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
+          : ListView(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        cacheExtent: 2000,
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
+        cacheExtent: 5000,
+        children: List.generate(posts.length, (index) {
           final post = posts[index];
           final currentUserId = client.auth.currentUser?.id;
           final isMyPost = currentUserId != null && currentUserId == post.userId;
@@ -160,7 +159,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
               ),
             ),
           );
-        },
+        }),
       ),
     );
   }
