@@ -1,0 +1,19 @@
+/Users/hongseogju/Library/Android/sdk/cmake/3.22.1/bin/cmake \
+  -H/Users/hongseogju/Desktop/flutter/packages/flutter_tools/gradle/src/main/scripts \
+  -DCMAKE_SYSTEM_NAME=Android \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_SYSTEM_VERSION=21 \
+  -DANDROID_PLATFORM=android-21 \
+  -DANDROID_ABI=x86 \
+  -DCMAKE_ANDROID_ARCH_ABI=x86 \
+  -DANDROID_NDK=/Users/hongseogju/Library/Android/sdk/ndk/27.0.12077973 \
+  -DCMAKE_ANDROID_NDK=/Users/hongseogju/Library/Android/sdk/ndk/27.0.12077973 \
+  -DCMAKE_TOOLCHAIN_FILE=/Users/hongseogju/Library/Android/sdk/ndk/27.0.12077973/build/cmake/android.toolchain.cmake \
+  -DCMAKE_MAKE_PROGRAM=/Users/hongseogju/Library/Android/sdk/cmake/3.22.1/bin/ninja \
+  -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/Users/hongseogju/Desktop/my_logue/android/app/build/intermediates/cxx/Debug/v2y5p3c4/obj/x86 \
+  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/Users/hongseogju/Desktop/my_logue/android/app/build/intermediates/cxx/Debug/v2y5p3c4/obj/x86 \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -B/Users/hongseogju/Desktop/my_logue/android/app/.cxx/Debug/v2y5p3c4/x86 \
+  -GNinja \
+  -Wno-dev \
+  --no-warn-unused-cli
