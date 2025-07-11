@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import '../../../data/datasources/aladin_book_api.dart';
 import '../../../data/models/book_model.dart';
-import '../../../data/utils/fcmPermissionUtil.dart';
 import '../../../domain/usecases/add_book.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/domain/usecases/insert_profile.dart';
@@ -164,7 +163,6 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       }
 
       if (context.mounted) {
-        await FcmPermissionUtil.requestOnceIfNeeded();
         Navigator.pushReplacementNamed(
           context,
           '/main',

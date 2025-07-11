@@ -4,7 +4,6 @@ import 'package:my_logue/data/repositories/agreement_repository.dart';
 import 'package:my_logue/presentation/screens/signup/login_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io' show Platform;
-import '../../data/utils/fcmPermissionUtil.dart';
 import '../../data/utils/update_check_util.dart';
 import '../../data/utils/mixpanel_util.dart';
 
@@ -113,7 +112,6 @@ class _SplashScreenState extends State<SplashScreen> {
         // });
       }
 
-      await FcmPermissionUtil.requestOnceIfNeeded();
       Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
     }
   }

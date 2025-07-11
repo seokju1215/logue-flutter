@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io' show Platform;
+
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,156 +9,136 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/themes/app_colors.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'data/utils/fcm_token_util.dart';
-import 'data/utils/mixpanel_util.dart';
 import 'package:flutter/services.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: false);
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print('📩 백그라운드 메시지 수신: ${message.messageId}');
-}
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    print('🔥 앱 시작');
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await dotenv.load(fileName: ".env");
+    // 에러 핸들링 세팅
+    FlutterError.onError = (FlutterErrorDetails details) {
+      print('❌ Flutter 프레임워크 에러: ${details.exception}');
+      print(details.stack);
+    };
 
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
+    try {
+      await dotenv.load(fileName: ".env");
+      print('✅ .env 로딩 완료');
 
-  // Mixpanel 초기화
-  await MixpanelUtil.initialize();
+      final supabaseUrl = dotenv.env['SUPABASE_URL'];
+      final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
 
+      print('🔍 SUPABASE_URL: $supabaseUrl');
+      print('🔍 SUPABASE_ANON_KEY: ${supabaseAnonKey?.substring(0, 10)}...');
 
-  final fragment = Uri.base.fragment;
-  if (fragment.isNotEmpty) {
-    final params = Uri.splitQueryString(fragment);
-    final refreshToken = params['refresh_token'];
-    if (refreshToken != null) {
-      final session = await Supabase.instance.client.auth.setSession(refreshToken);
-      print('[로그인] setSession 결과: $session');
-      print('[로그인] setSession 후 currentSession: \\${Supabase.instance.client.auth.currentSession}');
-    }
-  }
-
-  final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? 'anonymous';
-
-  FcmTokenUtil.listenTokenRefresh();
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  final messaging = FirebaseMessaging.instance;
-  bool _isRequestingPermission = false;
-
-  Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
-    final event = data.event;
-    final session = data.session;
-
-        if (event == AuthChangeEvent.signedIn && session != null) {
-      final user = session.user;
-      final email = user.email;
-      
-      // Mixpanel 사용자 식별
-      MixpanelUtil.identify(user.id);
-      MixpanelUtil.trackLogin('google');
-
-      if (email != null) {
-        // 차단된 유저 검사
-        try {
-          final response = await Supabase.instance.client.functions.invoke(
-            'check_deleted_user',
-            body: {'email': email},
-          );
-
-          final responseData = response.data as Map<String, dynamic>;
-          if (responseData['blocked'] == true) {
-            await Supabase.instance.client.auth.signOut();
-            navigatorKey.currentState?.pushReplacementNamed('/login_blocked');
-            return;
-          }
-        } catch (e) {
-          print('❌ 차단된 유저 검사 중 오류: $e');
-        }
+      if (supabaseUrl == null || supabaseAnonKey == null) {
+        print('❌ .env 로딩 실패: 환경변수 없음');
+        return;
       }
 
-      if (!_isRequestingPermission) {
-        _isRequestingPermission = true;
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+        debug: true, // 👈 디버깅을 위해 추가
+      );
+      print('✅ Supabase 초기화 완료');
+    } catch (e, s) {
+      print('❌ Supabase 초기화 오류: $e');
+      print(s);
+      return;
+    }
 
+    try {
+      final fragment = Uri.base.fragment;
+      if (fragment.isNotEmpty) {
+        final params = Uri.splitQueryString(fragment);
+        final refreshToken = params['refresh_token'];
+        if (refreshToken != null) {
+          try {
+            print('🔐 setSession 시작');
+            final session = await Supabase.instance.client.auth.setSession(refreshToken);
+            print('🔐 setSession 성공: ${session.user?.id}');
+          } catch (e, s) {
+            print('❌ setSession 실패: $e');
+            print(s);
+          }
+        }
+      }
+    } catch (e, s) {
+      print('❌ URI 파싱 실패: $e');
+      print(s);
+    }
+
+    try {
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
         try {
-          final settings = await FirebaseMessaging.instance.requestPermission();
-          print('🔧 알림 권한 상태: ${settings.authorizationStatus}');
+          print('👤 AuthState 이벤트: ${data.event}');
+          final session = data.session;
 
-          if (Platform.isIOS) {
-            String? apnsToken;
-            int retryCount = 0;
-            const maxRetries = 10;
+          if (data.event == AuthChangeEvent.signedIn && session != null) {
+            final user = session.user;
+            print('✅ 로그인된 유저: ${user.id}');
 
-            while (apnsToken == null && retryCount < maxRetries) {
-              await Future.delayed(const Duration(milliseconds: 500));
-              apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-              retryCount++;
-            }
+            final email = user.email;
+            if (email != null) {
+              print('🛡️ 차단 유저 검사 시작');
+              try {
+                final response = await Supabase.instance.client.functions.invoke(
+                  'check_deleted_user',
+                  body: {'email': email},
+                );
+                print('🛡️ 응답: ${response.data}');
 
-            if (apnsToken == null) {
-              print('⚠️ APNs 토큰을 가져오지 못했습니다.');
-            } else {
-              print('📲 APNs 토큰: $apnsToken');
+                final data = response.data as Map<String, dynamic>;
+                if (data['blocked'] == true) {
+                  await Supabase.instance.client.auth.signOut();
+                  navigatorKey.currentState?.pushReplacementNamed('/login_blocked');
+                  print('🚫 차단 유저: 로그인 차단');
+                  return;
+                }
+              } catch (e, s) {
+                print('❌ 차단 유저 검사 오류: $e');
+                print(s);
+              }
             }
           }
-
-          final fcmToken = await FirebaseMessaging.instance.getToken();
-          print('📱 FCM 토큰: $fcmToken');
-          await FcmTokenUtil.updateFcmToken();
-        } catch (e) {
-          print('❌ 알림 권한 요청 중 에러: $e');
-        } finally {
-          _isRequestingPermission = false;
+        } catch (e, s) {
+          print('❌ auth.onAuthStateChange 핸들러 내부 오류: $e');
+          print(s);
         }
-
-        navigatorKey.currentState?.pushReplacementNamed('/splash');
-      }
-    } else if (event == AuthChangeEvent.signedOut) {
-      // Mixpanel 로그아웃 트래킹
-      MixpanelUtil.trackLogout();
+      });
+    } catch (e, s) {
+      print('❌ auth.onAuthStateChange listen 등록 실패: $e');
+      print(s);
     }
-  });
 
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('📲 포그라운드 메시지 수신: ${message.notification?.title}');
-  });
-
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print('🚀 알림 클릭됨: ${message.data}');
-    final type = message.data['type'];
-    final targetId = message.data['targetId'];
-
-    if (type == 'profile') {
-      navigatorKey.currentState?.pushNamed('/other_profile', arguments: targetId);
-    } else if (type == 'post') {
-      navigatorKey.currentState?.pushNamed('/post_detail', arguments: targetId);
+    try {
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ));
+      print('🎨 시스템 UI 설정 완료');
+    } catch (e) {
+      print('❌ System UI 설정 실패: $e');
     }
+
+    print('🚀 runApp 시작');
+    runApp(
+      DevicePreview(
+        enabled: isQA,
+        builder: (context) => const ProviderScope(child: MyApp()),
+      ),
+    );
+  }, (error, stack) {
+    print('❌ Uncaught Zone Error: $error');
+    print(stack);
   });
-
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.white,
-    statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: Colors.white,
-    systemNavigationBarIconBrightness: Brightness.dark,
-  ));
-
-  runApp(
-    DevicePreview(
-      enabled: isQA,
-      builder: (context) => const ProviderScope(child: MyApp()),
-    ),
-  );
 }
 
 class MyApp extends StatefulWidget {
@@ -171,16 +153,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    print('🧩 MyApp initState 호출');
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    print('🧹 MyApp dispose 호출');
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    print('🧱 MyApp build 호출');
+
     return MaterialApp(
       useInheritedMediaQuery: isQA,
       locale: isQA ? DevicePreview.locale(context) : null,
