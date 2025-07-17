@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_logue/domain/usecases/login_with_google.dart';
+import 'package:my_logue/domain/usecases/login_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
@@ -8,8 +9,20 @@ class LoginScreen extends StatelessWidget {
   final bool blocked;
   const LoginScreen({super.key, this.blocked = false});
 
-  void _login(BuildContext context) async {
+  void _loginWithGoogle(BuildContext context) async {
     final loginUseCase = LoginWithGoogle(Supabase.instance.client);
+
+    try {
+      await loginUseCase(context); // 리턴값 안 받아도 됨
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('로그인 실패: $e')),
+      );
+    }
+  }
+
+  void _loginWithApple(BuildContext context) async {
+    final loginUseCase = LoginWithApple(Supabase.instance.client);
 
     try {
       await loginUseCase(context); // 리턴값 안 받아도 됨
@@ -57,7 +70,7 @@ class LoginScreen extends StatelessWidget {
                 SizedBox(
                   width: 350,
                   child: OutlinedButton.icon(
-                    onPressed: () => _login(context),
+                    onPressed: () => _loginWithGoogle(context),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.black900,
                       side: const BorderSide(color: AppColors.black500, width: 1),
@@ -72,6 +85,30 @@ class LoginScreen extends StatelessWidget {
                     ),
                     label: const Text(
                       "Sign in with Google",
+                      style: TextStyle(color: AppColors.black900),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: 350,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _loginWithApple(context),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.black900,
+                      side: const BorderSide(color: AppColors.black500, width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                    ),
+                    icon: const Icon(
+                      Icons.apple,
+                      size: 24,
+                      color: AppColors.black900,
+                    ),
+                    label: const Text(
+                      "Sign in with Apple",
                       style: TextStyle(color: AppColors.black900),
                     ),
                   ),
