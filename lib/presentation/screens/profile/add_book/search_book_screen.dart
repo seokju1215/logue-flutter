@@ -6,6 +6,7 @@ import '../../../../data/models/book_model.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:my_logue/presentation/screens/profile/add_book/write_review_screen.dart';
 import '../../../../data/utils/mixpanel_util.dart';
+import 'dart:async'; // ✅ 디바운싱 타이머를 위한 임포트
 
 class SearchBookScreen extends StatefulWidget {
   const SearchBookScreen({super.key});
@@ -20,8 +21,14 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
   BookModel? _selectedBook;
   bool _isLoading = false;
   String _currentQuery = '';
+  Timer? _debounce; // ✅ 디바운싱 타이머
+  bool _isSearching = false; // ✅ 중복 검색 방지 플래그
 
   void _search(String query) async {
+    if (_isSearching) {
+      return;
+    }
+    
     _currentQuery = query;
     if (query.isEmpty) {
       setState(() {
@@ -34,18 +41,24 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
     MixpanelUtil.trackBookSearch(query);
 
     setState(() => _isLoading = true);
+    _isSearching = true;
 
     try {
       final rawResults = await AladinBookApi().searchBooks(query);
       final results = rawResults.map((data) => BookModel.fromJson(data)).toList();
 
-      setState(() {
-        _results = results;
-      });
+      if (mounted) {
+        setState(() {
+          _results = results;
+        });
+      }
     } catch (e) {
-      print('검색 실패: $e');
+      // 에러 처리
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      _isSearching = false;
     }
   }
 
@@ -53,6 +66,13 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
     setState(() {
       _selectedBook = _selectedBook == book ? null : book;
     });
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -80,6 +100,12 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                     controller: _searchController,
                     textInputAction: TextInputAction.search,
                     onSubmitted: _search,
+                    onChanged: (value) {
+                      if (_debounce?.isActive ?? false) _debounce!.cancel();
+                      _debounce = Timer(const Duration(milliseconds: 500), () {
+                        _search(value);
+                      });
+                    },
                     style: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFF191A1C),

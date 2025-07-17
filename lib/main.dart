@@ -124,7 +124,25 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return MaterialApp(
       useInheritedMediaQuery: isQA,
       locale: isQA ? DevicePreview.locale(context) : null,
-      builder: isQA ? DevicePreview.appBuilder : null,
+      builder: (context, child) {
+        // 시스템 글자 크기 설정을 무시하고 고정된 스케일 사용
+        final mediaQuery = MediaQuery.of(context);
+        final fixedMediaQuery = mediaQuery.copyWith(
+          textScaleFactor: 1.0, // 고정된 텍스트 스케일
+        );
+        
+        Widget result = MediaQuery(
+          data: fixedMediaQuery,
+          child: child!,
+        );
+        
+        // QA 모드일 때만 DevicePreview 적용
+        if (isQA) {
+          result = DevicePreview.appBuilder(context, result);
+        }
+        
+        return result;
+      },
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       title: '로그',

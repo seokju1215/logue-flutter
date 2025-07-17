@@ -24,8 +24,13 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
   bool _isLoading = false;
   String _currentQuery = '';
   Timer? _debounce; // ✅ 디바운싱 타이머
+  bool _isSearching = false; // ✅ 중복 검색 방지 플래그
 
   void _search(String query) async {
+    if (_isSearching) {
+      return;
+    }
+    
     _currentQuery = query;
     if (query.isEmpty) {
       setState(() => _results = []);
@@ -33,17 +38,23 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     }
 
     setState(() => _isLoading = true);
+    _isSearching = true;
 
     try {
       final rawResults = await AladinBookApi().searchBooks(query);
       final results =
           rawResults.map((data) => BookModel.fromJson(data)).toList();
 
-      setState(() => _results = results);
+      if (mounted) {
+        setState(() => _results = results);
+      }
     } catch (e) {
-      print('검색 실패: $e');
+      // 에러 처리
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      _isSearching = false;
     }
   }
 

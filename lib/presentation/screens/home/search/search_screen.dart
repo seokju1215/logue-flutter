@@ -18,6 +18,7 @@ import 'package:my_logue/domain/usecases/follows/unfollow_user.dart';
 import 'package:my_logue/domain/usecases/follows/is_following.dart';
 import 'package:my_logue/data/repositories/follow_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:async'; // ✅ 타이머 패키지 추가
 
 import '../../../../core/providers/follow_state_provider.dart';
 
@@ -40,6 +41,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   List<BookModel> _bookResults = [];
   bool _isLoading = false;
   String _query = '';
+  bool _isSearching = false; // ✅ 중복 검색 방지 플래그
 
   @override
   void initState() {
@@ -63,27 +65,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   }
 
   Future<void> _search(String query) async {
+    if (_isSearching) {
+      return;
+    }
+    
     setState(() {
       _isLoading = true;
       _query = query;
     });
+    _isSearching = true;
+    
     try {
       final users = await SearchUsers().call(query);
-
-      // ✅ AladinBookApi 사용
       final booksRaw = await AladinBookApi().searchBooks(query);
       final books = booksRaw
           .map((data) => BookModel.fromJson(data))
           .toList();
 
-      setState(() {
-        _userResults = users;
-        _bookResults = books;
-      });
+      if (mounted) {
+        setState(() {
+          _userResults = users;
+          _bookResults = books;
+        });
+      }
     } catch (e) {
-      print('검색 오류: $e');
+      // 에러 처리
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      _isSearching = false;
     }
   }
 

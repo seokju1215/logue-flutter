@@ -26,31 +26,40 @@ class AladinBookApi {
       '$_baseUrl?ttbkey=$ttbKey&Query=$encodedQuery&QueryType=$queryType&MaxResults=20&start=1&SearchTarget=Book&output=js&Version=20131101&OptResult=toc,fulldescription',
     );
 
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final List items = decoded['item'] ?? [];
-
-      final RegExp excludePattern = RegExp(r'(세[\s\-]*트|\+|스[\s\-]*티[\s\-]*커)', caseSensitive: false);
-
-      final filteredItems = items
-          .where((item) {
-        final cover = item['cover']?.toString().trim() ?? '';
-        final rawTitle = item['title']?.toString().toLowerCase() ?? '';
-
-        return cover.isNotEmpty && !excludePattern.hasMatch(rawTitle);
-      })
-          .toList();
-
-      // 상세 정보를 병렬로 가져오기
-      final detailedBooks = await Future.wait(
-        filteredItems.map((item) => _enrichBookWithDetails(item, ttbKey)),
+    try {
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('알라딘 API 요청이 시간 초과되었습니다.');
+        },
       );
 
-      return detailedBooks.where((book) => book != null).cast<Map<String, dynamic>>().toList();
-    } else {
-      throw Exception('❌ 알라딘 API 요청 실패: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        final List items = decoded['item'] ?? [];
+
+        final RegExp excludePattern = RegExp(r'(세[\s\-]*트|\+|스[\s\-]*티[\s\-]*커)', caseSensitive: false);
+
+        final filteredItems = items
+            .where((item) {
+          final cover = item['cover']?.toString().trim() ?? '';
+          final rawTitle = item['title']?.toString().toLowerCase() ?? '';
+
+          return cover.isNotEmpty && !excludePattern.hasMatch(rawTitle);
+        })
+            .toList();
+
+        // 상세 정보를 병렬로 가져오기
+        final detailedBooks = await Future.wait(
+          filteredItems.map((item) => _enrichBookWithDetails(item, ttbKey)),
+        );
+
+        return detailedBooks.where((book) => book != null).cast<Map<String, dynamic>>().toList();
+      } else {
+        throw Exception('알라딘 API 요청 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -66,7 +75,12 @@ class AladinBookApi {
         '$_lookupUrl?ttbkey=$ttbKey&itemIdType=ISBN13&ItemId=$isbn13&output=js&Version=20131101&OptResult=toc,fulldescription',
       );
 
-      final lookupResponse = await http.get(lookupUrl);
+      final lookupResponse = await http.get(lookupUrl).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          throw Exception('상세 정보 조회가 시간 초과되었습니다.');
+        },
+      );
       
       if (lookupResponse.statusCode == 200) {
         final lookupDecoded = jsonDecode(utf8.decode(lookupResponse.bodyBytes));
@@ -81,7 +95,6 @@ class AladinBookApi {
       }
     } catch (e) {
       // 상세 정보 가져오기 실패 시 기본 정보만 사용
-      print('상세 정보 가져오기 실패: $e');
     }
 
     return _processBookItem(item);
