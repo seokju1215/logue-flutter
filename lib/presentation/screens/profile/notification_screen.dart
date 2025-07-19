@@ -5,8 +5,9 @@ import 'package:app_settings/app_settings.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/domain/usecases/get_notifications.dart';
+import 'package:my_logue/core/constants/app_constants.dart';
 
-import '../../../core/widgets/common/custom_app_bar.dart';
+
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -92,7 +93,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     _loadNotifications();
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -112,69 +113,78 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  '서비스 알림 수신 설정',
-                  style: TextStyle(fontSize: 14, color: AppColors.black900),
+      body: _notifications.isEmpty
+          ? Center(
+              child: Transform.translate(
+                offset: AppConstants.getCenterOffset(context),
+                child: const Text(
+                  '친구를 팔로우해 서로의 인생 책을 공유해보세요.',
+                  style: TextStyle(color: AppColors.black500, fontSize: 12),
+                  textAlign: TextAlign.center,
                 ),
-                Transform.scale(
-                  scale: 0.8,
-                  child: Switch(
-                    value: isNotificationOn,
-                    onChanged: (_) {
-                      AppSettings.openAppSettings();
+              ),
+            )
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '서비스 알림 수신 설정',
+                        style: TextStyle(fontSize: 14, color: AppColors.black900),
+                      ),
+                      Transform.scale(
+                        scale: 0.8,
+                        child: Switch(
+                          value: isNotificationOn,
+                          onChanged: (_) {
+                            AppSettings.openAppSettings();
+                          },
+                          activeColor: AppColors.white500,
+                          activeTrackColor: AppColors.black900,
+                          inactiveThumbColor: AppColors.black900,
+                          inactiveTrackColor: AppColors.white500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _notifications.length,
+                    itemBuilder: (context, index) {
+                      final item = _notifications[index];
+                      final type = item['type'];
+                      final sender = item['sender'];
+                      final username = sender['username'];
+                      final bookId = item['book_id'];
+                      final notifId = item['id'];
+
+                      final content = type == 'follow'
+                          ? '$username님이 팔로우하기 시작했어요.'
+                          : '$username님이 새로운 인생 책을 추가했어요.';
+
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 22),
+                        title: Text(
+                          content,
+                          style: const TextStyle(fontSize: 14, color: AppColors.black500),
+                        ),
+                        onTap: () {
+                          _goToProfile(sender['id']);
+                        },
+                        trailing: IconButton(
+                          icon: const Icon(Icons.close, size: 16),
+                          onPressed: () => _deleteNotification(notifId),
+                        ),
+                      );
                     },
-                    activeColor: AppColors.white500,
-                    activeTrackColor: AppColors.black900,
-                    inactiveThumbColor: AppColors.black900,
-                    inactiveTrackColor: AppColors.white500,
                   ),
                 ),
               ],
             ),
-          ),
-          Expanded(
-            child: _notifications.isEmpty
-                ? const Center(child: Text('친구를 팔로우해 서로의 인생 책을 공유해보세요.', style: TextStyle(color: AppColors.black500, fontSize: 12),))
-                : ListView.builder(
-              itemCount: _notifications.length,
-              itemBuilder: (context, index) {
-                final item = _notifications[index];
-                final type = item['type'];
-                final sender = item['sender'];
-                final username = sender['username'];
-                final bookId = item['book_id'];
-                final notifId = item['id'];
-
-                final content = type == 'follow'
-                    ? '$username님이 팔로우하기 시작했어요.'
-                    : '$username님이 새로운 인생 책을 추가했어요.';
-
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 22),
-                  title: Text(
-                    content,
-                    style: const TextStyle(fontSize: 14, color: AppColors.black500),
-                  ),
-                  onTap: () {
-                    _goToProfile(sender['id']);
-                  },
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    onPressed: () => _deleteNotification(notifId),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

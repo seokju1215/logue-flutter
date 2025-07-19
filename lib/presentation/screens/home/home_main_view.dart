@@ -87,7 +87,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(88),
+          preferredSize: const Size.fromHeight(88), // 높이를 88에서 100으로 증가
           child: SafeArea( // ⛑️ 상태바 아래로 여백 자동 확보
             child: Padding(
               padding: const EdgeInsets.only(top: 7),
@@ -97,33 +97,24 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
                 titleSpacing: 0,
                 leadingWidth: 120,
                 leading: Padding(
-                  padding: const EdgeInsets.only(left: 22),
+                  padding: const EdgeInsets.only(left: 22, top: 12), // top: 8 추가
                   child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
                 ),
                 actions: [
                   Padding(
-                    padding: const EdgeInsets.only(right: 10),
-                    child: IconButton(
-                      onPressed: () {
+                    padding: const EdgeInsets.only(right: 10, top: 12),
+                    child: GestureDetector(
+                      onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const SearchScreen()),
                         );
                       },
-                      icon: IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const SearchScreen()),
-                          );
-                        },
-                        icon: Transform.scale(
-                          scale: 1.6, // 👈 원하는 배율로 조정
-                          child: SvgPicture.asset(
-                            'assets/search_icon.svg',
-                            width: 28, // 아이콘 자체 크기
-                            height: 28,
-                          ),
+                      child: Transform.scale(
+                        scale: 1.4,
+                        child: SvgPicture.asset(
+                          'assets/search_icon.svg',
+                          width: 32,
+                          height: 32,
                         ),
                       ),
                     ),

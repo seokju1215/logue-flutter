@@ -14,7 +14,7 @@ import 'package:my_logue/data/repositories/follow_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../core/providers/follow_state_provider.dart';
-import '../../../core/widgets/common/custom_app_bar.dart';
+
 import '../../../core/widgets/profile/bio_content.dart';
 // import 'package:logue/data/utils/amplitude_util.dart';
 import 'follow/follow_tab_screen.dart';
@@ -172,23 +172,29 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     }
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(56),
-        child: CustomAppBar(
-          title: profile?['username'] ?? '사용자',
-          leadingIconPath: 'assets/back_arrow.svg',
-          onLeadingTap: () {
+      appBar: AppBar(
+        title: Text(profile?['username'] ?? 'User', style: TextStyle(fontSize: 16, color: AppColors.black900),),
+        centerTitle: true,
+        leading: IconButton(
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
+          onPressed: () {
             debugPrint('🔍 ===== 앱바 뒤로가기 버튼 눌림 =====');
             _handleBackNavigation();
           },
-          trailingIconPath: 'assets/share_button.svg',
-          onTrailingTap: () {
-            final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
-            if (profileLink.isNotEmpty) {
-              Share.share(profileLink);
-            }
-          },
         ),
+        actions: [
+          IconButton(
+            icon: SvgPicture.asset('assets/share_button.svg'),
+            onPressed: () {
+              final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
+              if (profileLink.isNotEmpty) {
+                Share.share(profileLink);
+              }
+            },
+          ),
+        ],
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -462,7 +468,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                     color: AppColors.black500,
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
-                    height: 1,
+                    height: 1.25,
                   ),
                 )
                     : Row(

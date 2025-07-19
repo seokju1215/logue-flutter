@@ -12,7 +12,7 @@ import 'package:my_logue/data/utils/fetch_profile.dart';
 import 'package:my_logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
 import 'dart:ui'; // 맨 위에 추가
 
-import '../../../core/widgets/common/custom_app_bar.dart';
+
 import '../../../core/widgets/profile/bio_content.dart';
 import '../main_navigation_screen.dart';
 import '../post/my_post_screen.dart';
@@ -265,34 +265,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(56),
-        child: CustomAppBar(
-          title: profile?['username'] ?? '사용자',
-          leadingIconPath: _hasUnreadNotifications
+      appBar: AppBar(
+        title: Text(profile?['username'] ?? 'User', style: TextStyle(fontSize: 16, color: AppColors.black900),),
+        centerTitle: true,
+        leading: IconButton(
+          icon: SvgPicture.asset(_hasUnreadNotifications
               ? 'assets/noticed_alarm_icon.svg'
-              : 'assets/bell_icon.svg',
-          onLeadingTap: () {
+              : 'assets/bell_icon.svg'),
+          onPressed: () {
             Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(builder: (_) => const NotificationScreen()),
             );
             _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
             setState(() => _showFullBio = false);
           },
-          trailingIconPath: 'assets/edit_icon.svg',
-          onTrailingTap: () async {
-            setState(() => _showFullBio = false);
-            final result = await Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (_) => ProfileEditScreen(initialProfile: profile!),
-              ),
-            );
-            print('👈 result 받음: $result');
-            if (result == true) {
-              _fetchProfile();
-            }
-          },
         ),
+        actions: [
+          IconButton(
+            icon: SvgPicture.asset('assets/edit_icon.svg'),
+            onPressed: () async {
+              setState(() => _showFullBio = false);
+              final result = await Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (_) => ProfileEditScreen(initialProfile: profile!),
+                ),
+              );
+              print('👈 result 받음: $result');
+              if (result == true) {
+                _fetchProfile();
+              }
+            },
+          ),
+        ],
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SafeArea(
         child: Stack(

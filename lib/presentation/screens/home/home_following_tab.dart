@@ -7,6 +7,7 @@ import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/post/post_item.dart';
 import '../../../core/providers/follow_state_provider.dart';
 import '../../../data/models/book_post_model.dart';
+import '../../../core/constants/app_constants.dart';
 
 class HomeFollowingTab extends StatefulWidget {
   const HomeFollowingTab({super.key});
@@ -125,16 +126,15 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
         }
 
         if (filteredPosts.isEmpty) {
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: const [
-              Text(
+          return Center(
+            child: Transform.translate(
+              offset: AppConstants.getCenterOffset(context),
+              child: const Text(
                 "친구를 팔로우해 서로의 인생 책을 공유해보세요",
                 style: TextStyle(fontSize: 12, color: AppColors.black500),
+                textAlign: TextAlign.center,
               ),
-              SizedBox(height: 50),
-            ],
+            ),
           );
         }
 

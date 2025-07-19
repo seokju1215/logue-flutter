@@ -8,6 +8,7 @@ import 'package:my_logue/domain/entities/follow_list_type.dart';
 import 'package:my_logue/presentation/screens/profile/other_profile_screen.dart';
 
 import '../../../../core/providers/follow_state_provider.dart';
+import '../../../../core/constants/app_constants.dart';
 
 class FollowListTab extends ConsumerStatefulWidget {
   final FollowListType type;
@@ -301,17 +302,15 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
         }
 
         if (displayUsers.isEmpty) {
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: const [
-              Text(
+          return Center(
+            child: Transform.translate(
+              offset: AppConstants.getCenterOffsetWithTabBar(context),
+              child: const Text(
                 "친구를 팔로우해 서로의 인생 책을 공유해보세요.",
-                style:
-                TextStyle(fontSize: 12, color: AppColors.black500),
+                style: TextStyle(fontSize: 12, color: AppColors.black500),
+                textAlign: TextAlign.center,
               ),
-              SizedBox(height: 50,)
-            ],
+            ),
           );
         }
 

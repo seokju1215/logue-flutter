@@ -94,37 +94,40 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                 onPressed: () => Navigator.pop(context),
               ),
               Expanded(
-                child: SizedBox(
-                  height: 38,
-                  child: TextField(
-                    controller: _searchController,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: _search,
-                    onChanged: (value) {
-                      if (_debounce?.isActive ?? false) _debounce!.cancel();
-                      _debounce = Timer(const Duration(milliseconds: 500), () {
-                        _search(value);
-                      });
-                    },
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF191A1C),
-                      fontWeight: FontWeight.w400,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: "책 이름을 검색해주세요.",
-                      hintStyle: const TextStyle(fontSize: 14, color: AppColors.black500),
-                      filled: true,
-                      fillColor: AppColors.black200,
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: AppColors.black200, width: 1.0),
-                        borderRadius: BorderRadius.circular(5),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: SizedBox(
+                    height: 38,
+                    child: TextField(
+                      controller: _searchController,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: _search,
+                      onChanged: (value) {
+                        if (_debounce?.isActive ?? false) _debounce!.cancel();
+                        _debounce = Timer(const Duration(milliseconds: 500), () {
+                          _search(value);
+                        });
+                      },
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF191A1C),
+                        fontWeight: FontWeight.w400,
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: AppColors.black200, width: 1.0),
-                        borderRadius: BorderRadius.circular(5),
+                      decoration: InputDecoration(
+                        hintText: "책 이름을 검색해주세요.",
+                        hintStyle: const TextStyle(fontSize: 14, color: AppColors.black500),
+                        filled: true,
+                        fillColor: AppColors.black200,
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: AppColors.black200, width: 1.0),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(color: AppColors.black200, width: 1.0),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 9),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 9),
                     ),
                   ),
                 ),

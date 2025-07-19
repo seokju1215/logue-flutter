@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/data/datasources/user_book_api.dart';
 import 'package:my_logue/core/widgets/dialogs/post_delete_dialog.dart';
 
+
 import '../book/book_detail_screen.dart';
 import '../profile/other_profile_screen.dart';
 
@@ -27,15 +28,14 @@ class PostDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        title: Text(userName, style: TextStyle(fontSize: 16, color: AppColors.black900),),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(userName, style: const TextStyle(color: AppColors.black900, fontSize: 18)),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 9),

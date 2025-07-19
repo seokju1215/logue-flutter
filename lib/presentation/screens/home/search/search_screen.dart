@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
-import 'package:my_logue/core/widgets/common/custom_app_bar.dart';
+
 import 'package:my_logue/core/widgets/follow/follow_user_tile.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:my_logue/presentation/screens/profile/other_profile_screen.dart';
@@ -21,6 +21,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async'; // ✅ 타이머 패키지 추가
 
 import '../../../../core/providers/follow_state_provider.dart';
+import '../../../../core/constants/app_constants.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -169,16 +170,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     final currentTab = _tabController.index;
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: SvgPicture.asset('assets/back_arrow.svg'),
-          onPressed: () => Navigator.pop(context),
+        leading: Padding(
+          padding: const EdgeInsets.fromLTRB(0,12,0,0),
+          child: IconButton(
+            icon: Transform.scale(
+              scale: 1.2, // 크기를 1.2배로 확대
+              child: SvgPicture.asset('assets/back_arrow.svg'),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
         titleSpacing: 0,
         title: Padding(
-          padding: const EdgeInsets.only(right: 22),
+          padding: const EdgeInsets.fromLTRB(0,12,22,0),
           child: SizedBox(
             height: 38,
             child : TextField(
@@ -190,7 +198,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                   const TextStyle(color: AppColors.black500, fontSize: 14, fontWeight: FontWeight.w400),
               border: InputBorder.none,
               contentPadding:
-                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
               filled: true,
               fillColor: const Color(0xFFF3F3F3),
               enabledBorder: OutlineInputBorder(
@@ -311,7 +319,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                         onTapFollow: () async {
                                           try {
                                             final followNotifier = ref.read(followStateProvider(e.id).notifier);
-                                            
+
                                             if (e.isFollowing) {
                                               // 언팔로우
                                               followNotifier.optimisticUnfollow();
@@ -320,7 +328,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                                   return u.id == e.id ? u.copyWith(isFollowing: false) : u;
                                                 }).toList();
                                               });
-                                              
+
                                               await followNotifier.unfollow();
                                             } else {
                                               // 팔로우
@@ -330,7 +338,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                                   return u.id == e.id ? u.copyWith(isFollowing: true) : u;
                                                 }).toList();
                                               });
-                                              
+
                                               await followNotifier.follow();
                                             }
                                           } catch (err) {
@@ -356,7 +364,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                               builder: (_) => OtherProfileScreen(userId: e.id),
                                             ),
                                           );
-                                          
+
                                           // 프로필 화면에서 돌아왔을 때 팔로우 상태가 변경되었을 수 있으므로
                                           // 해당 사용자의 팔로우 상태를 다시 확인
                                           if (result == true) {
@@ -438,7 +446,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                               onTapFollow: () async {
                                 try {
                                   final followNotifier = ref.read(followStateProvider(e.id).notifier);
-                                  
+
                                   if (e.isFollowing) {
                                     // 언팔로우
                                     followNotifier.optimisticUnfollow();
@@ -447,7 +455,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                         return u.id == e.id ? u.copyWith(isFollowing: false) : u;
                                       }).toList();
                                     });
-                                    
+
                                     await followNotifier.unfollow();
                                   } else {
                                     // 팔로우
@@ -457,7 +465,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                         return u.id == e.id ? u.copyWith(isFollowing: true) : u;
                                       }).toList();
                                     });
-                                    
+
                                     await followNotifier.follow();
                                   }
                                 } catch (err) {
@@ -483,7 +491,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                     builder: (_) => OtherProfileScreen(userId: e.id),
                                   ),
                                 );
-                                
+
                                 // 프로필 화면에서 돌아왔을 때 팔로우 상태가 변경되었을 수 있으므로
                                 // 해당 사용자의 팔로우 상태를 다시 확인
                                 if (result == true) {

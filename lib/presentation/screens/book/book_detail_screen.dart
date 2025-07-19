@@ -6,7 +6,7 @@ import 'package:my_logue/presentation/screens/book/life_book_users_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/themes/app_colors.dart';
 import '../../../core/widgets/book/book_frame.dart';
-import '../../../core/widgets/common/custom_app_bar.dart';
+
 import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:my_logue/data/datasources/aladin_book_api.dart';
 import 'package:url_launcher/url_launcher.dart';
