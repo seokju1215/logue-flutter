@@ -34,6 +34,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   late final FollowRepository _followRepo;
   bool _isScrollable = false;
   bool _hasFollowStateChanged = false; // 팔로우 상태 변경 추적
+  bool _isFollowActionInProgress = false; // 팔로우 액션 중복 방지
 
   Map<String, dynamic>? profile;
   late final GetUserBooks _getUserBooks;
@@ -161,7 +162,19 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
   @override
   void dispose() {
+    debugPrint('🔍 OtherProfileScreen dispose: ${widget.userId}');
     _scrollController.dispose();
+    
+    // 화면이 dispose될 때도 상태 변경 여부를 반환
+    if (_hasFollowStateChanged && mounted) {
+      // 릴리즈 모드에서 네트워크 요청 완료를 보장하기 위한 대기
+      Future.delayed(const Duration(milliseconds: 800)).then((_) {
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      });
+    }
+    
     super.dispose();
   }
 
@@ -383,80 +396,80 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
             if (!isMyProfile)
               OutlinedButton(
                 onPressed: () async {
+                  if (_isFollowActionInProgress) {
+                    debugPrint('🔴 팔로우 액션 중복 방지');
+                    return;
+                  }
+                  
+                  _isFollowActionInProgress = true;
+                  debugPrint('🔍 팔로우 액션 시작: ${widget.userId}');
                   final followNotifier = ref.read(followStateProvider(widget.userId).notifier);
                   final currentFollowers = profile?['followers'] ?? 0;
                   
-                  if (isFollowing) {
-                    // 언팔로우
-                    debugPrint('🔍 언팔로우 버튼 클릭');
-                    
-                    // 팔로우 상태 변경 플래그 설정
-                    _hasFollowStateChanged = true;
-                    
-                    // 즉시 UI 업데이트 (Optimistic Update)
-                    followNotifier.optimisticUnfollow();
-                    setState(() {
-                      profile = {
-                        ...?profile,
-                        'followers': (currentFollowers - 1).clamp(0, currentFollowers),
-                      };
-                    });
-                    
-                    // 서버 요청 (백그라운드)
-                    try {
-                      await followNotifier.unfollow();
-                    } catch (e) {
-                      // 실패 시 롤백
-                      followNotifier.optimisticFollow();
-                      _hasFollowStateChanged = false; // 실패 시 플래그 리셋
-                      if (mounted) {
-                        setState(() {
-                          profile = {
-                            ...?profile,
-                            'followers': currentFollowers,
-                          };
-                        });
-                        debugPrint('❌ 언팔로우 실패: $e');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('언팔로우에 실패했습니다: $e')),
-                        );
-                      }
-                    }
-                  } else {
-                    // 팔로우
-                    debugPrint('🔍 팔로우 버튼 클릭');
-                    
-                    // 팔로우 상태 변경 플래그 설정
-                    _hasFollowStateChanged = true;
-                    
-                    // 즉시 UI 업데이트 (Optimistic Update)
-                    followNotifier.optimisticFollow();
-                    setState(() {
-                      profile = {
-                        ...?profile,
-                        'followers': currentFollowers + 1,
-                      };
-                    });
-
-                    // 서버 요청 (백그라운드)
-                    try {
-                      await followNotifier.follow();
-                    } catch (e) {
-                      // 실패 시 롤백
+                  try {
+                    if (isFollowing) {
+                      // 언팔로우
+                      debugPrint('🔍 언팔로우 버튼 클릭');
+                      
+                      // 팔로우 상태 변경 플래그 설정
+                      _hasFollowStateChanged = true;
+                      
+                      // 즉시 UI 업데이트 (Optimistic Update)
                       followNotifier.optimisticUnfollow();
-                      _hasFollowStateChanged = false; // 실패 시 플래그 리셋
-                      if (mounted) {
-                        setState(() {
-                          profile = {
-                            ...?profile,
-                            'followers': currentFollowers,
-                          };
-                        });
-                        debugPrint('❌ 팔로우 실패: $e');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('팔로우에 실패했습니다: $e')),
-                        );
-                      }
+                      setState(() {
+                        profile = {
+                          ...?profile,
+                          'followers': (currentFollowers - 1).clamp(0, currentFollowers),
+                        };
+                      });
+                      
+                      // 서버 요청 (백그라운드)
+                      await followNotifier.unfollow();
+                      debugPrint('🔍 언팔로우 서버 요청 완료');
+                    } else {
+                      // 팔로우
+                      debugPrint('🔍 팔로우 버튼 클릭');
+                      
+                      // 팔로우 상태 변경 플래그 설정
+                      _hasFollowStateChanged = true;
+                      
+                      // 즉시 UI 업데이트 (Optimistic Update)
+                      followNotifier.optimisticFollow();
+                      setState(() {
+                        profile = {
+                          ...?profile,
+                          'followers': currentFollowers + 1,
+                        };
+                      });
+
+                      // 서버 요청 (백그라운드)
+                      await followNotifier.follow();
+                      debugPrint('🔍 팔로우 서버 요청 완료');
+                    }
+                  } catch (e) {
+                    // 실패 시 롤백
+                    if (isFollowing) {
+                      followNotifier.optimisticFollow();
+                    } else {
+                      followNotifier.optimisticUnfollow();
+                    }
+                    _hasFollowStateChanged = false; // 실패 시 플래그 리셋
+                    if (mounted) {
+                      setState(() {
+                        profile = {
+                          ...?profile,
+                          'followers': currentFollowers,
+                        };
+                      });
+                      debugPrint('❌ ${isFollowing ? '언팔로우' : '팔로우'} 실패: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${isFollowing ? '언팔로우' : '팔로우'}에 실패했습니다: $e')),
+                      );
+                    }
+                  } finally {
+                    if (mounted) {
+                      _isFollowActionInProgress = false;
+                      debugPrint('🔍 팔로우 액션 완료: ${widget.userId}');
                     }
                   }
                 },
@@ -543,8 +556,18 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     
     if (mounted) {
       debugPrint('🔍 Navigator.pop 호출 전');
+      
+      // 팔로우 상태가 변경된 경우 네트워크 요청 완료 대기
+      if (_hasFollowStateChanged) {
+        debugPrint('🔍 팔로우 상태 변경됨 - 네트워크 요청 완료 대기');
+        // 릴리즈 모드에서 네트워크 요청 완료를 보장하기 위한 대기
+        await Future.delayed(const Duration(milliseconds: 800));
+      }
+      
       Navigator.pop(context, result);
       debugPrint('🔍 Navigator.pop 호출 후');
     }
   }
+
+
 }

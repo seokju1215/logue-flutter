@@ -433,8 +433,29 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
                 // 프로필 화면에서 돌아왔을 때 팔로우 상태가 변경되었을 수 있으므로
                 // 해당 사용자의 팔로우 상태를 다시 확인
                 if (result == true) {
-                  debugPrint('🔍 팔로우 상태 변경 감지 - _updateFollowStatus 호출');
-                  await _updateFollowStatus(user['id']);
+                  debugPrint('🔍 팔로우 상태 변경 감지 - 강제 새로고침 실행');
+                  
+                  // 강제 새로고침으로 최신 상태 확인
+                  final followNotifier = ref.read(followStateProvider(user['id']).notifier);
+                  await followNotifier.forceRefresh();
+                  
+                  // 팔로잉 탭에서 언팔로우된 경우 목록에서 제거
+                  if (widget.type == FollowListType.followings && isMyProfile) {
+                    final isFollowing = ref.read(followStateProvider(user['id']));
+                    
+                    if (!isFollowing) {
+                      setState(() {
+                        users.removeWhere((u) => u['id'] == user['id']);
+                      });
+                      
+                      // 카운트 업데이트
+                      widget.onChangedCount?.call();
+                      debugPrint('🔍 팔로잉 탭에서 사용자 제거 완료: ${user['id']}');
+                    }
+                  } else {
+                    // 다른 탭에서는 상태만 업데이트
+                    await _updateFollowStatus(user['id']);
+                  }
                 } else {
                   debugPrint('🔍 팔로우 상태 변경 없음');
                 }

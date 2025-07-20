@@ -33,6 +33,8 @@ class FollowStateNotifier extends StateNotifier<bool> {
   final String targetUserId;
   final FollowRepository followRepository;
   bool _isDisposed = false;
+  bool _isRequestInProgress = false; // 요청 중복 방지
+  bool _isInitialized = false; // 초기화 완료 여부
 
   FollowStateNotifier(this.targetUserId, this.followRepository) : super(false) {
     _init();
@@ -53,9 +55,15 @@ class FollowStateNotifier extends StateNotifier<bool> {
   }
 
   Future<void> _init() async {
+    if (_isDisposed) {
+      debugPrint('🔴 _init: 이미 dispose 상태라 초기화 중단');
+      return;
+    }
+
     final currentUserId = followRepository.client.auth.currentUser?.id;
     if (currentUserId == null || currentUserId == targetUserId) {
       safeSet(false);
+      _isInitialized = true;
       return;
     }
 
@@ -66,10 +74,18 @@ class FollowStateNotifier extends StateNotifier<bool> {
           .eq('follower_id', currentUserId)
           .eq('following_id', targetUserId)
           .maybeSingle();
-      safeSet(res != null);
+      
+      if (!_isDisposed) {
+        safeSet(res != null);
+        _isInitialized = true;
+        debugPrint('🔍 FollowState 초기화 완료: $targetUserId -> ${res != null}');
+      }
     } catch (e) {
       debugPrint('🔴 FollowState fetch error: $e');
-      safeSet(false);
+      if (!_isDisposed) {
+        safeSet(false);
+        _isInitialized = true;
+      }
     }
   }
 
@@ -77,24 +93,66 @@ class FollowStateNotifier extends StateNotifier<bool> {
   void optimisticUnfollow() => safeSet(false);
 
   Future<void> follow() async {
+    if (_isDisposed) {
+      debugPrint('🔴 follow: 이미 dispose 상태라 요청 중단');
+      return;
+    }
+    
+    if (_isRequestInProgress) {
+      debugPrint('🔴 follow 요청 중복 방지: $targetUserId');
+      return;
+    }
+    
+    _isRequestInProgress = true;
     try {
       await followRepository.follow(targetUserId);
+      if (!_isDisposed) {
+        debugPrint('🔍 follow 완료: $targetUserId');
+      }
     } catch (e) {
       debugPrint('🔴 follow-user Edge Function 실패: $e');
       rethrow;
+    } finally {
+      if (!_isDisposed) {
+        _isRequestInProgress = false;
+      }
     }
   }
 
   Future<void> unfollow() async {
+    if (_isDisposed) {
+      debugPrint('🔴 unfollow: 이미 dispose 상태라 요청 중단');
+      return;
+    }
+    
+    if (_isRequestInProgress) {
+      debugPrint('🔴 unfollow 요청 중복 방지: $targetUserId');
+      return;
+    }
+    
+    _isRequestInProgress = true;
     try {
       await followRepository.unfollow(targetUserId);
+      if (!_isDisposed) {
+        debugPrint('🔍 unfollow 완료: $targetUserId');
+      }
     } catch (e) {
       debugPrint('🔴 unfollow-user Edge Function 실패: $e');
       rethrow;
+    } finally {
+      if (!_isDisposed) {
+        _isRequestInProgress = false;
+      }
     }
   }
 
   Future<void> refresh() async {
+    await _init();
+  }
+
+  // 강제 새로고침 (캐시 무시)
+  Future<void> forceRefresh() async {
+    _isDisposed = false; // dispose 상태 리셋
     await _init();
   }
 }

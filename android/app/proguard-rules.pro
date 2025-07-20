@@ -3,6 +3,8 @@
 # ----------------------------
 -keep class io.flutter.** { *; }
 -dontwarn io.flutter.**
+-keep class io.flutter.app.** { *; }
+-dontwarn io.flutter.app.**
 
 # ----------------------------
 # ✅ Flutter plugins
@@ -55,6 +57,12 @@
 # ktor logging (optional)
 -keep class io.ktor.client.plugins.logging.** { *; }
 -dontwarn io.ktor.client.plugins.logging.**
+
+# ----------------------------
+# ✅ Kotlin (reflection 이슈 방지)
+# ----------------------------
+-keep class kotlin.** { *; }
+-dontwarn kotlin.**
 
 # ----------------------------
 # ✅ Compose (사용 중인 경우)

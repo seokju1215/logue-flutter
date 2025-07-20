@@ -57,77 +57,78 @@ class FollowUserTile extends ConsumerWidget {
 
     final showRemoveButton = isMyProfile && tabType == FollowListType.followers;
 
-    return Padding(
-      padding: showRemoveButton
-          ? const EdgeInsets.fromLTRB(22, 8, 10, 8)
-          : const EdgeInsets.fromLTRB(22, 8, 22, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          GestureDetector(
-            onTap: onTapProfile,
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 27,
-                  backgroundImage:
-                  avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
-                  child: avatarUrl == 'basic'
-                      ? Image.asset('assets/basic_avatar.png')
-                      : null,
-                ),
-                const SizedBox(width: 22),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(username,
-                        style: const TextStyle(
-                            fontSize: 14, color: AppColors.black900)),
-                    Text(name,
-                        style: const TextStyle(
-                            fontSize: 12, color: AppColors.black500)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-
-          if (showFollowButton)
-            OutlinedButton(
-              onPressed: () {
-                print('팔로우 버튼 클릭됨: userId = $userId');
-                // 팔로우 트래킹
-                MixpanelUtil.trackFollow(userId);
-                // 부모 컴포넌트에서 처리하도록 콜백만 호출
-                onTapFollow?.call();
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.black900, width: 1),
-                padding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-                minimumSize: const Size(0, 0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5),
-                ),
+    return GestureDetector(
+      onTap: onTapProfile,
+      child: Padding(
+        padding: showRemoveButton
+            ? const EdgeInsets.fromLTRB(22, 8, 10, 8)
+            : const EdgeInsets.fromLTRB(22, 8, 22, 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 27,
+                    backgroundImage:
+                    avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
+                    child: avatarUrl == 'basic'
+                        ? Image.asset('assets/basic_avatar.png')
+                        : null,
+                  ),
+                  const SizedBox(width: 22),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(username,
+                          style: const TextStyle(
+                              fontSize: 14, color: AppColors.black900)),
+                      Text(name,
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.black500)),
+                    ],
+                  ),
+                ],
               ),
-              child: const Text(
-                "팔로우",
-                style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.black900,
-                    fontWeight: FontWeight.w400),
-              ),
-            )
-          else
-            const SizedBox(height: 26),
-
-          if (showRemoveButton)
-            IconButton(
-              icon: const Icon(Icons.close, size: 20),
-              onPressed: onTapRemove,
             ),
-        ],
+
+            if (showFollowButton)
+              OutlinedButton(
+                onPressed: () {
+                  print('팔로우 버튼 클릭됨: userId = $userId');
+                  // 팔로우 트래킹
+                  MixpanelUtil.trackFollow(userId);
+                  // 부모 컴포넌트에서 처리하도록 콜백만 호출
+                  onTapFollow?.call();
+                },
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.black900, width: 1),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                  minimumSize: const Size(0, 0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+                child: const Text(
+                  "팔로우",
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.black900,
+                      fontWeight: FontWeight.w400),
+                ),
+              )
+            else
+              const SizedBox(height: 26),
+
+            if (showRemoveButton)
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: onTapRemove,
+              ),
+          ],
+        ),
       ),
     );
   }
