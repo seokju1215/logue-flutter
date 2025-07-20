@@ -38,7 +38,8 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
       } else {
         // Android 13+ (API 33+)
         if (Platform.isAndroid) {
-          final androidInfo = await DeviceInfoPlugin().androidInfo;
+          final deviceInfo = DeviceInfoPlugin();
+          final androidInfo = await deviceInfo.androidInfo;
           final sdkInt = androidInfo.version.sdkInt;
           
           if (sdkInt >= 33) {
