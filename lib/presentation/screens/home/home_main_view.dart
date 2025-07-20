@@ -17,17 +17,15 @@ class HomeMainView extends StatefulWidget {
 
 class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMixin {
   late final TabController _tabController;
+  late final PageController _pageController;
   final List<String> labels = ['추천', '팔로잉', '인기'];
+  int _currentIndex = 0; // 현재 탭 인덱스를 별도로 관리
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: labels.length, vsync: this);
-    
-    // 탭 변경 리스너 추가
-    _tabController.addListener(() {
-      setState(() {});
-    });
+    _pageController = PageController(initialPage: _currentIndex);
     
     // 홈 화면 방문 트래킹
     MixpanelUtil.trackScreenView('Home');
@@ -36,6 +34,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
   @override
   void dispose() {
     _tabController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -49,11 +48,13 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
       ),
       child: Row(
         children: List.generate(labels.length, (index) {
-          final isSelected = _tabController.index == index;
+          final isSelected = _currentIndex == index;
           return GestureDetector(
             onTap: () {
-              _tabController.animateTo(index);
-              setState(() {});
+              _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+              setState(() {
+                _currentIndex = index;
+              });
             },
             child: Padding(
               padding: EdgeInsets.only(left: index == 0 ? 11 : 0, right: 15),
@@ -70,8 +71,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
                     ),
                   ),
                   const SizedBox(height: 6),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                  Container(
                     height: 2,
                     width: 56,
                     color: isSelected ? AppColors.black900 : Colors.transparent,
@@ -87,59 +87,61 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: labels.length,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(88), // 높이를 88에서 100으로 증가
-          child: SafeArea( // ⛑️ 상태바 아래로 여백 자동 확보
-            child: Padding(
-              padding: const EdgeInsets.only(top: 7),
-              child: AppBar(
-                backgroundColor: Colors.white,
-                elevation: 0,
-                titleSpacing: 0,
-                leadingWidth: 120,
-                leading: Padding(
-                  padding: const EdgeInsets.only(left: 22, top: 12), // top: 8 추가
-                  child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
-                ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16, top: 12),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SearchScreen()),
-                        );
-                      },
-                      child: Transform.scale(
-                        scale: 1.4,
-                        child: SvgPicture.asset(
-                          'assets/search_icon.svg',
-                          width: 32,
-                          height: 32,
-                        ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(88), // 높이를 88에서 100으로 증가
+        child: SafeArea( // ⛑️ 상태바 아래로 여백 자동 확보
+          child: Padding(
+            padding: const EdgeInsets.only(top: 7),
+            child: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              titleSpacing: 0,
+              leadingWidth: 120,
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 22, top: 12), // top: 8 추가
+                child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16, top: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SearchScreen()),
+                      );
+                    },
+                    child: Transform.scale(
+                      scale: 1.4,
+                      child: SvgPicture.asset(
+                        'assets/search_icon.svg',
+                        width: 32,
+                        height: 32,
                       ),
                     ),
                   ),
-                ],
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(38),
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 0), // 👈 간격 줄이고 싶으면 이걸 줄이기
-                    child: _buildTabBar(),
-                  ),
+                ),
+              ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(38),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 0), // 👈 간격 줄이고 싶으면 이걸 줄이기
+                  child: _buildTabBar(),
                 ),
               ),
             ),
           ),
         ),
-        body: SafeArea( // ⛑️ 오버플로 방지
-          child: TabBarView(
-            controller: _tabController,
-            physics: const ClampingScrollPhysics(), // 슬라이드 활성화
+      ),
+              body: SafeArea( // ⛑️ 오버플로 방지
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
             children: const [
               HomeRecommendTab(),
               HomeFollowingTab(),
@@ -147,7 +149,6 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
             ],
           ),
         ),
-      ),
     );
   }
 }
