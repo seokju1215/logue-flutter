@@ -196,14 +196,17 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           },
         ),
         actions: [
-          IconButton(
-            icon: SvgPicture.asset('assets/share_button.svg'),
-            onPressed: () {
-              final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
-              if (profileLink.isNotEmpty) {
-                Share.share(profileLink);
-              }
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: IconButton(
+              icon: SvgPicture.asset('assets/share_button.svg'),
+              onPressed: () {
+                final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
+                if (profileLink.isNotEmpty) {
+                  Share.share(profileLink);
+                }
+              },
+            ),
           ),
         ],
         backgroundColor: Colors.white,

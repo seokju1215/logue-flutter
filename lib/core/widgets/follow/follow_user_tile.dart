@@ -57,16 +57,17 @@ class FollowUserTile extends ConsumerWidget {
 
     final showRemoveButton = isMyProfile && tabType == FollowListType.followers;
 
-    return GestureDetector(
-      onTap: onTapProfile,
-      child: Padding(
-        padding: showRemoveButton
-            ? const EdgeInsets.fromLTRB(22, 8, 10, 8)
-            : const EdgeInsets.fromLTRB(22, 8, 22, 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
+    return Padding(
+      padding: showRemoveButton
+          ? const EdgeInsets.fromLTRB(22, 8, 10, 8)
+          : const EdgeInsets.fromLTRB(22, 8, 22, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: onTapProfile,
+              behavior: HitTestBehavior.opaque,
               child: Row(
                 children: [
                   CircleAvatar(
@@ -92,43 +93,43 @@ class FollowUserTile extends ConsumerWidget {
                 ],
               ),
             ),
+          ),
 
-            if (showFollowButton)
-              OutlinedButton(
-                onPressed: () {
-                  print('팔로우 버튼 클릭됨: userId = $userId');
-                  // 팔로우 트래킹
-                  MixpanelUtil.trackFollow(userId);
-                  // 부모 컴포넌트에서 처리하도록 콜백만 호출
-                  onTapFollow?.call();
-                },
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.black900, width: 1),
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-                  minimumSize: const Size(0, 0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                  ),
+          if (showFollowButton)
+            OutlinedButton(
+              onPressed: () {
+                print('팔로우 버튼 클릭됨: userId = $userId');
+                // 팔로우 트래킹
+                MixpanelUtil.trackFollow(userId);
+                // 부모 컴포넌트에서 처리하도록 콜백만 호출
+                onTapFollow?.call();
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.black900, width: 1),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                minimumSize: const Size(0, 0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
                 ),
-                child: const Text(
-                  "팔로우",
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.black900,
-                      fontWeight: FontWeight.w400),
-                ),
-              )
-            else
-              const SizedBox(height: 26),
-
-            if (showRemoveButton)
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                onPressed: onTapRemove,
               ),
-          ],
-        ),
+              child: const Text(
+                "팔로우",
+                style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.black900,
+                    fontWeight: FontWeight.w400),
+              ),
+            )
+          else
+            const SizedBox(height: 26),
+
+          if (showRemoveButton)
+            IconButton(
+              icon: const Icon(Icons.close, size: 20),
+              onPressed: onTapRemove,
+            ),
+        ],
       ),
     );
   }
