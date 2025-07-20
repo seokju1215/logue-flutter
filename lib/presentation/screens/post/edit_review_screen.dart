@@ -83,7 +83,7 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
           icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),// 👈 또는 null, 원하는 값으로
         ),
-        title: const Text('수정', style: TextStyle(fontSize: 16, color: AppColors.black900)),
+        title: const Text('수정', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _updateReview,

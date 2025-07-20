@@ -129,7 +129,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('책 추가', style: const TextStyle(color: AppColors.black900, fontSize: 16),),
+        title: const Text('책 추가', style: const TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500,),),
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),

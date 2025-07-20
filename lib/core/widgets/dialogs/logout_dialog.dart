@@ -1,14 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
+import 'package:my_logue/core/providers/follow_state_provider.dart';
 
-class LogoutDialog extends StatelessWidget {
+class LogoutDialog extends ConsumerWidget {
   final VoidCallback onConfirm;
 
   const LogoutDialog({super.key, required this.onConfirm});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () => Navigator.pop(context),
       child: Stack(
@@ -51,7 +53,11 @@ class LogoutDialog extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         ElevatedButton(
-                          onPressed: onConfirm,
+                          onPressed: () {
+                            // 로그아웃 시 모든 followStateProvider 무효화
+                            ref.read(followStateInvalidatorProvider).invalidateAll();
+                            onConfirm();
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.red500,
                             foregroundColor: Colors.white,

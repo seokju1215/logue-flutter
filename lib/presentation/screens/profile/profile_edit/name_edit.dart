@@ -27,9 +27,10 @@ class _NameEdit extends State<NameEdit> {
     final text = _controller.text;
     final changed = text != widget.currentName;
 
-    // 초성 단독을 허용하기 위해 유효한 정규식 체크를 느슨하게 수정
+    // 공백 허용하되 공백만 있으면 불가, 특수문자와 줄바꿈 불가
     final valid = text.isNotEmpty && text.length <= 10 &&
-        RegExp(r'^[a-zA-Z가-힣]+$').hasMatch(text);
+        RegExp(r'^[a-zA-Z가-힣\s]+$').hasMatch(text) &&
+        text.trim().isNotEmpty; // 공백만 있으면 불가
 
     setState(() {
       hasChanged = changed;
@@ -66,7 +67,7 @@ class _NameEdit extends State<NameEdit> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('이름', style: TextStyle(color: AppColors.black900, fontSize: 16)),
+        title: const Text('이름', style: TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500,)),
         centerTitle: true,
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),

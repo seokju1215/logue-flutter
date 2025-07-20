@@ -8,11 +8,26 @@ final followStateProvider = StateNotifierProvider.family<FollowStateNotifier, bo
   (ref, userId) => FollowStateNotifier(userId, ref.read(followRepositoryProvider)),
 );
 
+// 로그아웃 시 모든 followStateProvider를 무효화하기 위한 프로바이더
+final followStateInvalidatorProvider = Provider<FollowStateInvalidator>((ref) {
+  return FollowStateInvalidator(ref);
+});
+
 final followRepositoryProvider = Provider<FollowRepository>((ref) {
   final client = Supabase.instance.client;
   final functionBaseUrl = dotenv.env['FUNCTION_BASE_URL']!;
   return FollowRepository(client: client, functionBaseUrl: functionBaseUrl);
 });
+
+class FollowStateInvalidator {
+  final Ref _ref;
+  FollowStateInvalidator(this._ref);
+
+  void invalidateAll() {
+    // 모든 followStateProvider를 무효화
+    _ref.invalidate(followStateProvider);
+  }
+}
 
 class FollowStateNotifier extends StateNotifier<bool> {
   final String targetUserId;

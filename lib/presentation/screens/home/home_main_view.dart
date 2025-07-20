@@ -24,6 +24,11 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
     super.initState();
     _tabController = TabController(length: labels.length, vsync: this);
     
+    // 탭 변경 리스너 추가
+    _tabController.addListener(() {
+      setState(() {});
+    });
+    
     // 홈 화면 방문 트래킹
     MixpanelUtil.trackScreenView('Home');
   }
@@ -102,7 +107,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
                 ),
                 actions: [
                   Padding(
-                    padding: const EdgeInsets.only(right: 10, top: 12),
+                    padding: const EdgeInsets.only(right: 16, top: 12),
                     child: GestureDetector(
                       onTap: () {
                         Navigator.of(context).push(
@@ -134,7 +139,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
         body: SafeArea( // ⛑️ 오버플로 방지
           child: TabBarView(
             controller: _tabController,
-            physics: const NeverScrollableScrollPhysics(),
+            physics: const ClampingScrollPhysics(), // 슬라이드 활성화
             children: const [
               HomeRecommendTab(),
               HomeFollowingTab(),

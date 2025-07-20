@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:my_logue/core/providers/follow_state_provider.dart';
 
-class DeleteAccountScreen extends StatefulWidget {
+class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
 
   @override
-  State<DeleteAccountScreen> createState() => _DeleteAccountScreenState();
+  ConsumerState<DeleteAccountScreen> createState() => _DeleteAccountScreenState();
 }
 
-class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
+class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   int? selectedReasonIndex;
   bool agreed = false;
   final TextEditingController _controller = TextEditingController();
@@ -41,6 +43,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         'reason_index': selectedReasonIndex,
         'reason_text': reasonText,
       });
+      
+      // 계정 탈퇴 시 모든 followStateProvider 무효화
+      ref.read(followStateInvalidatorProvider).invalidateAll();
+      
       await client.auth.signOut();
 
       // 🔹 2. 계정 삭제 Edge Function 호출
@@ -77,7 +83,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       appBar: AppBar(
         title: const Text(
           '계정 탈퇴',
-          style: TextStyle(fontSize: 16, color: AppColors.black900),
+          style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),
         ),
         centerTitle: true,
         leading: IconButton(

@@ -149,7 +149,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         ),
         title: const Text(
           '책 추가',
-          style: TextStyle(fontSize: 16, color: AppColors.black900),
+          style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),
         ),
         actions: [
           TextButton(

@@ -146,7 +146,9 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                 : _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _results.isEmpty
-                ? const Center(child: Text("검색 결과가 없습니다."))
+                ? const Center(child: Text("검색 결과가 없습니다.", style: TextStyle(
+    fontSize: 14, color: AppColors.black500),
+    ),)
                 : GridView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

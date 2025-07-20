@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_logue/domain/usecases/login_with_google.dart';
 import 'package:my_logue/domain/usecases/login_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
+import 'package:my_logue/core/providers/follow_state_provider.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends ConsumerWidget {
   final bool blocked;
   const LoginScreen({super.key, this.blocked = false});
 
-  void _loginWithGoogle(BuildContext context) async {
+  void _loginWithGoogle(BuildContext context, WidgetRef ref) async {
+    // 로그인 시 모든 followStateProvider 무효화
+    ref.read(followStateInvalidatorProvider).invalidateAll();
+    
     final loginUseCase = LoginWithGoogle(Supabase.instance.client);
 
     try {
@@ -21,7 +26,10 @@ class LoginScreen extends StatelessWidget {
     }
   }
 
-  void _loginWithApple(BuildContext context) async {
+  void _loginWithApple(BuildContext context, WidgetRef ref) async {
+    // 로그인 시 모든 followStateProvider 무효화
+    ref.read(followStateInvalidatorProvider).invalidateAll();
+    
     final loginUseCase = LoginWithApple(Supabase.instance.client);
 
     try {
@@ -34,7 +42,7 @@ class LoginScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: Stack(
         children: [
@@ -70,7 +78,7 @@ class LoginScreen extends StatelessWidget {
                 SizedBox(
                   width: 350,
                   child: OutlinedButton.icon(
-                    onPressed: () => _loginWithGoogle(context),
+                    onPressed: () => _loginWithGoogle(context, ref),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.black900,
                       side: const BorderSide(color: AppColors.black500, width: 1),
@@ -93,7 +101,7 @@ class LoginScreen extends StatelessWidget {
                 SizedBox(
                   width: 350,
                   child: OutlinedButton.icon(
-                    onPressed: () => _loginWithApple(context),
+                    onPressed: () => _loginWithApple(context, ref),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.black900,
                       side: const BorderSide(color: AppColors.black500, width: 1),

@@ -107,7 +107,7 @@ class _UserNameEdit extends State<UserNameEdit> {
       appBar: AppBar(
         title: const Text(
           '사용자 이름',
-          style: TextStyle(color: AppColors.black900, fontSize: 16),
+          style: TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500,),
         ),
         centerTitle: true,
         leading: IconButton(

@@ -173,7 +173,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(profile?['username'] ?? 'User', style: TextStyle(fontSize: 16, color: AppColors.black900),),
+        title: Text(profile?['username'] ?? 'User', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
         centerTitle: true,
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),

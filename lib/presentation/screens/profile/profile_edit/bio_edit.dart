@@ -54,7 +54,7 @@ class _BioEdit extends State<BioEdit> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('소개', style: TextStyle(color: AppColors.black900, fontSize: 16)),
+        title: const Text('소개', style: TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500,)),
         centerTitle: true,
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),

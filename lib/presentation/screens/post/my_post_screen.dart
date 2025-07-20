@@ -106,7 +106,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.white,
-        title: Text(appBarTitle, style: const TextStyle(fontSize: 16, color: AppColors.black900)),
+        title: Text(appBarTitle, style: const TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,)),
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context, _hasDeleted),

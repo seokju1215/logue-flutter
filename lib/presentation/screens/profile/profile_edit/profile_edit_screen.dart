@@ -121,7 +121,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('프로필 편집', style: TextStyle(fontSize: 16, color: AppColors.black900),),
+        title: const Text('프로필 편집', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
         centerTitle: true,
         actions: [SaveButton(enabled: isEdited, onPressed: onSave)],
         leading: IconButton(
@@ -303,12 +303,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 22),
                     child: Text(
-                      '(주)로그퍼블릭은 개인정보 처리방침, 이용약관, 환불정책,\n사업자정보 등을 법적 고지사항 링크에서 통합하여 안내합니다.',
+                      '(주)로그퍼블릭은 개인정보 처리방침, 이용약관,\n 환불정책, 사업자정보 등을 법적 고지사항 \n링크에서 통합하여 안내합니다.',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 12, color: AppColors.black500),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 50),
                 ],
               ),
             ),

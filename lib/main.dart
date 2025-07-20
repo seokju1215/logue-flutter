@@ -154,6 +154,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.white500,
           surfaceTintColor: Colors.transparent,
+          titleTextStyle: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: AppColors.black900,
+          ),
         ),
         scaffoldBackgroundColor: AppColors.white500,
         canvasColor: AppColors.white500,

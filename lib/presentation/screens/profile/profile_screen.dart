@@ -266,35 +266,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(profile?['username'] ?? 'User', style: TextStyle(fontSize: 16, color: AppColors.black900),),
+        title: Text(profile?['username'] ?? 'User', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
         centerTitle: true,
-        leading: IconButton(
-          icon: SvgPicture.asset(_hasUnreadNotifications
-              ? 'assets/noticed_alarm_icon.svg'
-              : 'assets/bell_icon.svg'),
-          onPressed: () {
-            Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(builder: (_) => const NotificationScreen()),
-            );
-            _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
-            setState(() => _showFullBio = false);
-          },
+        leading: Padding(
+          padding: const EdgeInsets.only(left:16),
+          child: IconButton(
+            icon: Transform.scale(
+              scale: 1.08,
+              child: SvgPicture.asset(_hasUnreadNotifications
+                  ? 'assets/noticed_alarm_icon.svg'
+                  : 'assets/bell_icon.svg'),
+            ),
+            onPressed: () {
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+              );
+              _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
+              setState(() => _showFullBio = false);
+            },
+          ),
         ),
         actions: [
-          IconButton(
-            icon: SvgPicture.asset('assets/edit_icon.svg'),
-            onPressed: () async {
-              setState(() => _showFullBio = false);
-              final result = await Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (_) => ProfileEditScreen(initialProfile: profile!),
-                ),
-              );
-              print('👈 result 받음: $result');
-              if (result == true) {
-                _fetchProfile();
-              }
-            },
+          Padding(
+            padding: const EdgeInsets.only(right:12),
+            child: Transform.scale(
+              scale: 1.1,
+              child: IconButton(
+                icon: SvgPicture.asset('assets/edit_icon.svg'),
+                onPressed: () async {
+                  setState(() => _showFullBio = false);
+                  final result = await Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProfileEditScreen(initialProfile: profile!),
+                    ),
+                  );
+                  print('👈 result 받음: $result');
+                  if (result == true) {
+                    _fetchProfile();
+                  }
+                },
+              ),
+            ),
           ),
         ],
         backgroundColor: Colors.white,

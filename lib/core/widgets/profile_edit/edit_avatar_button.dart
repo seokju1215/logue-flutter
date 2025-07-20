@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class EditAvatarButton extends StatefulWidget {
   final String avatarUrl;
@@ -35,15 +36,42 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
         // iOS에서는 image_picker가 직접 권한을 처리하도록 함
         _pickImage(ImageSource.gallery);
       } else {
-        // Android
-        final status = await Permission.storage.status;
-        if (status.isDenied) {
-          final result = await Permission.storage.request();
-          if (result.isGranted) {
-            _pickImage(ImageSource.gallery);
+        // Android 13+ (API 33+)
+        if (Platform.isAndroid) {
+          final androidInfo = await DeviceInfoPlugin().androidInfo;
+          final sdkInt = androidInfo.version.sdkInt;
+          
+          if (sdkInt >= 33) {
+            // Android 13+ 에서는 READ_MEDIA_IMAGES 권한 사용
+            final photosStatus = await Permission.photos.status;
+            if (photosStatus.isDenied) {
+              final result = await Permission.photos.request();
+              if (result.isGranted) {
+                _pickImage(ImageSource.gallery);
+              } else {
+                _showSnackBar('사진 접근 권한이 필요합니다.', AppColors.red500);
+              }
+            } else if (photosStatus.isGranted) {
+              _pickImage(ImageSource.gallery);
+            } else {
+              _showSnackBar('사진 접근 권한이 필요합니다.', AppColors.red500);
+            }
+          } else {
+            // Android 12 이하에서는 storage 권한 사용
+            final storageStatus = await Permission.storage.status;
+            if (storageStatus.isDenied) {
+              final result = await Permission.storage.request();
+              if (result.isGranted) {
+                _pickImage(ImageSource.gallery);
+              } else {
+                _showSnackBar('저장소 접근 권한이 필요합니다.', AppColors.red500);
+              }
+            } else if (storageStatus.isGranted) {
+              _pickImage(ImageSource.gallery);
+            } else {
+              _showSnackBar('저장소 접근 권한이 필요합니다.', AppColors.red500);
+            }
           }
-        } else if (status.isGranted) {
-          _pickImage(ImageSource.gallery);
         }
       }
     } catch (e) {
@@ -135,8 +163,6 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
       final publicUrl = supabase.storage.from('avatars').getPublicUrl(storagePath);
       debugPrint('📸 공개 URL: $publicUrl');
       widget.onAvatarChanged(publicUrl);
-
-      _showSnackBar('프로필 이미지가 변경되었습니다.', AppColors.blue500);
     } catch (e) {
       debugPrint('🔥 프로필 이미지 업로드 실패: $e');
       
