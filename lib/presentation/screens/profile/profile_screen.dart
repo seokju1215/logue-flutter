@@ -277,8 +277,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ? 'assets/noticed_alarm_icon.svg'
                   : 'assets/bell_icon.svg'),
             ),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).push(
+            onPressed: () async {
+              final result = await Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const NotificationScreen()),
               );
               _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크

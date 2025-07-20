@@ -33,6 +33,7 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen>
     with TickerProviderStateMixin {
   late final TabController _tabController;
+  late final PageController _pageController;
   final TextEditingController _searchController = TextEditingController();
   late final FollowRepository _followRepo;
   late final FollowUser _followUser;
@@ -43,11 +44,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   bool _isLoading = false;
   String _query = '';
   bool _isSearching = false; // ✅ 중복 검색 방지 플래그
+  int _currentIndex = 0; // 현재 탭 인덱스를 별도로 관리
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _pageController = PageController(initialPage: _currentIndex);
 
     _followRepo = FollowRepository(
       client: Supabase.instance.client,
@@ -61,6 +64,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _pageController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -227,12 +231,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               Row(
                 children: List.generate(3, (index) {
                   final labels = ['추천', '계정', '책'];
-                  final isSelected = _tabController.index == index;
+                  final isSelected = _currentIndex == index;
 
                   return GestureDetector(
                     onTap: () {
-                      _tabController.animateTo(index);
-                      setState(() {});
+                      _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                      setState(() {
+                        _currentIndex = index;
+                      });
                     },
                     child: Padding(
                       padding: EdgeInsets.only(
@@ -255,8 +261,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                             ),
                           ),
                           const SizedBox(height: 6),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
+                          Container(
                             height: 2,
                             width: 56,
                             color: isSelected
@@ -273,9 +278,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: const NeverScrollableScrollPhysics(),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         children: [
           _isLoading
               ? const Center(child: CircularProgressIndicator())
