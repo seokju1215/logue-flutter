@@ -299,7 +299,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       ),
                     );
                   }),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 16),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 22),
                     child: Text(
@@ -308,7 +308,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       style: TextStyle(fontSize: 12, color: AppColors.black500),
                     ),
                   ),
-                  const SizedBox(height: 70),
+                  const SizedBox(height: 50),
                 ],
               ),
             ),

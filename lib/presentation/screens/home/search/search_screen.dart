@@ -421,19 +421,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                             ],
                           ),
                         ),
-          _query.isEmpty
-              ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
-              : _userResults.isEmpty
-                  ? Container(
-                      color: Colors.white,
-                      alignment: Alignment.center,
-                      child: const Text(
-                        '검색 결과가 없어요.',
-                        style:
-                            TextStyle(fontSize: 14, color: AppColors.black500),
-                      ),
-                    )
-                  : Column(
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _query.isEmpty
+                  ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
+                  : _userResults.isEmpty
+                      ? Container(
+                          color: Colors.white,
+                          alignment: Alignment.center,
+                          child: const Text(
+                            '검색 결과가 없어요.',
+                            style:
+                                TextStyle(fontSize: 14, color: AppColors.black500),
+                          ),
+                        )
+                      : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(
@@ -513,17 +515,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                         ),
                       ],
                     ),
-          _query.isEmpty
-              ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
-              : _bookResults.isEmpty
-                  ? const Center(
-                      child: Text(
-                        '검색 결과가 없어요.',
-                        style:
-                            TextStyle(fontSize: 14, color: AppColors.black500),
-                      ),
-                    )
-                  : SingleChildScrollView(
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _query.isEmpty
+                  ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
+                  : _bookResults.isEmpty
+                      ? const Center(
+                          child: Text(
+                            '검색 결과가 없어요.',
+                            style:
+                                TextStyle(fontSize: 14, color: AppColors.black500),
+                          ),
+                        )
+                      : SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 19, vertical: 22),
                       child: Column(

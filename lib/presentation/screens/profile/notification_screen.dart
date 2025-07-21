@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/domain/usecases/get_notifications.dart';
 import 'package:my_logue/core/constants/app_constants.dart';
+import 'package:my_logue/presentation/screens/profile/other_profile_screen.dart';
 
 
 
@@ -81,7 +82,12 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
   }
 
   void _goToProfile(String senderId) {
-    Navigator.pushNamed(context, '/other_profile', arguments: senderId);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OtherProfileScreen(userId: senderId),
+      ),
+    );
   }
 
   // void _goToPost(String bookId) {

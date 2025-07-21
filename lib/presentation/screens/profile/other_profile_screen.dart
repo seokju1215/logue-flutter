@@ -477,30 +477,21 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                   }
                 },
                 style: _outlinedStyle(context, isFollowing: isFollowing),
-                child: isFollowing
-                    ? const Text(
-                  '팔로잉',
-                  style: TextStyle(
-                    color: AppColors.black500,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    height: 1.25,
-                  ),
-                )
-                    : Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  crossAxisAlignment: CrossAxisAlignment.center, // 세로 중앙 정렬
+                  children: [
                     Text(
-                      '팔로우 +',
+                      isFollowing ? '팔로잉' : '팔로우 +',
                       style: TextStyle(
-                        color: AppColors.black900,
+                        color: isFollowing ? AppColors.black500 : AppColors.black900,
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                         height: 1.25,
                       ),
                     ),
-                    SizedBox(width: 1.8),
-
+                    if (!isFollowing)
+                      const SizedBox(width: 1.8), // 팔로우 상태일 때만 + 간격 유지
                   ],
                 ),
               )
