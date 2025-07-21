@@ -19,16 +19,68 @@ import '../post/my_post_screen.dart';
 import 'follow/follow_tab_screen.dart';
 import 'follow_list_screen.dart';
 import 'notification_screen.dart';
+import 'profile_view.dart';
 import 'package:flutter/gestures.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
+  static Future<void> loadBooksFromContext(BuildContext context) async {
+    // context를 통해 profile_screen의 State를 찾아서 loadBooks 호출
+    debugPrint('🔍 ProfileScreen.loadBooksFromContext 호출됨');
+    
+    // 먼저 ProfileScreenState를 찾아보기
+    final profileScreenState = context.findAncestorStateOfType<ProfileScreenState>();
+    if (profileScreenState != null) {
+      debugPrint('🔍 ProfileScreenState 찾음, loadBooks 호출');
+      await profileScreenState.loadBooks();
+      return;
+    }
+    
+    // ProfileScreenState를 찾을 수 없으면 ProfileViewState를 찾아서 Navigator를 통해 접근
+    final profileViewState = context.findAncestorStateOfType<ProfileViewState>();
+    if (profileViewState != null) {
+      debugPrint('🔍 ProfileViewState 찾음, Navigator를 통해 ProfileScreen 접근');
+      final navigatorState = profileViewState.widget.navigatorKey.currentState;
+      if (navigatorState != null) {
+        // Navigator의 context를 통해 ProfileScreen에 접근
+        final profileContext = navigatorState.context;
+        final profileScreenState = profileContext.findAncestorStateOfType<ProfileScreenState>();
+        if (profileScreenState != null) {
+          debugPrint('🔍 Navigator를 통해 ProfileScreenState 찾음, loadBooks 호출');
+          await profileScreenState.loadBooks();
+          return;
+        }
+      }
+    }
+    
+    debugPrint('🔍 ProfileScreenState를 찾을 수 없음');
+  }
+
+  static Future<void> navigateToMyBookPostScreen(BuildContext context) async {
+    debugPrint('🔍 ProfileScreen.navigateToMyBookPostScreen 호출됨');
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
+    );
+    debugPrint('🔍 MyBookPostScreen 결과: $result');
+    if (result == true) {
+      debugPrint('🔍 포스트 삭제됨, profile_screen 새로고침 시도');
+      // profile_screen의 State를 찾아서 loadBooks 호출
+      final profileScreenState = context.findAncestorStateOfType<ProfileScreenState>();
+      if (profileScreenState != null) {
+        debugPrint('🔍 ProfileScreenState 찾음, loadBooks 호출');
+        await profileScreenState.loadBooks();
+      } else {
+        debugPrint('🔍 ProfileScreenState를 찾을 수 없음');
+      }
+    }
+  }
+
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class ProfileScreenState extends State<ProfileScreen> {
   final client = Supabase.instance.client;
   final ScrollController _scrollController = ScrollController();
   bool _isScrollable = false;
@@ -47,7 +99,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _checkUnreadNotifications();
     _getUserBooks = GetUserBooks(UserBookApi(client));
     _fetchProfile();
-    _loadBooks();
+    loadBooks();
     _subscribeToProfileUpdates();
     _subscribeToBookUpdates();
 
@@ -164,6 +216,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  // 프로필 전체를 새로고침하는 함수
+  Future<void> refreshProfile() async {
+    debugPrint('🔍 프로필 전체 새로고침 시작');
+    await _fetchProfile();
+    await loadBooks();
+    await _checkUnreadNotifications();
+    debugPrint('🔍 프로필 전체 새로고침 완료');
+  }
+
   Future<void> _updateFollowCounts() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null || profile == null) return;
@@ -190,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Future<void> _loadBooks() async {
+  Future<void> loadBooks() async {
     final user = client.auth.currentUser;
     if (user == null) return;
 
@@ -362,7 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         MaterialPageRoute(builder: (_) => AddBookScreen(isLimitReached: books.length >= 9,)),
                                       );
                                       if (result == true) {
-                                        _loadBooks(); // ✅ 책 목록 다시 불러오기
+                                        loadBooks(); // ✅ 책 목록 다시 불러오기
                                       }
                                     },
                                     child: const Text(
@@ -521,7 +582,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MaterialPageRoute(builder: (_) => AddBookScreen(isLimitReached: books.length >= 9,)),
               );
               if (result == true) {
-                _loadBooks(); // ✅ 변경사항 반영
+                loadBooks(); // ✅ 변경사항 반영
               }
             },
             child: const Text("책 추가 +",
@@ -562,7 +623,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
         if (result == true) {
-          _loadBooks();
+          loadBooks();
         }
       },
     );

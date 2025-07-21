@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/home/home_screen.dart';
 import 'package:my_logue/presentation/screens/profile/profile_view.dart';
+import 'package:my_logue/presentation/screens/profile/profile_screen.dart';
 import 'package:my_logue/presentation/screens/post/my_post_screen.dart';
 
 import '../../data/utils/announcement_dialog_util.dart';
@@ -57,10 +58,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     if (!_hasNavigatedToPostScreen && widget.goToMyBookPostScreen == true) {
       _hasNavigatedToPostScreen = true;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
-        );
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+        // profile_screen의 context를 사용하여 MyBookPostScreen으로 이동
+        final profileContext = _navigatorKeys[1].currentState?.context;
+        if (profileContext != null) {
+          // profile_screen의 onTap 콜백을 직접 호출하는 방식으로 변경
+          final result = await Navigator.of(profileContext).push(
+            MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
+          );
+          
+          // 포스트 삭제 후 홈으로 이동했다가 프로필로 이동
+          if (result == true) {
+            debugPrint('🔍 포스트 삭제됨, 홈으로 이동 후 프로필로 이동');
+            
+            // 먼저 홈으로 이동
+            setState(() {
+              _selectedIndex = 0;
+              MainNavigationScreen.lastSelectedIndex = 0;
+            });
+            
+            // 잠시 후에 프로필로 이동
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted) {
+                debugPrint('🔍 100ms 후 프로필로 이동');
+                setState(() {
+                  _selectedIndex = 1;
+                  MainNavigationScreen.lastSelectedIndex = 1;
+                });
+              }
+            });
+          }
+        }
       });
     }
 

@@ -13,10 +13,10 @@ class ProfileView extends StatefulWidget {
   });
 
   @override
-  State<ProfileView> createState() => _ProfileViewState();
+  State<ProfileView> createState() => ProfileViewState();
 }
 
-class _ProfileViewState extends State<ProfileView> {
+class ProfileViewState extends State<ProfileView> {
   bool _hasNavigated = false;
 
   @override
