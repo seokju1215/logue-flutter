@@ -2,7 +2,7 @@ name: Update Book Ranking
 
 on:
   schedule:
-    - cron: '10 * * * *'   # 매시간 10분마다 실행
+    - cron: '*/5 * * * *'   # 매시간 10분마다 실행
   workflow_dispatch:         # 수동 실행도 허용
 
 jobs:
