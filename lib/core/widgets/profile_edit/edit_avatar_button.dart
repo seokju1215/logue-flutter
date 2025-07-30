@@ -35,6 +35,7 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
       builder: (context) => AvatarBottomSheet(
         onPhotoLibraryTap: _requestPhotoLibraryPermission,
         onDeleteTap: _deleteAvatar,
+        isDefaultAvatar: widget.avatarUrl == 'basic',
       ),
     );
   }
@@ -53,10 +54,8 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
       }).eq('id', userId);
 
       widget.onAvatarChanged('basic');
-      _showSnackBar('프로필 사진이 삭제되었습니다.', AppColors.blue500);
     } catch (e) {
       debugPrint('❌ 프로필 사진 삭제 실패: $e');
-      _showSnackBar('프로필 사진 삭제에 실패했습니다.', AppColors.red500);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }

@@ -4,11 +4,13 @@ import 'package:my_logue/core/themes/app_colors.dart';
 class AvatarBottomSheet extends StatelessWidget {
   final VoidCallback onPhotoLibraryTap;
   final VoidCallback onDeleteTap;
+  final bool isDefaultAvatar;
 
   const AvatarBottomSheet({
     super.key,
     required this.onPhotoLibraryTap,
     required this.onDeleteTap,
+    required this.isDefaultAvatar,
   });
 
   @override
@@ -63,19 +65,19 @@ class AvatarBottomSheet extends StatelessWidget {
               ),
             ),
             GestureDetector(
-              onTap: () {
+              onTap: isDefaultAvatar ? null : () {
                 Navigator.pop(context);
                 onDeleteTap();
               },
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.only(top:28),
-                child: const Text(
+                child: Text(
                   '삭제',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.black500,
+                    color: isDefaultAvatar ? AppColors.black500 : AppColors.red500,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
