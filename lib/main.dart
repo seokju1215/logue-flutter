@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:my_logue/presentation/routes/on_generate_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/themes/app_colors.dart';
@@ -127,7 +128,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MaterialApp(
       useInheritedMediaQuery: isQA,
-      locale: isQA ? DevicePreview.locale(context) : null,
+      locale: isQA ? DevicePreview.locale(context) : const Locale('ko', 'KR'),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ko', 'KR'),
+        Locale('en', 'US'),
+      ],
       builder: (context, child) {
         // 시스템 글자 크기 설정을 무시하고 고정된 스케일 사용
         final mediaQuery = MediaQuery.of(context);
@@ -149,7 +159,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       },
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
-      title: '로그',
+      title: 'Logue',
       theme: ThemeData(
         dialogTheme: DialogThemeData(
           backgroundColor: AppColors.white500,
