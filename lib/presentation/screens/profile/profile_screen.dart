@@ -562,8 +562,6 @@ class ProfileScreenState extends State<ProfileScreen> {
               },
               child: _buildCount("팔로잉", profile?['following'] ?? 0),
             ),
-            const SizedBox(width: 27),
-            _buildCount("방문자", profile?['visitors'] ?? 0, isTappable: false),
           ],
         ),
       ],
