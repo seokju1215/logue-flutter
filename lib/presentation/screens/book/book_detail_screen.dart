@@ -9,6 +9,7 @@ import '../../../core/widgets/book/book_frame.dart';
 
 import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:my_logue/data/datasources/aladin_book_api.dart';
+import 'package:my_logue/data/datasources/user_book_api.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/follow_state_provider.dart';
 import '../profile/other_profile_screen.dart';
@@ -176,17 +177,63 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     }
 
     final api = AladinBookApi();
+    final userBookApi = UserBookApi(Supabase.instance.client);
     Map<String, List<Map<String, dynamic>>> result = {};
+    
     for (final author in authors) {
       try {
-        final books = await api.searchBooksByAuthor(author);
-        if (books.isNotEmpty) {
-          result[author] = books;
+        // 1️⃣ 내 DB에서 저자로 책 검색
+        final dbResults = await userBookApi.searchBooksFromDB(author);
+        
+        // 3️⃣ 결과 합치기 및 중복 제거
+        final allBooks = <Map<String, dynamic>>[];
+        final seenIsbns = <String>{};
+        final seenTitles = <String>{};
+        
+        // DB 결과 먼저 추가
+        for (final dbBook in dbResults) {
+          final isbn = dbBook['isbn']?.toString() ?? '';
+          final title = dbBook['title']?.toString().toLowerCase() ?? '';
+          
+          if (isbn.isNotEmpty && !seenIsbns.contains(isbn)) {
+            allBooks.add(dbBook);
+            seenIsbns.add(isbn);
+          } else if (isbn.isEmpty && !seenTitles.contains(title)) {
+            allBooks.add(dbBook);
+            seenTitles.add(title);
+          }
+        }
+        
+        // 2️⃣ 알라딘 API에서 저자로 책 검색 (실패해도 DB 결과는 표시)
+        try {
+          final aladinResults = await api.searchBooksByAuthor(author);
+          
+          // 알라딘 결과 추가 (중복 제거)
+          for (final aladinBook in aladinResults) {
+            final isbn = aladinBook['isbn']?.toString() ?? '';
+            final title = aladinBook['title']?.toString().toLowerCase() ?? '';
+            
+            if (isbn.isNotEmpty && !seenIsbns.contains(isbn)) {
+              allBooks.add(aladinBook);
+              seenIsbns.add(isbn);
+            } else if (isbn.isEmpty && !seenTitles.contains(title)) {
+              allBooks.add(aladinBook);
+              seenTitles.add(title);
+            }
+          }
+        } catch (e) {
+          debugPrint('❌ 알라딘 API 실패 (저자: $author): $e');
+          // 알라딘 API 실패해도 DB 결과는 계속 사용
+        }
+        
+        if (allBooks.isNotEmpty) {
+          result[author] = allBooks;
         }
       } catch (e) {
         debugPrint('❌ 저자 "$author"의 책 검색 실패: $e');
       }
     }
+    
     if (mounted) {
       setState(() {
         authorBooks = result;

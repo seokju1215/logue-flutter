@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:my_logue/core/widgets/dialogs/avatar_bottom_sheet.dart';
 
 class EditAvatarButton extends StatefulWidget {
   final String avatarUrl;
@@ -27,7 +28,38 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
   bool _isUploading = false;
 
   Future<void> _showImageSourceDialog() async {
-    await _requestPhotoLibraryPermission();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.transparent,
+      builder: (context) => AvatarBottomSheet(
+        onPhotoLibraryTap: _requestPhotoLibraryPermission,
+        onDeleteTap: _deleteAvatar,
+      ),
+    );
+  }
+
+  Future<void> _deleteAvatar() async {
+    try {
+      setState(() => _isUploading = true);
+      
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) throw Exception('사용자 정보를 찾을 수 없습니다.');
+
+      // 프로필에서 avatar_url을 'basic'으로 변경
+      await supabase.from('profiles').update({
+        'avatar_url': 'basic',
+      }).eq('id', userId);
+
+      widget.onAvatarChanged('basic');
+      _showSnackBar('프로필 사진이 삭제되었습니다.', AppColors.blue500);
+    } catch (e) {
+      debugPrint('❌ 프로필 사진 삭제 실패: $e');
+      _showSnackBar('프로필 사진 삭제에 실패했습니다.', AppColors.red500);
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 
   Future<void> _requestPhotoLibraryPermission() async {
