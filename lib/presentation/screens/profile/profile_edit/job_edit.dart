@@ -34,7 +34,7 @@ class _JobEditState extends State<JobEdit> {
 
     setState(() {
       hasChanged = changed;
-      isValid = text.isNotEmpty && text.length <= 20;
+      isValid = text.length <= 20;
     });
   }
 
@@ -51,7 +51,7 @@ class _JobEditState extends State<JobEdit> {
   void _onConfirm([String? selectedJob]) {
     final jobToSave = selectedJob ?? _controller.text.trim();
 
-    if (jobToSave == widget.currentJob || jobToSave.isEmpty || jobToSave.length > 20) return;
+    if (jobToSave == widget.currentJob || jobToSave.length > 20) return;
 
     try {
       Navigator.pop(context, {'job': jobToSave});
@@ -96,12 +96,10 @@ class _JobEditState extends State<JobEdit> {
     final isConfirmEnabled = hasChanged && isValid;
 
     Color borderColor = AppColors.black500;
-    if (_controller.text.isNotEmpty) {
-      if (!isValid) {
-        borderColor = AppColors.red500;
-      } else if (hasChanged) {
-        borderColor = AppColors.blue500;
-      }
+    if (!isValid) {
+      borderColor = AppColors.red500;
+    } else if (hasChanged) {
+      borderColor = AppColors.blue500;
     }
 
     return Scaffold(
