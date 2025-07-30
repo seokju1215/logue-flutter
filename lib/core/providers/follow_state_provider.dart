@@ -76,14 +76,14 @@ class FollowStateNotifier extends StateNotifier<bool> {
           .maybeSingle();
       
       if (!_isDisposed) {
-        safeSet(res != null);
+      safeSet(res != null);
         _isInitialized = true;
         debugPrint('🔍 FollowState 초기화 완료: $targetUserId -> ${res != null}');
       }
     } catch (e) {
       debugPrint('🔴 FollowState fetch error: $e');
       if (!_isDisposed) {
-        safeSet(false);
+      safeSet(false);
         _isInitialized = true;
       }
     }

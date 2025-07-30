@@ -66,7 +66,7 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
                 _pickImage(ImageSource.gallery);
               } else {
                 _showSnackBar('저장소 접근 권한이 필요합니다.', AppColors.red500);
-              }
+        }
             } else if (storageStatus.isGranted) {
               _pickImage(ImageSource.gallery);
             } else {
@@ -84,7 +84,7 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
   Future<void> _pickImage(ImageSource source) async {
     try {
       debugPrint('📸 이미지 선택 시작 - source: $source');
-      
+
       final XFile? picked = await _picker.pickImage(
         source: source,
         maxWidth: 1024,
@@ -166,8 +166,8 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
       widget.onAvatarChanged(publicUrl);
     } catch (e) {
       debugPrint('🔥 프로필 이미지 업로드 실패: $e');
-      
-      String errorMessage = '프로필 이미지 변경에 실패했습니다.';
+
+        String errorMessage = '프로필 이미지 변경에 실패했습니다.';
       
       if (e.toString().contains('invalid_image')) {
         errorMessage = '이미지 파일이 손상되었거나 지원되지 않는 형식입니다.';
@@ -175,17 +175,17 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
         errorMessage = '이미지 로딩 중 오류가 발생했습니다. 다른 이미지를 선택해주세요.';
       } else if (e.toString().contains('permission')) {
         errorMessage = '이미지 접근 권한이 필요합니다.';
-      } else if (e.toString().contains('network')) {
-        errorMessage = '네트워크 연결을 확인해주세요.';
-      } else if (e.toString().contains('storage')) {
-        errorMessage = '저장소 접근에 실패했습니다.';
-      }
+        } else if (e.toString().contains('network')) {
+          errorMessage = '네트워크 연결을 확인해주세요.';
+        } else if (e.toString().contains('storage')) {
+          errorMessage = '저장소 접근에 실패했습니다.';
+        }
       
       _showSnackBar(errorMessage, AppColors.red500);
     } finally {
       if (mounted) setState(() => _isUploading = false);
+      }
     }
-  }
 
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
@@ -219,13 +219,13 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
               backgroundImage: isBasic ? null : NetworkImage(widget.avatarUrl),
               child: isBasic
                   ? ClipOval(
-                      child: Image.asset(
-                        'assets/basic_avatar.png',
-                        width: 96,
-                        height: 96,
-                        fit: BoxFit.cover,
-                      ),
-                    )
+                child: Image.asset(
+                  'assets/basic_avatar.png',
+                  width: 96,
+                  height: 96,
+                  fit: BoxFit.cover,
+                ),
+              )
                   : null,
             ),
           ),
@@ -237,10 +237,10 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
               backgroundColor: Colors.white,
               child: _isUploading
                   ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
                   : const Icon(Icons.camera_alt_outlined, size: 16),
             ),
           ),

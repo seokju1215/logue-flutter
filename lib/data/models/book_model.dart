@@ -29,15 +29,15 @@ class BookModel {
     final imageUrl = (json['image'] ?? '') as String;
 
     return BookModel(
-      isbn: json['isbn13'] ?? '',
+      isbn: json['isbn13'] ?? json['isbn'] ?? '',
       title: json['title'] ?? '',
       subtitle: json.containsKey('subtitle') ? json['subtitle'] : null,
       author: json['author'] ?? '',
       publisher: json['publisher'] ?? '',
-      publishedDate: json['pubDate'],
-      pageCount: json['subInfo']?['itemPage'],
+      publishedDate: json['pubDate'] ?? json['published_date'],
+      pageCount: json['subInfo']?['itemPage'] ?? json['page_count'],
       description: json['description'] ?? '',
-      toc: json['subInfo']?['toc'],
+      toc: json['subInfo']?['toc'] ?? json['toc'],
       image: imageUrl.startsWith('http://')
           ? imageUrl.replaceFirst('http://', 'https://')
           : imageUrl,

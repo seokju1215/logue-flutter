@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import '../../../../data/datasources/aladin_book_api.dart';
+import '../../../../data/datasources/user_book_api.dart';
 import '../../../../data/models/book_model.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:my_logue/presentation/screens/profile/add_book/write_review_screen.dart';
 import '../../../../data/utils/mixpanel_util.dart';
 import 'dart:async'; // ✅ 디바운싱 타이머를 위한 임포트
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SearchBookScreen extends StatefulWidget {
   const SearchBookScreen({super.key});
@@ -44,16 +46,49 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
     _isSearching = true;
 
     try {
-      final rawResults = await AladinBookApi().searchBooks(query);
-      final results = rawResults.map((data) => BookModel.fromJson(data)).toList();
+      // 1️⃣ 내 DB에서 검색
+      final userBookApi = UserBookApi(Supabase.instance.client);
+      final dbResults = await userBookApi.searchBooksFromDB(query);
+      
+      // 2️⃣ Aladin API에서 검색
+      final aladinResults = await AladinBookApi().searchBooks(query);
+      
+      // 3️⃣ 결과 합치기 및 중복 제거
+      final allBooks = <BookModel>[];
+      final seenIsbns = <String>{};
+      final seenTitles = <String>{};
+      
+      // DB 결과 먼저 추가
+      for (final dbBook in dbResults) {
+        final book = BookModel.fromJson(dbBook);
+        if (book.isbn.isNotEmpty && !seenIsbns.contains(book.isbn)) {
+          allBooks.add(book);
+          seenIsbns.add(book.isbn);
+        } else if (book.isbn.isEmpty && !seenTitles.contains(book.title.toLowerCase())) {
+          allBooks.add(book);
+          seenTitles.add(book.title.toLowerCase());
+        }
+      }
+      
+      // Aladin 결과 추가 (중복 제거)
+      for (final aladinBook in aladinResults) {
+        final book = BookModel.fromJson(aladinBook);
+        if (book.isbn.isNotEmpty && !seenIsbns.contains(book.isbn)) {
+          allBooks.add(book);
+          seenIsbns.add(book.isbn);
+        } else if (book.isbn.isEmpty && !seenTitles.contains(book.title.toLowerCase())) {
+          allBooks.add(book);
+          seenTitles.add(book.title.toLowerCase());
+        }
+      }
 
       if (mounted) {
         setState(() {
-          _results = results;
+          _results = allBooks;
         });
       }
     } catch (e) {
-      // 에러 처리
+      debugPrint('❌ 책 검색 실패: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

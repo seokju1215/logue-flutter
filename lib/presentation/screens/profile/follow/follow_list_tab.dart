@@ -454,7 +454,7 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
                     }
                   } else {
                     // 다른 탭에서는 상태만 업데이트
-                    await _updateFollowStatus(user['id']);
+                  await _updateFollowStatus(user['id']);
                   }
                 } else {
                   debugPrint('🔍 팔로우 상태 변경 없음');

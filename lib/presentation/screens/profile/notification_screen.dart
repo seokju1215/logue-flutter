@@ -99,7 +99,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     _loadNotifications();
   }
 
-    @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -131,66 +131,66 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
               ),
             )
           : Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        '서비스 알림 수신 설정',
-                        style: TextStyle(fontSize: 14, color: AppColors.black900),
-                      ),
-                      Transform.scale(
-                        scale: 0.8,
-                        child: Switch(
-                          value: isNotificationOn,
-                          onChanged: (_) {
-                            AppSettings.openAppSettings();
-                          },
-                          activeColor: AppColors.white500,
-                          activeTrackColor: AppColors.black900,
-                          inactiveThumbColor: AppColors.black900,
-                          inactiveTrackColor: AppColors.white500,
-                        ),
-                      ),
-                    ],
-                  ),
+                const Text(
+                  '서비스 알림 수신 설정',
+                  style: TextStyle(fontSize: 14, color: AppColors.black900),
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _notifications.length,
-                    itemBuilder: (context, index) {
-                      final item = _notifications[index];
-                      final type = item['type'];
-                      final sender = item['sender'];
-                      final username = sender['username'];
-                      final bookId = item['book_id'];
-                      final notifId = item['id'];
-
-                      final content = type == 'follow'
-                          ? '$username님이 팔로우하기 시작했어요.'
-                          : '$username님이 새로운 인생 책을 추가했어요.';
-
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 22),
-                        title: Text(
-                          content,
-                          style: const TextStyle(fontSize: 14, color: AppColors.black500),
-                        ),
-                        onTap: () {
-                          _goToProfile(sender['id']);
-                        },
-                        trailing: IconButton(
-                          icon: const Icon(Icons.close, size: 16),
-                          onPressed: () => _deleteNotification(notifId),
-                        ),
-                      );
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch(
+                    value: isNotificationOn,
+                    onChanged: (_) {
+                      AppSettings.openAppSettings();
                     },
+                    activeColor: AppColors.white500,
+                    activeTrackColor: AppColors.black900,
+                    inactiveThumbColor: AppColors.black900,
+                    inactiveTrackColor: AppColors.white500,
                   ),
                 ),
               ],
             ),
+          ),
+          Expanded(
+                  child: ListView.builder(
+              itemCount: _notifications.length,
+              itemBuilder: (context, index) {
+                final item = _notifications[index];
+                final type = item['type'];
+                final sender = item['sender'];
+                final username = sender['username'];
+                final bookId = item['book_id'];
+                final notifId = item['id'];
+
+                final content = type == 'follow'
+                    ? '$username님이 팔로우하기 시작했어요.'
+                    : '$username님이 새로운 인생 책을 추가했어요.';
+
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 22),
+                  title: Text(
+                    content,
+                    style: const TextStyle(fontSize: 14, color: AppColors.black500),
+                  ),
+                  onTap: () {
+                    _goToProfile(sender['id']);
+                  },
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => _deleteNotification(notifId),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

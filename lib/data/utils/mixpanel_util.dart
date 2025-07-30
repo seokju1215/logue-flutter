@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MixpanelUtil {
   static Mixpanel? _mixpanel;
+  static bool _isTrackingEnabled = true;
   
   static Future<void> initialize() async {
     final token = dotenv.env['MIXPANEL_PROJECT_TOKEN'];
@@ -11,20 +12,35 @@ class MixpanelUtil {
       return;
     }
     
+    // 항상 추적 허용
+    _isTrackingEnabled = true;
+    
+    if (_isTrackingEnabled) {
     _mixpanel = await Mixpanel.init(token, trackAutomaticEvents: true);
-    print('📊 Mixpanel 초기화 완료');
+      print('📊 Mixpanel 초기화 완료 (추적 허용)');
+    } else {
+      print('📊 Mixpanel 초기화 건너뜀 (추적 거부)');
+    }
   }
   
   static Mixpanel? get instance => _mixpanel;
   
   // 사용자 식별
   static void identify(String userId) {
+    if (!_isTrackingEnabled) {
+      print('📊 사용자 식별 건너뜀 (추적 거부): $userId');
+      return;
+    }
     _mixpanel?.identify(userId);
     print('📊 사용자 식별: $userId');
   }
   
   // 사용자 속성 설정
   static void setUserProperties(Map<String, dynamic> properties) {
+    if (!_isTrackingEnabled) {
+      print('📊 사용자 속성 설정 건너뜀 (추적 거부): $properties');
+      return;
+    }
     // Mixpanel Flutter SDK에서는 setUserProperties 대신 track으로 사용자 속성 설정
     _mixpanel?.track('User Properties', properties: properties);
     print('📊 사용자 속성 설정: $properties');
@@ -32,6 +48,10 @@ class MixpanelUtil {
   
   // 이벤트 트래킹
   static void track(String eventName, {Map<String, dynamic>? properties}) {
+    if (!_isTrackingEnabled) {
+      print('📊 이벤트 트래킹 건너뜀 (추적 거부): $eventName');
+      return;
+    }
     _mixpanel?.track(eventName, properties: properties);
     print('📊 이벤트 트래킹: $eventName ${properties ?? {}}');
   }

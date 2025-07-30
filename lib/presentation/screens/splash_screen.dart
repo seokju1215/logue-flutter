@@ -102,14 +102,14 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacementNamed(context, '/select-3books');
     } else {
       if (profile != null) {
-        // AmplitudeUtil.setUserProperties({
-        //   'username': profile['username'],
-        //   'full_name': profile['full_name'],
-        //   'job': profile['job'],
-        //   'joined_at': profile['created_at'],
-        //   'platform': Platform.isIOS ? 'iOS' : 'Android',
-        //   'app_version': await UpdateCheckUtil.getCurrentAppVersion(), // 예: 1.0.2
-        // });
+        MixpanelUtil.setUserProperties({
+          'username': profile['username'],
+          'full_name': profile['full_name'],
+          'job': profile['job'],
+          'joined_at': profile['created_at'],
+          'platform': Platform.isIOS ? 'iOS' : 'Android',
+          'app_version': await UpdateCheckUtil.getCurrentAppVersion(), // 예: 1.0.2
+        });
       }
 
       Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);

@@ -21,7 +21,6 @@ class _PostContentState extends State<PostContent> {
   @override
   void initState() {
     super.initState();
-    _calculateTextLayout();
   }
 
   @override
@@ -30,6 +29,13 @@ class _PostContentState extends State<PostContent> {
     // post가 변경된 경우에만 다시 계산
     if (oldWidget.post.reviewContent != widget.post.reviewContent) {
       _isCalculated = false;
+      _calculateTextLayout();
+    }
+  }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isCalculated) {
       _calculateTextLayout();
     }
   }
@@ -47,24 +53,47 @@ class _PostContentState extends State<PostContent> {
       return;
     }
 
-    // 간단한 문자 수 기반 계산으로 성능 향상
-    final estimatedCharsPerLine = 35; // 대략적인 한 줄당 문자 수
-    final maxLines = 5;
-    final estimatedMaxChars = estimatedCharsPerLine * maxLines;
+    const maxLines = 5;
+    const moreText = '더보기';
+    const ellipsis = '... ';
+    final textStyle = const TextStyle(
+      fontSize: 14,
+      color: AppColors.black500,
+      height: 2,
+      letterSpacing: -0.32,
+    );
 
-    if (fullText.length <= estimatedMaxChars) {
-      // 예상 5줄 이하면 전체 텍스트 표시
+    final textPainter = TextPainter(
+      text: TextSpan(text: fullText, style: textStyle),
+      maxLines: maxLines,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: MediaQuery.of(context).size.width - 44);
+
+    if (!textPainter.didExceedMaxLines) {
       setState(() {
         _displayText = fullText;
         _shouldShowMoreButton = false;
         _isCalculated = true;
       });
     } else {
-      // 예상 5줄 초과면 자르기
-      final truncatedText = fullText.substring(0, estimatedMaxChars - 10) + '... ';
-      
+      // " ... 더보기"가 들어갈 공간 확보
+      int endIndex = fullText.length;
+      for (int i = fullText.length - 1; i > 0; i--) {
+        final testText = fullText.substring(0, i) + ellipsis + moreText;
+        final testPainter = TextPainter(
+          text: TextSpan(text: testText, style: textStyle),
+          maxLines: maxLines,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: MediaQuery.of(context).size.width - 44);
+
+        if (!testPainter.didExceedMaxLines) {
+          endIndex = i;
+          break;
+        }
+      }
+
       setState(() {
-        _displayText = truncatedText;
+        _displayText = fullText.substring(0, endIndex) + ellipsis;
         _shouldShowMoreButton = true;
         _isCalculated = true;
       });

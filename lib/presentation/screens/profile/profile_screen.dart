@@ -335,16 +335,16 @@ class ProfileScreenState extends State<ProfileScreen> {
             icon: Transform.scale(
               scale: 1.08,
               child: SvgPicture.asset(_hasUnreadNotifications
-                  ? 'assets/noticed_alarm_icon.svg'
+              ? 'assets/noticed_alarm_icon.svg'
                   : 'assets/bell_icon.svg'),
             ),
             onPressed: () async {
               final result = await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const NotificationScreen()),
-              );
-              _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
-              setState(() => _showFullBio = false);
-            },
+              MaterialPageRoute(builder: (_) => const NotificationScreen()),
+            );
+            _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
+            setState(() => _showFullBio = false);
+          },
           ),
         ),
         actions: [
@@ -355,18 +355,18 @@ class ProfileScreenState extends State<ProfileScreen> {
               child: IconButton(
                 icon: SvgPicture.asset('assets/edit_icon.svg'),
                 onPressed: () async {
-                  setState(() => _showFullBio = false);
-                  final result = await Navigator.of(context, rootNavigator: true).push(
-                    MaterialPageRoute(
-                      builder: (_) => ProfileEditScreen(initialProfile: profile!),
-                    ),
-                  );
-                  print('👈 result 받음: $result');
-                  if (result == true) {
-                    _fetchProfile();
-                  }
-                },
+            setState(() => _showFullBio = false);
+            final result = await Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (_) => ProfileEditScreen(initialProfile: profile!),
               ),
+            );
+            print('👈 result 받음: $result');
+            if (result == true) {
+              _fetchProfile();
+            }
+          },
+        ),
             ),
           ),
         ],

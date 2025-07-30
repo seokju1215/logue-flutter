@@ -64,8 +64,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         if (profileContext != null) {
           // profile_screen의 onTap 콜백을 직접 호출하는 방식으로 변경
           final result = await Navigator.of(profileContext).push(
-            MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
-          );
+          MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
+        );
           
           // 포스트 삭제 후 홈으로 이동했다가 프로필로 이동
           if (result == true) {

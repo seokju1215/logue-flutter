@@ -3,25 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
-
-import 'package:my_logue/core/widgets/follow/follow_user_tile.dart';
+import 'package:my_logue/core/themes/text_theme.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
-import 'package:my_logue/presentation/screens/profile/other_profile_screen.dart';
-import 'package:my_logue/presentation/screens/book/book_detail_screen.dart';
-import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
+import 'package:my_logue/core/widgets/follow/follow_user_tile.dart';
+import 'package:my_logue/data/datasources/aladin_book_api.dart';
+import 'package:my_logue/data/datasources/user_book_api.dart';
 import 'package:my_logue/data/models/book_model.dart';
 import 'package:my_logue/data/models/user_profile.dart';
-import 'package:my_logue/data/datasources/aladin_book_api.dart';
-import 'package:my_logue/domain/usecases/search_users.dart';
 import 'package:my_logue/domain/usecases/follows/follow_user.dart';
-import 'package:my_logue/domain/usecases/follows/unfollow_user.dart';
 import 'package:my_logue/domain/usecases/follows/is_following.dart';
+import 'package:my_logue/domain/usecases/follows/unfollow_user.dart';
+import 'package:my_logue/domain/usecases/search_users.dart';
+import 'package:my_logue/presentation/screens/book/book_detail_screen.dart';
+import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
+import 'package:my_logue/presentation/screens/profile/other_profile_screen.dart';
+import 'package:my_logue/core/constants/app_constants.dart';
 import 'package:my_logue/data/repositories/follow_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async'; // ✅ 타이머 패키지 추가
 
 import '../../../../core/providers/follow_state_provider.dart';
-import '../../../../core/constants/app_constants.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -81,23 +82,56 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     _isSearching = true;
     
     try {
+      // 1️⃣ 사용자 검색 (내 DB)
       final users = await SearchUsers().call(query);
-      final booksRaw = await AladinBookApi().searchBooks(query);
-      final books = booksRaw
-          .map((data) => BookModel.fromJson(data))
-          .toList();
+
+      // 2️⃣ 내 DB에서 책 검색
+      final userBookApi = UserBookApi(Supabase.instance.client);
+      final dbResults = await userBookApi.searchBooksFromDB(query);
+      
+      // 3️⃣ Aladin API에서 책 검색
+      final aladinResults = await AladinBookApi().searchBooks(query);
+      
+      // 4️⃣ 책 결과 합치기 및 중복 제거
+      final allBooks = <BookModel>[];
+      final seenIsbns = <String>{};
+      final seenTitles = <String>{};
+      
+      // DB 결과 먼저 추가
+      for (final dbBook in dbResults) {
+        final book = BookModel.fromJson(dbBook);
+        if (book.isbn.isNotEmpty && !seenIsbns.contains(book.isbn)) {
+          allBooks.add(book);
+          seenIsbns.add(book.isbn);
+        } else if (book.isbn.isEmpty && !seenTitles.contains(book.title.toLowerCase())) {
+          allBooks.add(book);
+          seenTitles.add(book.title.toLowerCase());
+        }
+      }
+      
+      // Aladin 결과 추가 (중복 제거)
+      for (final aladinBook in aladinResults) {
+        final book = BookModel.fromJson(aladinBook);
+        if (book.isbn.isNotEmpty && !seenIsbns.contains(book.isbn)) {
+          allBooks.add(book);
+          seenIsbns.add(book.isbn);
+        } else if (book.isbn.isEmpty && !seenTitles.contains(book.title.toLowerCase())) {
+          allBooks.add(book);
+          seenTitles.add(book.title.toLowerCase());
+        }
+      }
 
       if (mounted) {
-        setState(() {
-          _userResults = users;
-          _bookResults = books;
-        });
+      setState(() {
+        _userResults = users;
+          _bookResults = allBooks;
+      });
       }
     } catch (e) {
-      // 에러 처리
+      debugPrint('❌ 검색 실패: $e');
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
       }
       _isSearching = false;
     }
@@ -185,7 +219,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               scale: 1.2, // 크기를 1.2배로 확대
               child: SvgPicture.asset('assets/back_arrow.svg'),
             ),
-            onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
           ),
         ),
         titleSpacing: 0,
@@ -328,7 +362,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                         onTapFollow: () async {
                                           try {
                                             final followNotifier = ref.read(followStateProvider(e.id).notifier);
-
+                                            
                                             if (e.isFollowing) {
                                               // 언팔로우
                                               followNotifier.optimisticUnfollow();
@@ -337,7 +371,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                                   return u.id == e.id ? u.copyWith(isFollowing: false) : u;
                                                 }).toList();
                                               });
-
+                                              
                                               await followNotifier.unfollow();
                                             } else {
                                               // 팔로우
@@ -347,7 +381,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                                   return u.id == e.id ? u.copyWith(isFollowing: true) : u;
                                                 }).toList();
                                               });
-
+                                              
                                               await followNotifier.follow();
                                             }
                                           } catch (err) {
@@ -373,7 +407,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                               builder: (_) => OtherProfileScreen(userId: e.id),
                                             ),
                                           );
-
+                                          
                                           // 프로필 화면에서 돌아왔을 때 팔로우 상태가 변경되었을 수 있으므로
                                           // 해당 사용자의 팔로우 상태를 다시 확인
                                           if (result == true) {
@@ -424,18 +458,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _query.isEmpty
-                  ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
-                  : _userResults.isEmpty
-                      ? Container(
-                          color: Colors.white,
-                          alignment: Alignment.center,
-                          child: const Text(
-                            '검색 결과가 없어요.',
-                            style:
-                                TextStyle(fontSize: 14, color: AppColors.black500),
-                          ),
-                        )
-                      : Column(
+              ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
+              : _userResults.isEmpty
+                  ? Container(
+                      color: Colors.white,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        '검색 결과가 없어요.',
+                        style:
+                            TextStyle(fontSize: 14, color: AppColors.black500),
+                      ),
+                    )
+                  : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(
@@ -457,7 +491,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                               onTapFollow: () async {
                                 try {
                                   final followNotifier = ref.read(followStateProvider(e.id).notifier);
-
+                                  
                                   if (e.isFollowing) {
                                     // 언팔로우
                                     followNotifier.optimisticUnfollow();
@@ -466,7 +500,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                         return u.id == e.id ? u.copyWith(isFollowing: false) : u;
                                       }).toList();
                                     });
-
+                                    
                                     await followNotifier.unfollow();
                                   } else {
                                     // 팔로우
@@ -476,7 +510,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                         return u.id == e.id ? u.copyWith(isFollowing: true) : u;
                                       }).toList();
                                     });
-
+                                    
                                     await followNotifier.follow();
                                   }
                                 } catch (err) {
@@ -502,7 +536,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                     builder: (_) => OtherProfileScreen(userId: e.id),
                                   ),
                                 );
-
+                                
                                 // 프로필 화면에서 돌아왔을 때 팔로우 상태가 변경되었을 수 있으므로
                                 // 해당 사용자의 팔로우 상태를 다시 확인
                                 if (result == true) {
@@ -518,16 +552,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _query.isEmpty
-                  ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
-                  : _bookResults.isEmpty
-                      ? const Center(
-                          child: Text(
-                            '검색 결과가 없어요.',
-                            style:
-                                TextStyle(fontSize: 14, color: AppColors.black500),
-                          ),
-                        )
-                      : SingleChildScrollView(
+              ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
+              : _bookResults.isEmpty
+                  ? const Center(
+                      child: Text(
+                        '검색 결과가 없어요.',
+                        style:
+                            TextStyle(fontSize: 14, color: AppColors.black500),
+                      ),
+                    )
+                  : SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 19, vertical: 22),
                       child: Column(

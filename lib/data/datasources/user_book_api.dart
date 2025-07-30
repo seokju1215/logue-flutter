@@ -31,6 +31,30 @@ class UserBookApi {
     }
   }
 
+  Future<List<Map<String, dynamic>>> searchBooksFromDB(String query) async {
+    debugPrint("📡 searchBooksFromDB 호출됨, query: $query");
+
+    try {
+      final response = await client
+          .from('books')
+          .select('*')
+          .or('title.ilike.%$query%,author.ilike.%$query%')
+          .limit(20);
+
+      final result = response.map<Map<String, dynamic>>((e) {
+        return Map<String, dynamic>.from(e);
+      }).toList();
+
+      debugPrint('📦 searchBooksFromDB 결과 개수: ${result.length}');
+
+      return result;
+    } catch (e, stack) {
+      debugPrint("❌ DB 책 검색 실패: $e");
+      debugPrint("🔍 스택 트레이스: $stack");
+      return [];
+    }
+  }
+
   Future<void> deleteBook(String bookId) async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) throw Exception('로그인된 사용자가 없습니다.');

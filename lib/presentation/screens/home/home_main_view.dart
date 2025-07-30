@@ -88,53 +88,53 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
+        backgroundColor: Colors.white,
+        appBar: PreferredSize(
         preferredSize: const Size.fromHeight(88), // 높이를 88에서 100으로 증가
-        child: SafeArea( // ⛑️ 상태바 아래로 여백 자동 확보
-          child: Padding(
-            padding: const EdgeInsets.only(top: 7),
-            child: AppBar(
-              backgroundColor: Colors.white,
-              elevation: 0,
-              titleSpacing: 0,
-              leadingWidth: 120,
-              leading: Padding(
+          child: SafeArea( // ⛑️ 상태바 아래로 여백 자동 확보
+            child: Padding(
+              padding: const EdgeInsets.only(top: 7),
+              child: AppBar(
+                backgroundColor: Colors.white,
+                elevation: 0,
+                titleSpacing: 0,
+                leadingWidth: 120,
+                leading: Padding(
                 padding: const EdgeInsets.only(left: 22, top: 12), // top: 8 추가
-                child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
-              ),
-              actions: [
-                Padding(
+                  child: SvgPicture.asset('assets/logue_logo.svg', width: 92, height: 28),
+                ),
+                actions: [
+                  Padding(
                   padding: const EdgeInsets.only(right: 16, top: 12),
                   child: GestureDetector(
                     onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const SearchScreen()),
-                      );
-                    },
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SearchScreen()),
+                        );
+                      },
                     child: Transform.scale(
                       scale: 1.4,
-                      child: SvgPicture.asset(
-                        'assets/search_icon.svg',
+                          child: SvgPicture.asset(
+                            'assets/search_icon.svg',
                         width: 32,
                         height: 32,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(38),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 0), // 👈 간격 줄이고 싶으면 이걸 줄이기
-                  child: _buildTabBar(),
+                ],
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(38),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 0), // 👈 간격 줄이고 싶으면 이걸 줄이기
+                    child: _buildTabBar(),
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-              body: SafeArea( // ⛑️ 오버플로 방지
+        body: SafeArea( // ⛑️ 오버플로 방지
           child: PageView(
             controller: _pageController,
             onPageChanged: (index) {
@@ -147,8 +147,8 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
               HomeFollowingTab(),
               HomePopularTab(),
             ],
-          ),
         ),
+      ),
     );
   }
 }
