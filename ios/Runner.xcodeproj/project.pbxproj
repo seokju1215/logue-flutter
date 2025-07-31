@@ -488,8 +488,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 15;
-				DEVELOPMENT_TEAM = SCJMRA4Z88;
+				CURRENT_PROJECT_VERSION = 50;
+				DEVELOPMENT_TEAM = 49T4986984;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
@@ -497,7 +497,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.14;
+				MARKETING_VERSION = 1.0.49;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.logue.logue;
 				PRODUCT_NAME = logue;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -680,7 +680,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 50;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = SCJMRA4Z88;
 				ENABLE_BITCODE = NO;
@@ -690,7 +690,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.14;
+				MARKETING_VERSION = 1.0.49;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.logue.logue;
 				PRODUCT_NAME = logue;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -711,7 +711,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 50;
 				DEVELOPMENT_TEAM = SCJMRA4Z88;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -720,7 +720,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.14;
+				MARKETING_VERSION = 1.0.49;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.logue.logue;
 				PRODUCT_NAME = logue;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
