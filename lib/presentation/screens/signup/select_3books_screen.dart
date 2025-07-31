@@ -241,16 +241,16 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: Text(
-          "인생 책 3권을 선택해주세요",
+          "인생 책 1권을 선택해주세요",
           style: TextStyle(fontSize: 16, color: AppColors.black900),
         ),
         actions: [
           TextButton(
-            onPressed: _selectedBooks.length == 3 ? _submitBooks : null,
+            onPressed: _selectedBooks.length == 1 ? _submitBooks : null,
             child: Text(
               "확인",
               style: TextStyle(
-                color: _selectedBooks.length == 3
+                color: _selectedBooks.length == 1
                     ? AppColors.blue500
                     : Colors.grey,
               ),
@@ -311,7 +311,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                 else
                   const SizedBox(),
                 Text(
-                  '${_selectedBooks.length}/3',
+                  '${_selectedBooks.length}/1',
                   style: TextStyle(fontSize: 12, color: AppColors.black500),
                 ),
               ],
