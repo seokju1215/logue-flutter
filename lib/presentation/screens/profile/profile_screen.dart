@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/profile/add_book/add_book_screen.dart';
+import 'package:my_logue/presentation/screens/setting/setting_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/data/datasources/user_book_api.dart';
@@ -351,17 +352,16 @@ class ProfileScreenState extends State<ProfileScreen> {
           Padding(
             padding: const EdgeInsets.only(right:12),
             child: Transform.scale(
-              scale: 1.1,
+              scale: 0.7,
               child: IconButton(
-                icon: SvgPicture.asset('assets/edit_icon.svg'),
+                icon: Image.asset('assets/edit_icon.png'),
                 onPressed: () async {
             setState(() => _showFullBio = false);
             final result = await Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
-                builder: (_) => ProfileEditScreen(initialProfile: profile!),
+                builder: (_) => SettingScreen(),
               ),
             );
-            print('👈 result 받음: $result');
             if (result == true) {
               _fetchProfile();
             }
@@ -404,17 +404,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 20),
                       ] else ...[
-                        const SizedBox(height: 55),
+                        const SizedBox(height: 76),
                         Center(
                           child: Column(
                             children: [
-                              const Text(
-                                '인생 책을 소개해보세요.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontSize: 12, color: AppColors.black500),
-                              ),
-                              const SizedBox(height: 5),
                               Builder(
                                 builder: (context) {
                                   return TextButton(
@@ -576,14 +569,16 @@ class ProfileScreenState extends State<ProfileScreen> {
             style: _outlinedStyle(context),
             onPressed: () async {
               setState(() => _showFullBio = false);
-              final result = await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => AddBookScreen(isLimitReached: books.length >= 9,)),
+              final result = await Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (_) => ProfileEditScreen(initialProfile: profile!),
+                ),
               );
               if (result == true) {
-                loadBooks(); // ✅ 변경사항 반영
+                _fetchProfile();
               }
             },
-            child: const Text("책 추가 +",
+            child: const Text("프로필 편집",
                 style: TextStyle(color: AppColors.black900, fontSize: 13)),
           ),
         ),
