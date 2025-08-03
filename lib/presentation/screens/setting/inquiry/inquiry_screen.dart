@@ -17,16 +17,20 @@ class InquiryScreen extends StatefulWidget {
 }
 
 class _InquiryScreenState extends State<InquiryScreen> {
-  late Future<List<Map<String, dynamic>>> _futureInquiries;
   late PageController _pageController;
   int currentIndex = 0;
-  int _completedCount = 485;
-  int _requestCount = 41;
+  int _completedCount = 0;
+  int _requestCount = 0;
+  late InquiryRepository _repository;
+  List<InquiryListModel> _completedInquiries = [];
+  List<InquiryListModel> _pendingInquiries = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: currentIndex);
+    _initializeRepository();
     _loadInquiries();
   }
 
@@ -36,25 +40,34 @@ class _InquiryScreenState extends State<InquiryScreen> {
     super.dispose();
   }
 
-  void _loadInquiries() {
+  void _initializeRepository() {
     final client = Supabase.instance.client;
-    final currentUser = client.auth.currentUser;
-
-    if (currentUser == null) {
-      // 사용자가 로그인하지 않은 경우 처리
-      setState(() {
-        _futureInquiries = Future.value([]);
-      });
-      return;
-    }
-
-    final userId = currentUser.id;
     final api = InquiryApi(client);
-    final repository = InquiryRepository(api);
+    _repository = InquiryRepository(api);
+  }
 
+  Future<void> _loadInquiries() async {
     setState(() {
-      _futureInquiries = repository.getInquiries(userId);
+      _isLoading = true;
     });
+
+    try {
+      final completedInquiries = await _repository.getCompletedInquiries();
+      final pendingInquiries = await _repository.getPendingInquiries();
+
+      setState(() {
+        _completedInquiries = completedInquiries;
+        _pendingInquiries = pendingInquiries;
+        _completedCount = completedInquiries.length;
+        _requestCount = pendingInquiries.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading inquiries: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -121,18 +134,20 @@ class _InquiryScreenState extends State<InquiryScreen> {
           ),
           // 탭뷰 추가
           Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  currentIndex = index;
-                });
-              },
-              children: [
-                _buildCompletedTab(),
-                _buildRequestTab(),
-              ],
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : PageView(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        currentIndex = index;
+                      });
+                    },
+                    children: [
+                      _buildCompletedTab(),
+                      _buildRequestTab(),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -189,68 +204,14 @@ class _InquiryScreenState extends State<InquiryScreen> {
   }
 
   Widget _buildCompletedTab() {
-    return _buildInquiryList(_getCompletedInquiries());
+    return _buildInquiryList(_completedInquiries);
   }
 
   Widget _buildRequestTab() {
-    return _buildInquiryList(_getRequestInquiries());
+    return _buildInquiryList(_pendingInquiries);
   }
 
-  List<Map<String, dynamic>> _getCompletedInquiries() {
-    // 임시 데이터 - 실제로는 API에서 가져와야 함
-    return [
-      {
-        'user_id': 'seo_yeon21',
-        'request': '민음사 북클럽에서 나온 도서들 요청드립니다.',
-        'details': '빛이 나지 않아요 경주는 왜냐하면 본드가의 댈러웨이 부인 보이지....',
-        'date': '2025/07/28',
-        'status': 'completed'
-      },
-      {
-        'user_id': 'seo_yeon21',
-        'request': '전국불효자랑 도서 추가',
-        'details': '추가 부탁드립니다.',
-        'date': '2025/07/28',
-        'status': 'completed'
-      },
-      {
-        'user_id': 'seo_yeon21',
-        'request': '없는 도서 추가 요청합니다',
-        'details': '이집트 신화의 신비로운 여정 ISBN 9791173195792 추가요청입니다.',
-        'date': '2025/07/28',
-        'status': 'completed'
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> _getRequestInquiries() {
-    // 임시 데이터 - 실제로는 API에서 가져와야 함
-    return [
-      {
-        'user_id': 'seo_yeon21',
-        'request': '넷플릭스하다',
-        'details': '추가해주세요',
-        'date': '2025/07/28',
-        'status': 'pending'
-      },
-      {
-        'user_id': 'seo_yeon21',
-        'request': '너머의 아이들',
-        'details': '천선란 단편소설',
-        'date': '2025/07/28',
-        'status': 'pending'
-      },
-      {
-        'user_id': 'seo_yeon21',
-        'request': '기억의 기억들 도서 추가 부탁드립니다',
-        'details': '추가 부탁드립니다.',
-        'date': '2025/07/28',
-        'status': 'pending'
-      },
-    ];
-  }
-
-  Widget _buildInquiryList(List<Map<String, dynamic>> inquiries) {
+  Widget _buildInquiryList(List<InquiryListModel> inquiries) {
     if (inquiries.isEmpty) {
       return const Center(
         child: Text(
@@ -269,11 +230,11 @@ class _InquiryScreenState extends State<InquiryScreen> {
       itemBuilder: (context, index) {
         final inquiry = inquiries[index];
         return InquiryCard(
-          userId: inquiry['user_id'] ?? '',
-          request: inquiry['request'] ?? '',
-          details: inquiry['details'],
-          date: inquiry['date'] ?? '',
-          status: inquiry['status'] ?? '',
+          userId: inquiry.username,
+          request: inquiry.title,
+          details: inquiry.content,
+          date: inquiry.formattedDate,
+          status: 'completed',
         );
       },
     );
