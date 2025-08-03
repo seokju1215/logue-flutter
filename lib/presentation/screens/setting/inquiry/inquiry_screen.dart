@@ -8,6 +8,7 @@ import '../../../../core/themes/app_colors.dart';
 import '../../../../data/models/inquiry_models.dart';
 import '../../../../data/repositories/inquiry_repository.dart';
 import '../../../../data/datasources/inquiry_api.dart';
+import 'create_inquiry_screen.dart';
 
 class InquiryScreen extends StatefulWidget {
   const InquiryScreen({Key? key}) : super(key: key);
@@ -113,7 +114,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                       onTap: () {
                         Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
-                            builder: (_) => InquiryScreen(),
+                            builder: (_) => const CreateInquiryScreen(),
                           ),
                         );
                       }),
