@@ -225,19 +225,22 @@ class _InquiryScreenState extends State<InquiryScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: inquiries.length,
-      itemBuilder: (context, index) {
-        final inquiry = inquiries[index];
-        return InquiryCard(
-          userId: inquiry.username,
-          request: inquiry.title,
-          details: inquiry.content,
-          date: inquiry.formattedDate,
-          status: 'completed',
-        );
-      },
+    return Container(
+      color: AppColors.black100, // 원하는 배경색
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: inquiries.length,
+        itemBuilder: (context, index) {
+          final inquiry = inquiries[index];
+          return InquiryCard(
+            userId: inquiry.username,
+            request: inquiry.title,
+            details: inquiry.content,
+            date: inquiry.formattedDate,
+            status: 'completed',
+          );
+        },
+      ),
     );
   }
 }

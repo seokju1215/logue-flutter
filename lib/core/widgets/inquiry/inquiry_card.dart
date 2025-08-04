@@ -23,6 +23,7 @@ class InquiryCard extends StatefulWidget {
 
 class _InquiryCardState extends State<InquiryCard> {
   String _displayDetails = '';
+  String _displayTitle = '';
 
   static const double fontSize = 12;
   static const double lineHeight = 1.25;
@@ -34,10 +35,20 @@ class _InquiryCardState extends State<InquiryCard> {
     color: AppColors.black500,
   );
 
+  final titleStyle = const TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: AppColors.black900,
+    height: 1.23
+  );
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _calculateDisplayText());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _calculateDisplayText();
+      _calculateDisplayTitle();
+    });
   }
 
   @override
@@ -45,6 +56,9 @@ class _InquiryCardState extends State<InquiryCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.details != widget.details) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _calculateDisplayText());
+    }
+    if (oldWidget.request != widget.request) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _calculateDisplayTitle());
     }
   }
 
@@ -71,12 +85,13 @@ class _InquiryCardState extends State<InquiryCard> {
       maxLines: maxLines,
     )..layout(maxWidth: maxWidth);
 
-    if (!fullTp.didExceedMaxLines) {
+    // 텍스트가 잘렸는지 확인 (width가 maxWidth를 초과하거나 줄바꿈이 발생한 경우)
+    if (fullTp.width <= maxWidth && !fullTp.didExceedMaxLines) {
       setState(() {
         _displayDetails = fullText;
       });
     } else {
-      // 텍스트가 한 줄을 넘어가면 적절한 위치에서 자르기
+      // 텍스트가 잘렸으므로 "..." 추가
       const suffix = '...';
       int end = fullText.length;
       
@@ -89,7 +104,7 @@ class _InquiryCardState extends State<InquiryCard> {
           maxLines: maxLines,
         )..layout(maxWidth: maxWidth);
 
-        if (!testTp.didExceedMaxLines) {
+        if (testTp.width <= maxWidth && !testTp.didExceedMaxLines) {
           setState(() {
             _displayDetails = fullText.substring(0, end).trimRight() + suffix;
           });
@@ -98,9 +113,67 @@ class _InquiryCardState extends State<InquiryCard> {
         end--;
       }
 
-      // 자르기 실패 시 빈 텍스트
+      // 자르기 실패 시 최소한의 텍스트라도 표시
       setState(() {
-        _displayDetails = '';
+        _displayDetails = fullText.length > 3 ? fullText.substring(0, 3) + suffix : fullText;
+      });
+    }
+  }
+
+  void _calculateDisplayTitle() {
+    final fullText = widget.request;
+    if (fullText.isEmpty) {
+      setState(() {
+        _displayTitle = '';
+      });
+      return;
+    }
+
+    // 컨테이너의 실제 너비를 계산
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final maxWidth = renderBox.size.width - 30; // 패딩 고려
+
+    // 전체 텍스트가 한 줄에 들어가는지 확인
+    final fullSpan = TextSpan(text: fullText, style: titleStyle);
+    final fullTp = TextPainter(
+      text: fullSpan,
+      textDirection: TextDirection.ltr,
+      maxLines: maxLines,
+    )..layout(maxWidth: maxWidth);
+
+    // 텍스트가 잘렸는지 확인 (width가 maxWidth를 초과하거나 줄바꿈이 발생한 경우)
+    if (fullTp.width <= maxWidth && !fullTp.didExceedMaxLines) {
+      setState(() {
+        _displayTitle = fullText;
+      });
+    } else {
+      // 텍스트가 잘렸으므로 "..." 추가
+      const suffix = '...';
+      int end = fullText.length;
+      
+      while (end > 0) {
+        final testText = fullText.substring(0, end) + suffix;
+        final testSpan = TextSpan(text: testText, style: titleStyle);
+        final testTp = TextPainter(
+          text: testSpan,
+          textDirection: TextDirection.ltr,
+          maxLines: maxLines,
+        )..layout(maxWidth: maxWidth);
+
+        if (testTp.width <= maxWidth && !testTp.didExceedMaxLines) {
+          setState(() {
+            _displayTitle = fullText.substring(0, end).trimRight() + suffix;
+          });
+          return;
+        }
+        end--;
+      }
+
+      // 자르기 실패 시 최소한의 텍스트라도 표시
+      setState(() {
+        _displayTitle = fullText.length > 3 ? fullText.substring(0, 3) + suffix : fullText;
       });
     }
   }
@@ -139,20 +212,15 @@ class _InquiryCardState extends State<InquiryCard> {
           ),
           const SizedBox(height: 5),
           Text(
-            widget.request,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              color: AppColors.black900,
-              height: 1.23
-            ),
+            _displayTitle,
+            style: titleStyle,
+            maxLines: maxLines,
           ),
           const SizedBox(height: 5),
           Text(
             _displayDetails,
             style: textStyle,
             maxLines: maxLines,
-            overflow: TextOverflow.clip,
           ),
           const SizedBox(height: 5),
           Text(

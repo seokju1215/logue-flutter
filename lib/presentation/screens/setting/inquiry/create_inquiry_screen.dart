@@ -6,6 +6,7 @@ import '../../../../core/themes/app_colors.dart';
 import '../../../../data/models/inquiry_models.dart';
 import '../../../../data/repositories/inquiry_repository.dart';
 import '../../../../data/datasources/inquiry_api.dart';
+import '../../../../data/utils/fetch_profile.dart';
 
 class CreateInquiryScreen extends StatefulWidget {
   const CreateInquiryScreen({Key? key}) : super(key: key);
@@ -80,9 +81,13 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
         return;
       }
 
+      // 프로필에서 username 가져오기
+      final profile = await fetchCurrentUserProfile();
+      final username = profile?['username'] ?? '사용자';
+
       final inquiryData = {
         'user_id': currentUser.id,
-        'username': currentUser.userMetadata?['username'] ?? '사용자',
+        'username': username,
         'title': _subjectController.text.trim(),
         'content': _contentController.text.trim(),
         'inquiry_type': _selectedInquiryType,
