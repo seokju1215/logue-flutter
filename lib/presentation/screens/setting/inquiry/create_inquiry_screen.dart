@@ -35,8 +35,12 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
   @override
   void initState() {
     super.initState();
-    _subjectController.text = '비비디 바 블라';
-    _contentController.text = '비비디 바 블라';
+    _subjectController.text = '';
+    _contentController.text = '';
+    
+    // 텍스트 변경 리스너 추가
+    _subjectController.addListener(() => setState(() {}));
+    _contentController.addListener(() => setState(() {}));
   }
 
   @override
@@ -109,6 +113,11 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 버튼 활성화 조건
+    final bool isFormValid = _selectedInquiryType.isNotEmpty && 
+                             _subjectController.text.trim().isNotEmpty && 
+                             _contentController.text.trim().isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -306,86 +315,96 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 26),
+            const SizedBox(height: 21),
             
             // 문의 제목
-            Padding(
-              padding: const EdgeInsets.only(left: 9),
-              child: const Text(
-                '문의 제목',
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.25,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.black500,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 9),
+                  child: Text(
+                    '문의 제목',
+                    style: TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 9),
+                  child: Text(
+                    '${_subjectController.text.length}/50',
+                    style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 3),
             TextField(
               controller: _subjectController,
               maxLength: 50,
+              minLines: 3,
+              maxLines: null,
+              style: const TextStyle(fontSize: 13, color: AppColors.black900, height: 1.23),
               decoration: InputDecoration(
+                counterText: '', // 기본 글자 수 숨김
+                contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 13),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(5),
-                  borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+                  borderSide: const BorderSide(color: AppColors.black300),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(5),
-                  borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+                  borderSide: const BorderSide(color: AppColors.black300),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(5),
                   borderSide: const BorderSide(color: AppColors.black300),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 13,
-                  vertical: 6,
-                ),
-                counterText: '${_subjectController.text.length}/50',
-                counterStyle: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.black500,
                 ),
               ),
             ),
             const SizedBox(height: 16),
             
             // 문의 내용
-            const Text(
-              '문의 내용',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.black900,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 9),
+                  child: Text(
+                    '문의 내용',
+                    style: TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 9),
+                  child: Text(
+                    '${_contentController.text.length}/500',
+                    style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 3),
             TextField(
               controller: _contentController,
               maxLength: 500,
-              maxLines: 6,
+              minLines: 13,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              style: const TextStyle(fontSize: 13, color: AppColors.black900, height : 1.23),
               decoration: InputDecoration(
+                counterText: '', // 기본 카운터 제거
+                contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 13),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+                  borderRadius: BorderRadius.circular(5),
+                  borderSide: const BorderSide(color: AppColors.black300),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFD9D9D9)),
+                  borderRadius: BorderRadius.circular(5),
+                  borderSide: const BorderSide(color: AppColors.black300),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.black900),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                counterText: '${_contentController.text.length}/500',
-                counterStyle: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.black500,
+                  borderRadius: BorderRadius.circular(5),
+                  borderSide: const BorderSide(color: AppColors.black300),
                 ),
               ),
             ),
@@ -393,36 +412,41 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            onPressed: _isSubmitting ? null : _submitInquiry,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.black900,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+        padding: const EdgeInsets.only(right: 30, bottom: 21),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            SizedBox(
+              width: 200,
+              height: 36,
+              child: ElevatedButton(
+                onPressed: (isFormValid && !_isSubmitting) ? _submitInquiry : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isFormValid ? AppColors.black900 : AppColors.black300,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        '문의 접수',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
-            child: _isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Text(
-                    '문의 접수',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-          ),
+          ],
         ),
       ),
     );
