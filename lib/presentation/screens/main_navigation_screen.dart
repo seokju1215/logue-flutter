@@ -5,6 +5,7 @@ import 'package:my_logue/presentation/screens/home/home_screen.dart';
 import 'package:my_logue/presentation/screens/profile/profile_view.dart';
 import 'package:my_logue/presentation/screens/profile/profile_screen.dart';
 import 'package:my_logue/presentation/screens/post/my_post_screen.dart';
+import 'package:my_logue/presentation/screens/profile/add_book/add_book_screen.dart';
 
 import '../../data/utils/announcement_dialog_util.dart';
 import '../../data/utils/update_check_util.dart';
@@ -37,11 +38,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
   ];
 
   late final List<Widget> _screens = [
     HomeScreen(navigatorKey: _navigatorKeys[0]),
     ProfileView(navigatorKey: _navigatorKeys[1]),
+    ProfileView(navigatorKey: _navigatorKeys[2]), // 중간 버튼용 (실제로는 사용하지 않음)
   ];
 
   @override
@@ -106,15 +109,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _onItemTapped(int index) {
-    if (_selectedIndex == index) {
-      _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
+    if (index == 1) {
+      // 중간 버튼 (책 추가) 클릭 시
+      _showAddBookDialog();
+      return;
+    }
+    
+    // 인덱스 조정 (중간 버튼 때문에)
+    int actualIndex = index > 1 ? index - 1 : index;
+    
+    if (_selectedIndex == actualIndex) {
+      _navigatorKeys[actualIndex].currentState?.popUntil((route) => route.isFirst);
     } else {
       setState(() {
-        _selectedIndex = index;
-        MainNavigationScreen.lastSelectedIndex = index;
+        _selectedIndex = actualIndex;
+        MainNavigationScreen.lastSelectedIndex = actualIndex;
         _overrideWithChild = false;
       });
     }
+  }
+
+  void _showAddBookDialog() {
+    // 책 추가 화면으로 이동
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const AddBookScreen(isLimitReached: false),
+      ),
+    );
   }
 
   Widget _buildBottomNavBar() {
@@ -137,24 +158,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           BottomNavigationBarItem(
             icon: SvgPicture.asset(
               'assets/home_bottomnavi.svg',
-              width: 30,
-              height: 30,
+              width: 32,
+              height: 32,
               color: _selectedIndex == 0
                   ? AppColors.black900
                   : AppColors.black500,
             ),
-            label: '홈',
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Container(
+              width: 32,
+              height: 32,
+              child: SvgPicture.asset(
+                'assets/add_book_icon.svg',
+                width: 32,
+                height: 32,
+              ),
+            ),
+            label: '',
           ),
           BottomNavigationBarItem(
             icon: SvgPicture.asset(
               'assets/profile_bottomnavi.svg',
-              width: 30,
-              height: 30,
-              color: _selectedIndex == 1
+              width: 32,
+              height: 32,
+              color: _selectedIndex == 2
                   ? AppColors.black900
                   : AppColors.black500,
             ),
-            label: '프로필',
+            label: '',
           ),
         ],
       ),

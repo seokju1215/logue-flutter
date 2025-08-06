@@ -85,6 +85,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         if (widget.bookId.length != 36) 'isbn': widget.bookId,
       };
 
+      // TODO: edge function에서 is_archived = false 조건 추가 필요
       final res = await Supabase.instance.client.functions.invoke(
         'get-book-detail',
         body: body,
@@ -118,6 +119,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         if (widget.bookId.length != 36) 'isbn': widget.bookId,
       };
 
+      // TODO: edge function에서 is_archived = false 조건 추가 필요
       final res = await Supabase.instance.client.functions.invoke(
         'get-book-detail',
         body: body,

@@ -128,9 +128,18 @@ class PostItem extends StatelessWidget {
                         }
                       } else if (action == 'archive') {
                         // 보관함으로 이동 기능 구현
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('보관함 기능이 준비 중입니다')),
-                        );
+                        try {
+                          final userBookApi = UserBookApi(Supabase.instance.client);
+                          await userBookApi.archiveBook(post.id);
+                          onDeleteSuccess?.call(); // 보관 후 목록 새로고침
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('책이 보관함으로 이동되었습니다')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('보관 중 오류가 발생했습니다')),
+                          );
+                        }
                       } else if (action == 'delete') {
                         await showDialog(
                           context: context,

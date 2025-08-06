@@ -35,25 +35,6 @@ class PostActionBottomSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          // 공유
-          GestureDetector(
-            onTap: () {
-              Navigator.pop(context, 'share');
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 33),
-              child: const Text(
-                '공유',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.black900,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-          ),
           // 후기 수정
           GestureDetector(
             onTap: () {
