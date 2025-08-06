@@ -5,7 +5,7 @@ import 'package:my_logue/data/models/book_model.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
-import '../../../../data/utils/mixpanel_util.dart';
+import '../../../data/utils/mixpanel_util.dart';
 
 class WriteReviewScreen extends StatefulWidget {
   final BookModel book;

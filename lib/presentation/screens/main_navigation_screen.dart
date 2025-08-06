@@ -5,7 +5,7 @@ import 'package:my_logue/presentation/screens/home/home_screen.dart';
 import 'package:my_logue/presentation/screens/profile/profile_view.dart';
 import 'package:my_logue/presentation/screens/profile/profile_screen.dart';
 import 'package:my_logue/presentation/screens/post/my_post_screen.dart';
-import 'package:my_logue/presentation/screens/profile/add_book/add_book_screen.dart';
+import 'package:my_logue/presentation/screens/add_book/add_book_screen.dart';
 
 import '../../data/utils/announcement_dialog_util.dart';
 import '../../data/utils/update_check_util.dart';

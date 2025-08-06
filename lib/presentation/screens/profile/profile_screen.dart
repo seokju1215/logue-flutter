@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
-import 'package:my_logue/presentation/screens/profile/add_book/add_book_screen.dart';
+import 'package:my_logue/presentation/screens/add_book/add_book_screen.dart';
 import 'package:my_logue/presentation/screens/setting/setting_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

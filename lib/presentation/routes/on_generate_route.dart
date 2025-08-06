@@ -7,7 +7,7 @@ import '../screens/home/search/search_screen.dart';
 import '../screens/main_navigation_screen.dart';
 import '../screens/post/edit_review_screen.dart';
 import '../screens/post/my_post_screen.dart';
-import '../screens/profile/add_book/search_book_screen.dart';
+import '../screens/add_book/search_book_screen.dart';
 import '../screens/profile/notification_screen.dart';
 import '../screens/profile/other_profile_screen.dart';
 import '../screens/profile/profile_edit/bio_edit.dart';
