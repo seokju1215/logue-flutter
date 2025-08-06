@@ -174,7 +174,7 @@ class _ProfileTabState extends State<ProfileTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  '책을 눌러 위치를 변경할 수 있어요.',
+                  '책을 길게 눌러 위치를 변경할 수 있어요.',
                   style: TextStyle(fontSize: 12, color: AppColors.black500),
                 ),
                 Text(
