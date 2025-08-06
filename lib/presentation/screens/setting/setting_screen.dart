@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/widgets/common/common_outlined_button.dart';
 import 'package:my_logue/presentation/screens/setting/inquiry/inquiry_screen.dart';
+import 'package:my_logue/presentation/screens/setting/legal_notice/legal_notice_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -54,7 +55,11 @@ class _SettingScreenState extends State<SettingScreen> {
             CommonOutlinedButton(text: "알림 설정"),
             SizedBox(height: 63,),
             CommonOutlinedButton(text: "법적 고지사항", onTap: () {
-              _launchUrl('https://general-spatula-561.notion.site/2024e6fb980481589b15c74214c83718');
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (_) => LegalNoticeScreen(),
+                ),
+              );
             }),
             SizedBox(height: 20,),
             CommonOutlinedButton(text: "로그아웃", onTap: () {

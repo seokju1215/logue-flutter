@@ -18,60 +18,117 @@ class PostActionDialog extends StatelessWidget {
               child: Container(color: Colors.black.withOpacity(0.3)),
             ),
           ),
-          Center(
-            child: GestureDetector(
-              onTap: () {},
-              child: Stack(
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(40),
+                  topRight: Radius.circular(40),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 0),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // 드래그 핸들
                   Container(
-                    width: 300,
-                    padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 25),
+                    margin: const EdgeInsets.only(top: 15),
+                    width: 40,
+                    height: 3,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 10),
-                        const Text('책 수정',
-                            style: TextStyle(fontSize: 20, color: AppColors.black900)),
-                        const SizedBox(height: 7),
-                        const Text(
-                          '후기 내용을 수정하거나 또는 \n프로필에서 책을 삭제할 수 있어요.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: AppColors.black500),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop('edit'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.black900,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 72, vertical: 8),
-                            elevation: 0,
-                          ),
-                          child: const Text('내용 수정', style: TextStyle(fontSize: 16)),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop('delete'),
-                          child: const Text('삭제',
-                              style: TextStyle(color: AppColors.red500, fontSize: 14)),
-                        ),
-                      ],
+                      color: AppColors.black900,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.close, size: 26, color: AppColors.black900),
+                  // 공유
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context, 'share');
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 33),
+                      child: const Text(
+                        '공유',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.black900,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
                     ),
                   ),
+                  // 후기 수정
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context, 'edit');
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 28),
+                      child: const Text(
+                        '후기 수정',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.black900,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // 보관함으로 이동
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context, 'archive');
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 28),
+                      child: const Text(
+                        '보관함으로 이동',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.black900,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // 삭제
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context, 'delete');
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(top: 28),
+                      child: const Text(
+                        '삭제',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.red500,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // 하단 여백
+                  const SizedBox(height: 39),
                 ],
               ),
             ),

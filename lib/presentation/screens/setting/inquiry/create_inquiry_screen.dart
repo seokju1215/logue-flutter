@@ -99,7 +99,9 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
       await client.from('inquiries').insert(inquiryData);
 
       _showSnackBar('문의가 성공적으로 접수되었습니다.');
-      Navigator.pop(context);
+      
+      // inquiry_screen으로 돌아가면서 새로고침을 위한 result 전달
+      Navigator.pop(context, true);
     } catch (e) {
       print('Error submitting inquiry: $e');
       _showSnackBar('문의 접수 중 오류가 발생했습니다.');
@@ -146,44 +148,55 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 이메일 답변 받기 섹션
-            Row(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Checkbox(
-                    value: _emailReply,
-                    onChanged: (value) {
-                      setState(() {
-                        _emailReply = value ?? false;
-                      });
-                    },
-                    activeColor: AppColors.black900,
-                    fillColor: MaterialStateProperty.resolveWith((states) {
-                      if (states.contains(MaterialState.selected)) {
-                        return AppColors.black900;
-                      }
-                      return AppColors.black300;
-                    }),
-                    checkColor: Colors.white,
-                    side: const BorderSide(
-                      color: AppColors.black300,
-                      width: 1,
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _emailReply = !_emailReply;
+                });
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Checkbox(
+                        value: _emailReply,
+                        onChanged: (value) {
+                          setState(() {
+                            _emailReply = value ?? false;
+                          });
+                        },
+                        activeColor: AppColors.black900,
+                        fillColor: MaterialStateProperty.resolveWith((states) {
+                          if (states.contains(MaterialState.selected)) {
+                            return AppColors.black900;
+                          }
+                          return AppColors.black300;
+                        }),
+                        checkColor: Colors.white,
+                        side: const BorderSide(
+                          color: AppColors.black300,
+                          width: 1,
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
                     ),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                  ),
+                    SizedBox(width: 7,),
+                    const Text(
+                      '이메일로 문의 답변 받기 (선택)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.23,
+                        color: AppColors.black900,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 7,),
-                const Text(
-                  '이메일로 문의 답변 받기 (선택)',
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.23,
-                    color: AppColors.black900,
-                  ),
-                ),
-              ],
+              ),
             ),
             if (_emailReply) ...[
               const SizedBox(height: 8),
@@ -227,13 +240,28 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
             const SizedBox(height: 38),
             
             // 문의사항 섹션
-            const Text(
-              '문의사항을 알려주세요!',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: AppColors.black900,
-              ),
+            Stack(
+              children: [
+                Text( // 테두리용
+                  '문의사항을 알려주세요!',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    foreground: Paint()
+                      ..style = PaintingStyle.stroke
+                      ..strokeWidth = 0.2
+                      ..color = Colors.black,
+                  ),
+                ),
+                Text( // 내부 채우기용
+                  '문의사항을 알려주세요!',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.black900, // 내부 텍스트 색상
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             
@@ -439,16 +467,44 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
                         ),
                       )
-                    : const Text(
-                        '문의 접수',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    : isFormValid
+                ? Stack(
+                  children: [
+                    // 테두리용 텍스트
+                    Text(
+                      '문의 접수',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 0.2 // 테두리 두께
+                          ..color = AppColors.white500, // 테두리 색상
                       ),
+                    ),
+                    // 내부 텍스트 (원래 스타일)
+                    const Text(
+                      '문의 접수',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.white500, // 내부 텍스트 색상
+                      ),
+                    ),
+                  ],
+                )
+                    :
+                    // 내부 텍스트 (원래 스타일)
+                    const Text(
+                      '문의 접수',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.black500, // 내부 텍스트 색상
+                      ),
+                    ),
               ),
             ),
           ],

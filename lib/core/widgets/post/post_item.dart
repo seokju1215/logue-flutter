@@ -9,7 +9,7 @@ import 'package:my_logue/data/models/book_post_model.dart';
 import 'package:my_logue/presentation/screens/book/book_detail_screen.dart';
 import 'package:my_logue/presentation/screens/post/edit_review_screen.dart';
 import 'package:my_logue/presentation/screens/profile/other_profile_screen.dart';
-import 'package:my_logue/core/widgets/dialogs/post_action_dialog.dart';
+import 'package:my_logue/core/widgets/dialogs/post_action_bottom_sheet.dart';
 import 'package:my_logue/core/widgets/dialogs/post_delete_dialog.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -107,18 +107,30 @@ class PostItem extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.more_vert),
                     onPressed: () async {
-                      final action = await showDialog<String>(
+                      final action = await showModalBottomSheet<String>(
                         context: context,
-                        builder: (_) => const PostActionDialog(),
+                        backgroundColor: Colors.transparent,
+                        barrierColor: Colors.transparent,
+                        builder: (context) => const PostActionBottomSheet(),
                       );
 
-                      if (action == 'edit') {
+                      if (action == 'share') {
+                        // 공유 기능 구현
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('공유 기능이 준비 중입니다')),
+                        );
+                      } else if (action == 'edit') {
                         final result = await Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => EditReviewScreen(post: post),
                         ));
                         if (result == true) {
                           onEditSuccess?.call();
                         }
+                      } else if (action == 'archive') {
+                        // 보관함으로 이동 기능 구현
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('보관함 기능이 준비 중입니다')),
+                        );
                       } else if (action == 'delete') {
                         await showDialog(
                           context: context,

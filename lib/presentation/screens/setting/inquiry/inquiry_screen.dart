@@ -111,12 +111,17 @@ class _InquiryScreenState extends State<InquiryScreen> {
                 Expanded(
                   child: CommonOutlinedButton(
                       text: "고객센터",
-                      onTap: () {
-                        Navigator.of(context, rootNavigator: true).push(
+                      onTap: () async {
+                        final result = await Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
                             builder: (_) => const CreateInquiryScreen(),
                           ),
                         );
+                        
+                        // 문의가 생성되었으면 새로고침
+                        if (result == true) {
+                          _loadInquiries();
+                        }
                       }),
                 )
               ],
