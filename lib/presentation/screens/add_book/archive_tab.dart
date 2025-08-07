@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/add_book/search_book_screen.dart';
+import 'package:my_logue/presentation/screens/post/single_post_screen.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -246,14 +247,28 @@ class _ArchiveTabState extends State<ArchiveTab> {
                       needsLongPressDraggable: false,
                       onReorder: _onReorder,
                       children: books.map((book) {
-                        return SizedBox(
-                          key: ValueKey(book['id']),
-                          width: itemWidth,
-                          height: itemHeight,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(0),
-                            child: BookFrame(
-                              imageUrl: book['books']?['image'] ?? 'https://via.placeholder.com/150',
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SinglePostScreen(
+                                  bookId: book['book_id'] ?? '',
+                                  userBookId: book['id'],
+                                  userId: client.auth.currentUser?.id,
+                                ),
+                              ),
+                            );
+                          },
+                          child: SizedBox(
+                            key: ValueKey(book['id']),
+                            width: itemWidth,
+                            height: itemHeight,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(0),
+                              child: BookFrame(
+                                imageUrl: book['books']?['image'] ?? 'https://via.placeholder.com/150',
+                              ),
                             ),
                           ),
                         );

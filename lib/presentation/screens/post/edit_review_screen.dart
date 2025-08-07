@@ -5,13 +5,19 @@ import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/data/models/book_post_model.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
+import 'package:my_logue/presentation/screens/post/single_post_screen.dart';
 
 import 'my_post_screen.dart';
 
 class EditReviewScreen extends StatefulWidget {
   final BookPostModel post;
+  final String? fromScreen; // 'my_post_screen' 또는 'single_post_screen'
 
-  const EditReviewScreen({Key? key, required this.post}) : super(key: key);
+  const EditReviewScreen({
+    Key? key, 
+    required this.post, 
+    this.fromScreen
+  }) : super(key: key);
 
   @override
   State<EditReviewScreen> createState() => _EditReviewScreenState();
@@ -51,12 +57,30 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
       }).eq('id', widget.post.id);
 
       if (mounted) {
-        Navigator.of(context).pop(true);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => MyBookPostScreen(userBookId: widget.post.id),
-          ),
-        );
+        // 어디서 왔는지에 따라 다른 동작
+        if (widget.fromScreen == 'single_post_screen') {
+          debugPrint("single_post에서 옴");
+          Navigator.pop(context);
+          // single_post_screen에서 왔다면 원래 화면으로 돌아가기
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => SinglePostScreen(
+                bookId: widget.post.bookId ?? '',
+                userBookId: widget.post.id,
+                userId: client.auth.currentUser?.id,
+              ),
+            ),
+          );
+        } else {
+          debugPrint("my_post에서 옴");
+          // my_post_screen에서 왔다면 기존 로직 유지장
+          Navigator.pop(context);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => MyBookPostScreen(userBookId: widget.post.id),
+            ),
+          );
+        }
         return;
       }
     } catch (e) {

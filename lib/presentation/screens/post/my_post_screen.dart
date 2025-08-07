@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/data/models/book_post_model.dart';
 import 'package:my_logue/core/widgets/post/post_item.dart';
+import 'package:my_logue/presentation/screens/post/edit_review_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MyBookPostScreen extends StatefulWidget {
@@ -132,18 +133,33 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                 top: 51,
                 bottom: 27,
               ),
-              child: PostItem(
-                isMyPost: isMyPost,
-                post: post,
-                onDeleteSuccess: () {
-                  setState(() {
-                    posts.removeAt(index);
-                    _itemKeys.removeAt(index);
-                    _hasDeleted = true;
-                  });
-                  Navigator.pop(context, true);
-                },
-                onEditSuccess: _fetchPosts,
+                                      child: PostItem(
+                          isMyPost: isMyPost,
+                          post: post,
+                          onDeleteSuccess: () {
+                            setState(() {
+                              posts.removeAt(index);
+                              _itemKeys.removeAt(index);
+                              _hasDeleted = true;
+                            });
+                            Navigator.pop(context, true);
+                          },
+                          onEditSuccess: () async {
+                            // my_post_screen에서 직접 편집 화면 호출
+                            final result = await Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EditReviewScreen(
+                                  post: post,
+                                  fromScreen: 'my_post_screen',
+                                ),
+                              ),
+                            );
+                            if (result == true) {
+                              await _fetchPosts();
+                              setState(() => _hasDeleted = true);
+                            }
+                          },
                 onTap: () async {
                   final result = await Navigator.pushNamed(
                     context,

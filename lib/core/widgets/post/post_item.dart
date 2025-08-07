@@ -19,6 +19,7 @@ class PostItem extends StatelessWidget {
   final VoidCallback? onDeleteSuccess;
   final VoidCallback? onEditSuccess;
   final VoidCallback? onTap;
+  final String? fromScreen;
 
   const PostItem({
     super.key,
@@ -27,6 +28,7 @@ class PostItem extends StatelessWidget {
     this.onDeleteSuccess,
     this.onEditSuccess,
     this.onTap,
+    this.fromScreen
   });
 
   @override
@@ -121,7 +123,7 @@ class PostItem extends StatelessWidget {
                         );
                       } else if (action == 'edit') {
                         final result = await Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => EditReviewScreen(post: post),
+                          builder: (_) => EditReviewScreen(post: post, fromScreen: fromScreen,),
                         ));
                         if (result == true) {
                           onEditSuccess?.call();
