@@ -116,12 +116,30 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 앱 시작 시 한 번 업데이트
+    _updateLastSeenAt();
+  }
+  Future<void> _updateLastSeenAt() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    await Supabase.instance.client
+        .from('profiles')
+        .update({'last_seen_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('id', user.id);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _updateLastSeenAt();
+    }
   }
 
   @override
