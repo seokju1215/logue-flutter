@@ -44,7 +44,7 @@ class _SinglePostScreenState extends State<SinglePostScreen> {
 
     try {
       final response = await client
-          .rpc('get_user_books_with_profiles', params: {'target_user_id': userId});
+          .rpc('get_user_books', params: {'target_user_id': userId});
 
       if (!mounted) return;
 

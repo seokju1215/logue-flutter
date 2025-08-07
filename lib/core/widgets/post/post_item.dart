@@ -18,6 +18,7 @@ class PostItem extends StatelessWidget {
   final bool isMyPost;
   final VoidCallback? onDeleteSuccess;
   final VoidCallback? onEditSuccess;
+  final VoidCallback? onArchiveSuccess;
   final VoidCallback? onTap;
   final String? fromScreen;
 
@@ -27,6 +28,7 @@ class PostItem extends StatelessWidget {
     required this.isMyPost,
     this.onDeleteSuccess,
     this.onEditSuccess,
+    this.onArchiveSuccess,
     this.onTap,
     this.fromScreen
   });
@@ -109,12 +111,14 @@ class PostItem extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.more_vert),
                     onPressed: () async {
+                      debugPrint('🔍 PostActionBottomSheet 호출: is_archived=${post.is_archived}');
                       final action = await showModalBottomSheet<String>(
                         context: context,
                         backgroundColor: Colors.transparent,
                         barrierColor: Colors.transparent,
                         builder: (context) => PostActionBottomSheet(is_archived : post.is_archived),
                       );
+                      debugPrint('🔍 PostActionBottomSheet 결과: $action');
 
                       if (action == 'share') {
                         // 공유 기능 구현
@@ -133,13 +137,24 @@ class PostItem extends StatelessWidget {
                         try {
                           final userBookApi = UserBookApi(Supabase.instance.client);
                           await userBookApi.archiveBook(post.id);
-                          onDeleteSuccess?.call(); // 보관 후 목록 새로고침
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('책이 보관함으로 이동되었습니다')),
-                          );
+                          fromScreen == 'single_post_screen'? onDeleteSuccess?.call() :onArchiveSuccess?.call(); // 보관 후 목록 새로고침
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('보관 중 오류가 발생했습니다')),
+                          );
+                        }
+                      } else if (action == 'profile') {
+                        // 프로필로 이동 기능 구현
+                        debugPrint('🔍 프로필로 이동 시도: ${post.id}');
+                        try {
+                          final userBookApi = UserBookApi(Supabase.instance.client);
+                          await userBookApi.moveToProfile(post.id);
+                          debugPrint('✅ 프로필로 이동 성공: ${post.id}');
+                          onDeleteSuccess?.call(); // 프로필 이동 후 목록 새로고침
+                        } catch (e) {
+                          debugPrint('❌ 프로필로 이동 실패: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('프로필 이동 중 오류가 발생했습니다: $e')),
                           );
                         }
                       } else if (action == 'delete') {

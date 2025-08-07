@@ -86,27 +86,12 @@ class UserBookApi {
     if (userId == null) throw Exception('로그인된 사용자가 없습니다.');
 
     try {
-      // 보관된 책의 최대 archived_order_index 가져오기
-      final maxOrderResult = await client
-          .from('user_books')
-          .select('archived_order_index')
-          .eq('user_id', userId)
-          .eq('is_archived', true)
-          .order('archived_order_index', ascending: false)
-          .limit(1);
-
-      int newArchivedOrderIndex = 0;
-      if (maxOrderResult.isNotEmpty) {
-        newArchivedOrderIndex = (maxOrderResult.first['archived_order_index'] as int?) ?? 0;
-        newArchivedOrderIndex++;
-      }
 
       // 책을 보관함으로 이동
       await client
           .from('user_books')
           .update({
             'is_archived': true,
-            'archived_order_index': newArchivedOrderIndex,
           })
           .eq('id', bookId)
           .eq('user_id', userId);
@@ -145,7 +130,6 @@ class UserBookApi {
           .update({
             'is_archived': false,
             'order_index': newOrderIndex,
-            'archived_order_index': null,
           })
           .eq('id', bookId)
           .eq('user_id', userId);
@@ -153,6 +137,52 @@ class UserBookApi {
       debugPrint("📦 책 보관 해제 성공: $bookId");
     } catch (e, stack) {
       debugPrint("❌ 책 보관 해제 중 오류: $e");
+      debugPrint("🔍 스택 트레이스: $stack");
+      rethrow;
+    }
+  }
+
+  Future<void> moveToProfile(String bookId) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) throw Exception('로그인된 사용자가 없습니다.');
+
+    debugPrint("🔍 moveToProfile 시작: bookId=$bookId, userId=$userId");
+
+    try {
+      // 1. 현재 프로필 포스트들을 가져와서 order_index를 1씩 증가
+      final currentProfileBooks = await client
+          .from('user_books')
+          .select('id, order_index')
+          .eq('user_id', userId)
+          .eq('is_archived', false)
+          .order('order_index', ascending: true);
+
+      debugPrint("📦 현재 프로필 포스트 개수: ${currentProfileBooks.length}");
+
+      // 2. 각 프로필 포스트의 order_index를 1씩 증가
+      for (final book in currentProfileBooks) {
+        final currentOrderIndex = book['order_index'] as int;
+        debugPrint("📦 포스트 ${book['id']}의 order_index를 ${currentOrderIndex}에서 ${currentOrderIndex + 1}로 변경");
+        await client
+            .from('user_books')
+            .update({'order_index': currentOrderIndex + 1})
+            .eq('id', book['id']);
+      }
+
+      // 3. 해당 책을 프로필로 이동 (is_archived = false, order_index = 0)
+      debugPrint("📦 책 $bookId를 프로필로 이동 (is_archived=false, order_index=0)");
+      await client
+          .from('user_books')
+          .update({
+            'is_archived': false,
+            'order_index': 0,
+          })
+          .eq('id', bookId)
+          .eq('user_id', userId);
+
+      debugPrint("✅ 책 프로필 이동 성공: $bookId");
+    } catch (e, stack) {
+      debugPrint("❌ 책 프로필 이동 중 오류: $e");
       debugPrint("🔍 스택 트레이스: $stack");
       rethrow;
     }

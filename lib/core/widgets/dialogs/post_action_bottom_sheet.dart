@@ -56,10 +56,10 @@ class PostActionBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-          // 보관함으로 이동
+          // 보관함 또는 프로필로으로 이동
           GestureDetector(
             onTap: () {
-              Navigator.pop(context, 'archive');
+              Navigator.pop(context, is_archived == true ? 'profile' : 'archive');
             },
             child: Container(
               width: double.infinity,

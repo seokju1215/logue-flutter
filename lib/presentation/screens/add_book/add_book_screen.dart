@@ -53,11 +53,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
     if (userId == null) return;
 
     try {
+      // 모든 책을 가져오기
       final data = await Supabase.instance.client
           .from('user_books')
           .select('id, user_id, order_index, archived_order_index, is_archived, books(image)')
-          .eq('user_id', userId)
-          .order('order_index', ascending: true);
+          .eq('user_id', userId);
 
       final fetched = List<Map<String, dynamic>>.from(data);
       setState(() {
@@ -150,12 +150,20 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   ProfileTab(
                     key: ValueKey(_profileTabKey),
                     isLimitReached: widget.isLimitReached,
-                    books: allBooks.where((book) => book['is_archived'] == false).toList(),
+                    books: List.from(allBooks.where((book) => book['is_archived'] == false))..sort((a, b) {
+                      final aIndex = a['order_index'] ?? 0;
+                      final bIndex = b['order_index'] ?? 0;
+                      return aIndex.compareTo(bIndex);
+                    }),
                     onRefresh: _fetchAllBooks,
                   ),
                   ArchiveTab(
                     key: ValueKey(_archiveTabKey),
-                    books: allBooks.toList(),
+                    books: List.from(allBooks)..sort((a, b) {
+                      final aIndex = a['archived_order_index'] ?? 0;
+                      final bIndex = b['archived_order_index'] ?? 0;
+                      return aIndex.compareTo(bIndex);
+                    }),
                     onRefresh: _fetchAllBooks,
                   ),
                 ],

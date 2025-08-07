@@ -147,6 +147,14 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                             });
                             Navigator.pop(context, true);
                           },
+                          onArchiveSuccess: () {
+                            setState(() {
+                              posts.removeAt(index);
+                              _itemKeys.removeAt(index);
+                              _hasDeleted = true;
+                            });
+                            // 보관함으로 이동한 경우에는 Navigator.pop을 호출하지 않음
+                          },
                           onEditSuccess: () async {
                             // my_post_screen에서 직접 편집 화면 호출
                             final result = await Navigator.pushReplacement(
