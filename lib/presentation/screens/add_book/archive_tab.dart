@@ -228,18 +228,21 @@ class _ArchiveTabState extends State<ArchiveTab> {
                         onReorder: _onReorder,
                         children: widget.books.map((book) {
                           return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SinglePostScreen(
-                                    bookId: book['book_id'] ?? '',
-                                    userBookId: book['id'],
-                                    userId: client.auth.currentUser?.id,
-                                  ),
+                                                      onTap: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SinglePostScreen(
+                                  bookId: book['book_id'] ?? '',
+                                  userBookId: book['id'],
+                                  userId: client.auth.currentUser?.id,
                                 ),
-                              );
-                            },
+                              ),
+                            );
+                            if (result == true) {
+                              widget.onRefresh();
+                            }
+                          },
                             child: SizedBox(
                               key: ValueKey(book['id']),
                               width: itemWidth,
