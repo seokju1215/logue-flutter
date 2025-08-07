@@ -9,8 +9,9 @@ import '../../../data/utils/mixpanel_util.dart';
 
 class WriteReviewScreen extends StatefulWidget {
   final BookModel book;
+  final String fromTab; // 'profile' 또는 'archive'
 
-  const WriteReviewScreen({Key? key, required this.book}) : super(key: key);
+  const WriteReviewScreen({Key? key, required this.book, required this.fromTab}) : super(key: key);
 
   @override
   State<WriteReviewScreen> createState() => _WriteReviewScreenState();
@@ -93,22 +94,40 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
       if (bookId == null) throw Exception('책 ID를 확보할 수 없습니다.');
 
-      await client.rpc('increment_all_order_indices', params: {'uid': user.id});
-
-// ✅ Edge Function 호출
-      final FunctionResponse response = await client.functions.invoke('add-user-book-and-notify', body: {
-        'user_id': user.id,
-        'book_id': bookId,
-        'isbn': widget.book.isbn,
-        'review_title': reviewTitle,
-        'review_content': reviewContent,
-      });
-
-      if (response.status != 200) {
-        final errorMessage = response.data['error'] ?? '알 수 없는 오류';
-        debugPrint('❌ 함수 오류: $errorMessage');
-        throw Exception(errorMessage);
-      }
+              // fromTab에 따라 다르게 처리
+        if (widget.fromTab == 'profile') {
+          // 프로필 탭에서 추가: is_archived = false
+          final FunctionResponse response = await client.functions.invoke('add-user-book-v2', body: {
+            'user_id': user.id,
+            'book_id': bookId,
+            'isbn': widget.book.isbn,
+            'review_title': reviewTitle,
+            'review_content': reviewContent,
+            'is_archived': false,
+          });
+          
+          if (response.status != 200) {
+            final errorMessage = response.data['error'] ?? '알 수 없는 오류';
+            debugPrint('❌ 함수 오류: $errorMessage');
+            throw Exception(errorMessage);
+          }
+        } else {
+          // 보관함 탭에서 추가: is_archived = true, archived_order_index = 0
+          final FunctionResponse response = await client.functions.invoke('add-user-book-v2', body: {
+            'user_id': user.id,
+            'book_id': bookId,
+            'isbn': widget.book.isbn,
+            'review_title': reviewTitle,
+            'review_content': reviewContent,
+            'is_archived': true,
+          });
+          
+          if (response.status != 200) {
+            final errorMessage = response.data['error'] ?? '알 수 없는 오류';
+            debugPrint('❌ 함수 오류: $errorMessage');
+            throw Exception(errorMessage);
+          }
+        }
 
       // 책 추가 및 리뷰 작성 트래킹
       MixpanelUtil.trackBookAdd(widget.book.title, bookId);
@@ -116,11 +135,13 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
       if (!mounted) return;
 
-      Navigator.pop(context);
+      // SearchBookScreen과 WriteReviewScreen 닫기
       Navigator.pop(context);
 
+      // fromTab에 따라 해당 탭으로 돌아가기
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
+          // AddBookScreen으로 돌아가서 새로고침
           Navigator.of(context).pop(true);
         }
       });

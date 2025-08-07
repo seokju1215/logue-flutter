@@ -89,7 +89,7 @@ Route<dynamic>? onGenerateRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => const NotificationScreen());
 
     case '/search_book':
-      return MaterialPageRoute(builder: (_) => const SearchBookScreen());
+      return MaterialPageRoute(builder: (_) => const SearchBookScreen(fromTab: 'profile'));
 
     case '/profile':
       return MaterialPageRoute(builder: (_) => const ProfileScreen());

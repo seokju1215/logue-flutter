@@ -144,17 +144,21 @@ class _ProfileTabState extends State<ProfileTab> {
                 const Expanded(child: SizedBox()),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {
-                      if (widget.isLimitReached) {
+                    onPressed: () async {
+                      // 현재 책 개수로 limit 확인
+                      if (books.length >= 9) {
                         showDialog(
                           context: context,
                           builder: (_) => const BookLimitDialog(),
                         );
                       } else {
-                        Navigator.push(
+                        final result = await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const SearchBookScreen()),
+                          MaterialPageRoute(builder: (_) => const SearchBookScreen(fromTab: 'profile')),
                         );
+                        if (result == true) {
+                          _fetchBooks();
+                        }
                       }
                     },
                     style: _outlinedStyle(context),

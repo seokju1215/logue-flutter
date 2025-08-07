@@ -32,7 +32,6 @@ class ProfileViewState extends State<ProfileView> {
 
       Future.delayed(Duration.zero, () {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          debugPrint('🚀 MyBookPostScreen 이동 시작!');
           widget.navigatorKey.currentState?.push(
             MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
           );

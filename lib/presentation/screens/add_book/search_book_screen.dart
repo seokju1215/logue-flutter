@@ -11,7 +11,9 @@ import 'dart:async'; // ✅ 디바운싱 타이머를 위한 임포트
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SearchBookScreen extends StatefulWidget {
-  const SearchBookScreen({super.key});
+  final String fromTab; // 'profile' 또는 'archive'
+  
+  const SearchBookScreen({super.key, required this.fromTab});
 
   @override
   State<SearchBookScreen> createState() => _SearchBookScreenState();
@@ -200,7 +202,7 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => WriteReviewScreen(book: book),
+                        builder: (_) => WriteReviewScreen(book: book, fromTab: widget.fromTab),
                       ),
                     );
                   },

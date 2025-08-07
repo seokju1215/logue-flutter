@@ -47,21 +47,53 @@ class _TermsScreenState extends State<TermsScreen> {
   }
 
   Future<void> _submit() async {
+    debugPrint('🔍 _submit() 함수 시작');
+    
     final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
+    debugPrint('🔍 현재 사용자: $user');
+    if (user == null) {
+      debugPrint('❌ 사용자가 null입니다');
+      return;
+    }
 
-    if (!agreedTerms || !agreedPrivacy) return;
+    debugPrint('🔍 약관 동의 상태 - agreedTerms: $agreedTerms, agreedPrivacy: $agreedPrivacy');
+    if (!agreedTerms || !agreedPrivacy) {
+      debugPrint('❌ 약관 동의가 완료되지 않았습니다');
+      return;
+    }
 
+    debugPrint('🔍 로딩 상태 설정 시작');
     setState(() => isLoading = true);
-    await Supabase.instance.client.from('user_agreements').insert({
-      'user_id': user.id,
-      'agreed_terms': agreedTerms,
-      'agreed_privacy': agreedPrivacy,
-      'agreed_at': DateTime.now().toIso8601String(),
-    });
+    debugPrint('🔍 로딩 상태 설정 완료');
 
-    if (context.mounted) {
-      Navigator.pushReplacementNamed(context, '/select-3books');
+    try {
+      debugPrint('🔍 user_agreements 테이블에 데이터 삽입 시작');
+      debugPrint('🔍 삽입할 데이터: user_id=${user.id}, agreed_terms=$agreedTerms, agreed_privacy=$agreedPrivacy');
+      
+      final result = await Supabase.instance.client.from('user_agreements').insert({
+        'user_id': user.id,
+        'agreed_terms': agreedTerms,
+        'agreed_privacy': agreedPrivacy,
+        'agreed_at': DateTime.now().toIso8601String(),
+      });
+      
+      debugPrint('🔍 user_agreements 삽입 성공: $result');
+
+      if (context.mounted) {
+        debugPrint('🔍 context가 mounted 상태입니다. /select-3books로 이동합니다');
+        Navigator.pushReplacementNamed(context, '/select-3books');
+      } else {
+        debugPrint('❌ context가 mounted 상태가 아닙니다');
+      }
+    } catch (e) {
+      debugPrint('❌ user_agreements 삽입 중 오류 발생: $e');
+      setState(() => isLoading = false);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('약관 동의 저장에 실패했습니다: $e')),
+        );
+      }
     }
   }
 

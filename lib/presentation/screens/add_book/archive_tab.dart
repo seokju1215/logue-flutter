@@ -206,12 +206,15 @@ class _ArchiveTabState extends State<ArchiveTab> {
                 const Expanded(child: SizedBox()),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const SearchBookScreen()),
+                            builder: (_) => const SearchBookScreen(fromTab: 'archive')),
                       );
+                      if (result == true) {
+                        _fetchBooks();
+                      }
                     },
                     style: _outlinedStyle(context),
                     child: const Text(

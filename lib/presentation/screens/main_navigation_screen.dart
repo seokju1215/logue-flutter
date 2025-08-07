@@ -31,6 +31,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _selectedIndex;
   bool _overrideWithChild = true;
+  Widget? _child;
   bool _hasNavigatedToPostScreen = false;
   bool _hasCheckedUpdate = false;
   bool _hasShownAnnouncement = false;
@@ -41,10 +42,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     GlobalKey<NavigatorState>(),
   ];
 
-  late final List<Widget> _screens = [
+  List<Widget> get _screens => [
     HomeScreen(navigatorKey: _navigatorKeys[0]),
     ProfileView(navigatorKey: _navigatorKeys[1]),
-    ProfileView(navigatorKey: _navigatorKeys[2]), // 중간 버튼용 (실제로는 사용하지 않음)
+    AddBookScreen(isLimitReached: false), // 중간 버튼용
   ];
 
   @override
@@ -115,27 +116,38 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       return;
     }
     
-    // 인덱스 조정 (중간 버튼 때문에)
-    int actualIndex = index > 1 ? index - 1 : index;
+    if (index == 2) {
+      // 프로필 탭 클릭 시
+      if (_selectedIndex == 1) {
+        _navigatorKeys[1].currentState?.popUntil((route) => route.isFirst);
+      } else {
+        setState(() {
+          _selectedIndex = 1;
+          MainNavigationScreen.lastSelectedIndex = 1;
+          _overrideWithChild = false;
+        });
+      }
+      return;
+    }
     
-    if (_selectedIndex == actualIndex) {
-      _navigatorKeys[actualIndex].currentState?.popUntil((route) => route.isFirst);
+    // 홈 탭 클릭 시
+    if (_selectedIndex == 0) {
+      _navigatorKeys[0].currentState?.popUntil((route) => route.isFirst);
     } else {
       setState(() {
-        _selectedIndex = actualIndex;
-        MainNavigationScreen.lastSelectedIndex = actualIndex;
+        _selectedIndex = 0;
+        MainNavigationScreen.lastSelectedIndex = 0;
         _overrideWithChild = false;
       });
     }
   }
 
   void _showAddBookDialog() {
-    // 책 추가 화면으로 이동
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const AddBookScreen(isLimitReached: false),
-      ),
-    );
+    // 책 추가 화면으로 이동 (index 2)
+    setState(() {
+      _selectedIndex = 2;
+      MainNavigationScreen.lastSelectedIndex = 2;
+    });
   }
 
   Widget _buildBottomNavBar() {
@@ -156,13 +168,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onTap: _onItemTapped,
         items: [
           BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/home_bottomnavi.svg',
-              width: 32,
-              height: 32,
-              color: _selectedIndex == 0
-                  ? AppColors.black900
-                  : AppColors.black500,
+            icon: Container(
+              padding: const EdgeInsets.only(left: 0),
+              child: SvgPicture.asset(
+                'assets/home_bottomnavi.svg',
+                width: 32,
+                height: 32,
+                color: _selectedIndex == 0
+                    ? AppColors.black900
+                    : AppColors.black500,
+              ),
             ),
             label: '',
           ),
@@ -179,13 +194,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: '',
           ),
           BottomNavigationBarItem(
-            icon: SvgPicture.asset(
-              'assets/profile_bottomnavi.svg',
-              width: 32,
-              height: 32,
-              color: _selectedIndex == 2
-                  ? AppColors.black900
-                  : AppColors.black500,
+            icon: Container(
+              child: SvgPicture.asset(
+                'assets/profile_bottomnavi.svg',
+                width: 32,
+                height: 32,
+                color: _selectedIndex == 1
+                    ? AppColors.black900
+                    : AppColors.black500,
+              ),
             ),
             label: '',
           ),
@@ -196,11 +213,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Widget body = (_overrideWithChild && widget.child != null)
-        ? widget.child!
+    final Widget body = (_overrideWithChild && _child != null)
+        ? _child!
         : _screens[_selectedIndex];
 
-    if (_overrideWithChild && widget.child != null) {
+    if (_overrideWithChild && _child != null) {
       debugPrint('🔍 child를 보여주므로 MainNavigationScreen WillPopScope 비활성화');
       return Scaffold(
         body: body,

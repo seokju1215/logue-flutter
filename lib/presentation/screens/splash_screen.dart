@@ -81,13 +81,21 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     // 약관 동의 여부 확인
+    debugPrint('🔍 약관 동의 여부 확인 시작 - userId: ${user.id}');
     final hasAgreed = await AgreementRepository().hasAgreedTerms(user.id);
+    debugPrint('🔍 약관 동의 여부 확인 결과: $hasAgreed');
 
-    if (!mounted) return;
+    if (!mounted) {
+      debugPrint('❌ context가 mounted 상태가 아닙니다');
+      return;
+    }
 
     if (!hasAgreed) {
+      debugPrint('🔍 약관 동의하지 않음 - /terms 화면으로 이동');
       Navigator.pushReplacementNamed(context, '/terms');
       return;
+    } else {
+      debugPrint('🔍 약관 동의 완료 - 다음 단계로 진행');
     }
 
     // 책 3권 선택 여부 확인

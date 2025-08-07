@@ -96,7 +96,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       if (_selectedBooks.contains(book)) {
         _selectedBooks.remove(book);
       } else {
-        if (_selectedBooks.length < 3) {
+        if (_selectedBooks.length < 1) {
           _selectedBooks.add(book);
         }
       }

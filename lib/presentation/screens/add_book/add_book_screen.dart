@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/add_book/search_book_screen.dart';
+import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -13,7 +14,7 @@ import 'archive_tab.dart';
 
 class AddBookScreen extends StatefulWidget {
   final bool isLimitReached;
-  const AddBookScreen({Key? key, required this.isLimitReached, }) : super(key: key);
+  const AddBookScreen({Key? key, required this.isLimitReached}) : super(key: key);
 
   @override
   State<AddBookScreen> createState() => _AddBookScreenState();
@@ -22,6 +23,8 @@ class AddBookScreen extends StatefulWidget {
 class _AddBookScreenState extends State<AddBookScreen> {
   late PageController _pageController;
   int _currentIndex = 0;
+  String _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
+  String _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
 
   @override
   void initState() {
@@ -36,6 +39,13 @@ class _AddBookScreenState extends State<AddBookScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _refreshTabs() {
+    setState(() {
+      _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
+      _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
+    });
   }
 
   ButtonStyle _outlinedStyle(BuildContext context) {
@@ -74,43 +84,50 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text('책 추가', style: TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500)),
-        leading: IconButton(
-          icon: SvgPicture.asset('assets/back_arrow.svg'),
-          onPressed: () => Navigator.pop(context),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.of(context).pop(false);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: const Text('책 추가', style: TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500)),
         ),
-      ),
-      body: Column(
-        children: [
-          // 탭바
-          Container(
-            color: Colors.white,
-            child: Row(
-              children: [
-                _buildTab('프로필', 0),
-                _buildTab('보관함', 1),
-              ],
+        body: Column(
+          children: [
+            // 탭바
+            Container(
+              color: Colors.white,
+              child: Row(
+                children: [
+                  _buildTab('프로필', 0),
+                  _buildTab('보관함', 1),
+                ],
+              ),
             ),
-          ),
-          // 탭뷰
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              children: [
-                ProfileTab(isLimitReached: widget.isLimitReached),
-                const ArchiveTab(),
-              ],
+            // 탭뷰
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                children: [
+                  ProfileTab(
+                    key: ValueKey(_profileTabKey),
+                    isLimitReached: widget.isLimitReached,
+                  ),
+                  ArchiveTab(
+                    key: ValueKey(_archiveTabKey),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -119,13 +136,13 @@ class _AddBookScreenState extends State<AddBookScreen> {
     final isSelected = _currentIndex == index;
 
     return Expanded(
-              child: GestureDetector(
-          onTap: () {
-            _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-            setState(() {
-              _currentIndex = index;
-            });
-          },
+      child: GestureDetector(
+        onTap: () {
+          _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
