@@ -74,6 +74,9 @@ class _ArchiveTabState extends State<ArchiveTab> {
       final currentOrder = books.map((b) => b['id'] as String).toList();
       isEdited = !_areListsEqual(currentOrder, originalOrder);
     });
+    
+    // 드래그 앤 드롭 후 즉시 데이터베이스 업데이트
+    _updateBookOrder();
   }
 
   bool _areListsEqual(List<String> a, List<String> b) {
@@ -84,69 +87,40 @@ class _ArchiveTabState extends State<ArchiveTab> {
     return true;
   }
 
-  Widget _buildBooksWithShelves(List<Map<String, dynamic>> books, double itemWidth, double itemHeight, double spacing) {
+  List<Widget> _buildShelves(int bookCount, double itemWidth, double spacing, double itemHeight) {
     const booksPerRow = 5;
-    final List<Widget> rows = [];
+    final List<Widget> shelves = [];
     
-    for (int i = 0; i < books.length; i += booksPerRow) {
-      final rowBooks = books.skip(i).take(booksPerRow).toList();
-      final List<Widget> bookWidgets = [];
+    // 필요한 선반 개수 계산
+    final shelfCount = (bookCount / booksPerRow).ceil();
+    
+    for (int i = 0; i < shelfCount; i++) {
+      // 선반의 Y 위치 계산 (책 높이 + 간격)
+      final shelfY =90 + (itemHeight + 35) * i;
       
-      for (int j = 0; j < rowBooks.length; j++) {
-        final book = rowBooks[j];
-        bookWidgets.add(
-          SizedBox(
-            key: ValueKey(book['id']),
-            width: itemWidth,
-            height: itemHeight,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(0),
-              child: BookFrame(
-                imageUrl: book['books']?['image'] ?? 'https://via.placeholder.com/150',
-              ),
+      shelves.add(
+        Positioned(
+          top: shelfY,
+          left: 22,
+          right: 22,
+          child: Container(
+            height: 5,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F6),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 4,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
           ),
-        );
-        
-        // 마지막 책이 아니면 간격 추가
-        if (j < rowBooks.length - 1) {
-          bookWidgets.add(SizedBox(width: spacing));
-        }
-      }
-      
-      // 각 줄에 책들과 선반 추가
-      rows.add(
-        Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: bookWidgets,
-              ),
-            ),
-            // 각 줄마다 선반 박스 추가
-            Container(
-              width: double.infinity,
-              height: 5,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF6F6F6),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
-                    blurRadius: 4,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30), // 줄 사이 간격
-          ],
         ),
       );
     }
     
-    return Column(children: rows);
+    return shelves;
   }
 
   ButtonStyle _outlinedStyle(BuildContext context) {
@@ -246,7 +220,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 15),
           LayoutBuilder(
             builder: (context, constraints) {
               const crossAxisCount = 5;
@@ -261,7 +235,35 @@ class _ArchiveTabState extends State<ArchiveTab> {
               final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
               final itemHeight = itemWidth / itemAspectRatio;
 
-              return _buildBooksWithShelves(books, itemWidth, itemHeight, crossAxisSpacing);
+              return Stack(
+                children: [
+                  // 책들을 ReorderableWrap으로 배치
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
+                    child: ReorderableWrap(
+                      spacing: crossAxisSpacing,
+                      runSpacing: 35, // 선반 높이 + 간격
+                      needsLongPressDraggable: false,
+                      onReorder: _onReorder,
+                      children: books.map((book) {
+                        return SizedBox(
+                          key: ValueKey(book['id']),
+                          width: itemWidth,
+                          height: itemHeight,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(0),
+                            child: BookFrame(
+                              imageUrl: book['books']?['image'] ?? 'https://via.placeholder.com/150',
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  // 선반들을 오버레이로 배치
+                  ..._buildShelves(books.length, itemWidth, crossAxisSpacing, itemHeight),
+                ],
+              );
             },
           ),
 

@@ -77,6 +77,9 @@ class _ProfileTabState extends State<ProfileTab> {
       final currentOrder = books.map((b) => b['id'] as String).toList();
       isEdited = !_areListsEqual(currentOrder, originalOrder);
     });
+    
+    // 드래그 앤 드롭 후 즉시 데이터베이스 업데이트
+    _updateBookOrder();
   }
 
   bool _areListsEqual(List<String> a, List<String> b) {

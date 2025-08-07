@@ -189,6 +189,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 'assets/add_book_icon.svg',
                 width: 32,
                 height: 32,
+                color: _selectedIndex == 2
+                    ? AppColors.black900
+                    : AppColors.black500,
               ),
             ),
             label: '',
