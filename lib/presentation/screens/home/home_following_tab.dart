@@ -71,7 +71,7 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
 
       final response = await http.get(
         Uri.parse(
-          'https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/following-posts?page=$page&limit=$limit',
+          'https://tbuoutcwvalrcdlajobk.supabase.co/functions/v1/get-visible-following-posts?page=$page&limit=$limit',
         ),
         headers: {
           'Authorization': 'Bearer $accessToken',

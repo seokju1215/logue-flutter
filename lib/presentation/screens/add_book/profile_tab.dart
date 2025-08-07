@@ -11,8 +11,15 @@ import '../../../core/widgets/dialogs/book_limit_dialog.dart';
 
 class ProfileTab extends StatefulWidget {
   final bool isLimitReached;
+  final List<Map<String, dynamic>> books;
+  final VoidCallback onRefresh;
   
-  const ProfileTab({Key? key, required this.isLimitReached}) : super(key: key);
+  const ProfileTab({
+    Key? key, 
+    required this.isLimitReached,
+    required this.books,
+    required this.onRefresh,
+  }) : super(key: key);
 
   @override
   State<ProfileTab> createState() => _ProfileTabState();
@@ -20,44 +27,27 @@ class ProfileTab extends StatefulWidget {
 
 class _ProfileTabState extends State<ProfileTab> {
   final client = Supabase.instance.client;
-  List<Map<String, dynamic>> books = [];
   List<String> originalOrder = [];
   bool isEdited = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchBooks();
+    _updateOriginalOrder();
   }
 
-  Future<void> _fetchBooks() async {
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) return;
-
-    try {
-      final data = await client
-          .from('user_books')
-          .select('id, user_id, order_index, books(image)')
-          .eq('user_id', userId)
-          .eq('is_archived', false) // 보관되지 않은 책만 가져오기
-          .order('order_index', ascending: true);
-
-      final fetched = List<Map<String, dynamic>>.from(data);
-      setState(() {
-        books = fetched;
-        originalOrder = fetched.map((book) => book['id'] as String).toList();
-        isEdited = false;
-      });
-    } catch (e) {
-      debugPrint('❌ 책 불러오기 실패: $e');
-    }
+  void _updateOriginalOrder() {
+    setState(() {
+      originalOrder = widget.books.map((book) => book['id'] as String).toList();
+      isEdited = false;
+    });
   }
 
   Future<void> _updateBookOrder() async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
-    for (int i = 0; i < books.length; i++) {
-      final bookId = books[i]['id'];
+    for (int i = 0; i < widget.books.length; i++) {
+      final bookId = widget.books[i]['id'];
       await client
           .from('user_books')
           .update({'order_index': i})
@@ -65,17 +55,17 @@ class _ProfileTabState extends State<ProfileTab> {
     }
 
     setState(() {
-      originalOrder = books.map((b) => b['id'] as String).toList();
+      originalOrder = widget.books.map((b) => b['id'] as String).toList();
       isEdited = false;
     });
   }
 
   void _onReorder(int oldIndex, int newIndex) {
     setState(() {
-      final item = books.removeAt(oldIndex);
-      books.insert(newIndex, item);
+      final item = widget.books.removeAt(oldIndex);
+      widget.books.insert(newIndex, item);
 
-      final currentOrder = books.map((b) => b['id'] as String).toList();
+      final currentOrder = widget.books.map((b) => b['id'] as String).toList();
       isEdited = !_areListsEqual(currentOrder, originalOrder);
     });
     
@@ -150,7 +140,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   child: OutlinedButton(
                     onPressed: () async {
                       // 현재 책 개수로 limit 확인
-                      if (books.length >= 9) {
+                      if (widget.books.length >= 9) {
                         showDialog(
                           context: context,
                           builder: (_) => const BookLimitDialog(),
@@ -161,7 +151,7 @@ class _ProfileTabState extends State<ProfileTab> {
                           MaterialPageRoute(builder: (_) => const SearchBookScreen(fromTab: 'profile')),
                         );
                         if (result == true) {
-                          _fetchBooks();
+                          widget.onRefresh();
                         }
                       }
                     },
@@ -186,7 +176,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   style: TextStyle(fontSize: 12, color: AppColors.black500),
                 ),
                 Text(
-                  '${books.length}/9',
+                  '${widget.books.length}/9',
                   style: const TextStyle(fontSize: 12, color: AppColors.black500),
                 ),
               ],
@@ -211,7 +201,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   runSpacing: mainAxisSpacing,
                   needsLongPressDraggable: false,
                   onReorder: _onReorder,
-                  children: books.map((book) {
+                  children: widget.books.map((book) {
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(

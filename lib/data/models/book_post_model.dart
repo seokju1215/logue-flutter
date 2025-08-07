@@ -13,6 +13,7 @@ class BookPostModel {
   final String? userName;
   final String? avatarUrl;
   final int? orderIndex;
+  final bool? is_archived;
 
   BookPostModel({
     required this.id,
@@ -27,6 +28,7 @@ class BookPostModel {
     this.userName,
     this.avatarUrl,
     this.orderIndex,
+    this.is_archived
   });
 
   factory BookPostModel.fromMap(Map<String, dynamic> map) {
@@ -56,6 +58,7 @@ class BookPostModel {
       userName: profiles?['username'] ?? map['username'],
       avatarUrl: profiles?['avatar_url'] ?? map['avatar_url'],
       orderIndex: map['order_index'] as int?,
+      is_archived: map['is_archived'] as bool?,
     );
   }
 }

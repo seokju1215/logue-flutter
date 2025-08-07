@@ -113,7 +113,7 @@ class PostItem extends StatelessWidget {
                         context: context,
                         backgroundColor: Colors.transparent,
                         barrierColor: Colors.transparent,
-                        builder: (context) => const PostActionBottomSheet(),
+                        builder: (context) => PostActionBottomSheet(is_archived : post.is_archived),
                       );
 
                       if (action == 'share') {

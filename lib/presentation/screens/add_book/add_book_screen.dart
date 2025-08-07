@@ -25,6 +25,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
   int _currentIndex = 0;
   String _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
   String _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
+  
+  // 공통 데이터 관리
+  List<Map<String, dynamic>> allBooks = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -33,12 +37,39 @@ class _AddBookScreenState extends State<AddBookScreen> {
     
     // 책 추가 화면 방문 트래킹
     MixpanelUtil.trackScreenView('Add Book');
+    
+    // 데이터 로드
+    _fetchAllBooks();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchAllBooks() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      final data = await Supabase.instance.client
+          .from('user_books')
+          .select('id, user_id, order_index, archived_order_index, is_archived, books(image)')
+          .eq('user_id', userId)
+          .order('order_index', ascending: true);
+
+      final fetched = List<Map<String, dynamic>>.from(data);
+      setState(() {
+        allBooks = fetched;
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('❌ 책 불러오기 실패: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   void _refreshTabs() {
@@ -119,9 +150,13 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   ProfileTab(
                     key: ValueKey(_profileTabKey),
                     isLimitReached: widget.isLimitReached,
+                    books: allBooks.where((book) => book['is_archived'] == false).toList(),
+                    onRefresh: _fetchAllBooks,
                   ),
                   ArchiveTab(
                     key: ValueKey(_archiveTabKey),
+                    books: allBooks.toList(),
+                    onRefresh: _fetchAllBooks,
                   ),
                 ],
               ),

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 
 class PostActionBottomSheet extends StatelessWidget {
-  const PostActionBottomSheet({super.key});
+  final bool? is_archived;
+
+  const PostActionBottomSheet({super.key, this.is_archived});
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +64,8 @@ class PostActionBottomSheet extends StatelessWidget {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.only(top: 28),
-              child: const Text(
-                '보관함으로 이동',
+              child: Text(
+                is_archived == true ? '프로필에 표시' : '보관함으로 이동',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -98,4 +100,4 @@ class PostActionBottomSheet extends StatelessWidget {
       ),
     );
   }
-} 
+}
