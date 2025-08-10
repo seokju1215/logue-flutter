@@ -221,11 +221,11 @@ class _ArchiveTabState extends State<ArchiveTab> {
                     width: double.infinity,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
-                      child: ReorderableWrap(
-                        spacing: crossAxisSpacing,
-                        runSpacing: 35,
-                        needsLongPressDraggable: false,
-                        onReorder: _onReorder,
+                                               child: ReorderableWrap(
+                           spacing: crossAxisSpacing,
+                           runSpacing: 35,
+                           needsLongPressDraggable: true,
+                           onReorder: _onReorder,
                         children: widget.books.map((book) {
                           return GestureDetector(
                                                       onTap: () async {

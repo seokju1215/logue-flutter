@@ -59,8 +59,8 @@ class FollowUserTile extends ConsumerWidget {
 
     return Padding(
       padding: showRemoveButton
-          ? const EdgeInsets.fromLTRB(22, 8, 10, 8)
-          : const EdgeInsets.fromLTRB(22, 8, 22, 8),
+          ? const EdgeInsets.fromLTRB(22, 7, 10, 7)
+          : const EdgeInsets.fromLTRB(22, 7, 22, 7),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [

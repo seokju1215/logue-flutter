@@ -8,23 +8,30 @@ import 'package:my_logue/core/widgets/post/post_item.dart';
 import 'package:my_logue/core/widgets/follow/follow_user_tile.dart';
 import '../../../data/models/book_post_model.dart';
 import '../../../data/repositories/user_repository.dart';
+import '../profile/other_profile_screen.dart';
+import '../../../core/providers/follow_state_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'users_with_same_books_screen.dart';
 
-class HomeRecommendTab extends StatefulWidget {
+class HomeRecommendTab extends ConsumerStatefulWidget {
   const HomeRecommendTab({super.key});
 
   @override
-  State<HomeRecommendTab> createState() => _HomeRecommendTabState();
+  ConsumerState<HomeRecommendTab> createState() => _HomeRecommendTabState();
 }
 
-class _HomeRecommendTabState extends State<HomeRecommendTab> {
+class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
   final client = Supabase.instance.client;
   List<Map<String, dynamic>> usersWithSameBooks = [];
+  List<Map<String, dynamic>> recentActiveUsers = [];
   bool isLoading = true;
+  bool isLoadingUsers = true;
 
   @override
   void initState() {
     super.initState();
     _fetchUsersWithSameBooks();
+    _fetchRecentActiveUsers();
   }
 
   Future<void> _fetchUsersWithSameBooks() async {
@@ -33,8 +40,11 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
       final users = await userRepository.getUsersWithSameBooks();
       
       if (mounted) {
+        // 팔로우한 사람들을 먼저, 팔로우하지 않은 사람들을 나중에 정렬
+        final sortedUsers = await _sortUsersByFollowStatus(users);
+        
         setState(() {
-          usersWithSameBooks = users;
+          usersWithSameBooks = sortedUsers;
           isLoading = false;
         });
       }
@@ -45,6 +55,75 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
           isLoading = false;
         });
       }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _sortUsersByFollowStatus(List<Map<String, dynamic>> users) async {
+    final currentUserId = client.auth.currentUser?.id;
+    if (currentUserId == null) return users;
+
+    // 각 사용자의 팔로우 상태를 확인
+    final List<Map<String, dynamic>> sortedUsers = [];
+    final List<Map<String, dynamic>> followingUsers = [];
+    final List<Map<String, dynamic>> nonFollowingUsers = [];
+
+    for (final user in users) {
+      final userId = user['user_id'];
+      if (userId == currentUserId) continue; // 자기 자신은 제외
+
+      // 팔로우 상태 확인
+      final isFollowing = await _checkFollowStatus(userId);
+      
+      if (isFollowing) {
+        followingUsers.add(user);
+      } else {
+        nonFollowingUsers.add(user);
+      }
+    }
+
+    // 팔로우한 사람들을 먼저, 팔로우하지 않은 사람들을 나중에
+    sortedUsers.addAll(followingUsers);
+    sortedUsers.addAll(nonFollowingUsers);
+
+    return sortedUsers;
+  }
+
+  Future<void> _fetchRecentActiveUsers() async {
+    try {
+      final userRepository = UserRepository(client);
+      final users = await userRepository.getRecentActiveUsers();
+      
+      if (mounted) {
+        setState(() {
+          recentActiveUsers = users;
+          isLoadingUsers = false;
+        });
+      }
+    } catch (e) {
+      print('❌ 최근 활성 유저 조회 실패: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingUsers = false;
+        });
+      }
+    }
+  }
+
+  Future<bool> _checkFollowStatus(String targetUserId) async {
+    try {
+      final currentUserId = client.auth.currentUser?.id;
+      if (currentUserId == null) return false;
+      
+      final response = await client
+          .from('follows')
+          .select('id')
+          .eq('follower_id', currentUserId)
+          .eq('following_id', targetUserId)
+          .single();
+      
+      return response != null;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -116,19 +195,7 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
               ],
             ),
           ),
-          const SizedBox(height: 40),
-          // 인생책이 겹치는 사람 섹션
-          Padding(
-            padding: const EdgeInsets.only(left: 22),
-            child: StrokeTextStyle.createStrokeText(
-              text: '나와 인생책이 겹치는 사람',
-              fontSize: 16,
-              color: AppColors.black900,
-              fontWeight: FontWeight.w400,
-              height: 1.187,
-            ),
-          ),
-          const SizedBox(height: 13),
+          const SizedBox(height: 35),
           if (isLoading)
             const Center(child: CircularProgressIndicator())
           else if (usersWithSameBooks.isEmpty)
@@ -143,30 +210,171 @@ class _HomeRecommendTabState extends State<HomeRecommendTab> {
               ),
             )
           else
-            Container(
-              height: 90,
-              margin: const EdgeInsets.symmetric(horizontal: 22),
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: usersWithSameBooks.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final user = usersWithSameBooks[index];
-                  return SizedBox(
-                    width: 280,
-                    child: FollowUserTile(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      StrokeTextStyle.createStrokeText(text: "나와 인생책이 겹치는 친구", fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black900, height: 1.187),
+                      Text(
+                        '${usersWithSameBooks.length}명',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: AppColors.black500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Column(
+                  children: usersWithSameBooks.take(3).map((user) {
+                    final isFollowing = ref.watch(followStateProvider(user['user_id']));
+                    return FollowUserTile(
+                      currentUserId: client.auth.currentUser?.id ?? '',
                       userId: user['user_id'],
                       username: user['username'] ?? '',
-                      name: '${user['overlap_count']}권의 책이 겹쳐요',
+                      name: user['name'] ?? '',
                       avatarUrl: user['avatar_url'] ?? 'basic',
                       isMyProfile: false,
+                      onTapFollow: () async {
+                        final followNotifier = ref.read(followStateProvider(user['user_id']).notifier);
+                        followNotifier.optimisticFollow();
+                        try {
+                          await followNotifier.follow();
+                        } catch (e) {
+                          followNotifier.optimisticUnfollow();
+                        }
+                      },
+                      onTapUnfollow: () async {
+                        final followNotifier = ref.read(followStateProvider(user['user_id']).notifier);
+                        followNotifier.optimisticUnfollow();
+                        try {
+                          await followNotifier.unfollow();
+                        } catch (e) {
+                          followNotifier.optimisticFollow();
+                        }
+                      },
+                      onTapProfile: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => OtherProfileScreen(userId: user['user_id']),
+                          ),
+                        );
+                      },
+                      isFollowing: isFollowing,
+                    );
+                  }).toList(),
+                ),
+                SizedBox(
+                  height: 31,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (usersWithSameBooks.length > 3)
+                        Center(
+                          child: TextButton(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => UsersWithSameBooksScreen(
+                                    users: usersWithSameBooks,
+                                  ),
+                                ),
+                              );
+                              setState(() {}); // Provider 상태로만 UI 갱신
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              "더보기",
+                              style: TextStyle(
+                                color: AppColors.black900,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                height: 1.0
+                              ),
+                            ),
+                          ),
+                        ),
+                     usersWithSameBooks.length <= 3? const SizedBox(height: 31) : SizedBox(height: 10),
+                      const Divider(height: 1, color: AppColors.black300),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          // 최근 활성 유저 섹션
+          const SizedBox(height: 35),
+          Padding(
+            padding: const EdgeInsets.only(left: 22),
+            child: StrokeTextStyle.createStrokeText(
+              text: '최근 활동 친구',
+              fontSize: 16,
+              color: AppColors.black900,
+              fontWeight: FontWeight.w400,
+              height: 1.187,
+            ),
+          ),
+          SizedBox(height: 16,),
+          if (isLoadingUsers)
+            const Center(child: CircularProgressIndicator())
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 0),
+                Column(
+                  children: recentActiveUsers.take(50).map((user) {
+                    final isFollowing = ref.watch(followStateProvider(user['user_id']));
+                    return FollowUserTile(
                       currentUserId: client.auth.currentUser?.id ?? '',
-                      onTapFollow: _fetchUsersWithSameBooks,
-                      onTapUnfollow: _fetchUsersWithSameBooks,
-                    ),
-                  );
-                },
-              ),
+                      userId: user['user_id'],
+                      username: user['username'] ?? '',
+                      name: user['name'] ?? '',
+                      avatarUrl: user['avatar_url'] ?? 'basic',
+                      isMyProfile: false,
+                      onTapFollow: () async {
+                        final followNotifier = ref.read(followStateProvider(user['user_id']).notifier);
+                        followNotifier.optimisticFollow();
+                        try {
+                          await followNotifier.follow();
+                        } catch (e) {
+                          followNotifier.optimisticUnfollow();
+                        }
+                      },
+                      onTapUnfollow: () async {
+                        final followNotifier = ref.read(followStateProvider(user['user_id']).notifier);
+                        followNotifier.optimisticUnfollow();
+                        try {
+                          await followNotifier.unfollow();
+                        } catch (e) {
+                          followNotifier.optimisticFollow();
+                        }
+                      },
+                      onTapProfile: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => OtherProfileScreen(userId: user['user_id']),
+                          ),
+                        );
+                      },
+                      isFollowing: isFollowing,
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
         ],
       ),

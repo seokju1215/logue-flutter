@@ -199,7 +199,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 return ReorderableWrap(
                   spacing: crossAxisSpacing,
                   runSpacing: mainAxisSpacing,
-                  needsLongPressDraggable: false,
+                  needsLongPressDraggable: true,
                   onReorder: _onReorder,
                   children: widget.books.map((book) {
                     return GestureDetector(
