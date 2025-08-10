@@ -198,17 +198,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
           const SizedBox(height: 35),
           if (isLoading)
             const Center(child: CircularProgressIndicator())
-          else if (usersWithSameBooks.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(left: 22),
-              child: Text(
-                '아직 인생책이 겹치는 사람이 없어요.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.black500,
-                ),
-              ),
-            )
           else
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,7 +218,8 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 15),
+                if (usersWithSameBooks.isNotEmpty) ...[
+                  const SizedBox(height: 15),
                 Column(
                   children: usersWithSameBooks.take(3).map((user) {
                     final isFollowing = ref.watch(followStateProvider(user['user_id']));
@@ -311,8 +301,11 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                     ],
                   ),
                 ),
+                ],
               ],
             ),
+          if(usersWithSameBooks.isNotEmpty)
+            const SizedBox(height: 17),
           // 최근 활성 유저 섹션
           const SizedBox(height: 35),
           Padding(
