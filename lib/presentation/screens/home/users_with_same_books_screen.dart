@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/follow/follow_user_tile.dart';
 import 'package:my_logue/presentation/screens/profile/other_profile_screen.dart';
@@ -66,45 +67,21 @@ class _UsersWithSameBooksScreenState extends ConsumerState<UsersWithSameBooksScr
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.black900),
+          icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          '나와 인생책이 겹치는 사람',
+          '나와 인생책이 겹치는 친구',
           style: TextStyle(
             color: AppColors.black900,
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
           ),
         ),
         centerTitle: true,
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '총 ${widget.users.length}명',
-                  style: const TextStyle(
-                    color: AppColors.black900,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '${sortedUsers.length}명',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.black500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: AppColors.black300),
           Expanded(
             child: ListView.builder(
               itemCount: sortedUsers.length,
@@ -116,7 +93,7 @@ class _UsersWithSameBooksScreenState extends ConsumerState<UsersWithSameBooksScr
                   currentUserId: client.auth.currentUser?.id ?? '',
                   userId: user['user_id'],
                   username: user['username'] ?? '',
-                  name: '${user['overlap_count']}권의 책이 겹쳐요',
+                  name: user['name'] ?? '',
                   avatarUrl: user['avatar_url'] ?? 'basic',
                   isMyProfile: false,
                   onTapFollow: () async {
