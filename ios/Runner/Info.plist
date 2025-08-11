@@ -41,6 +41,8 @@
 	<string>사진첩 접근을 위해 필요합니다.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>프로필 사진 저장을 위해 필요합니다.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>친구 찾기를 위해 주소록 접근이 필요합니다.</string>
 
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

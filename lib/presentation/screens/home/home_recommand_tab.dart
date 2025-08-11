@@ -12,6 +12,8 @@ import '../profile/other_profile_screen.dart';
 import '../../../core/providers/follow_state_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'users_with_same_books_screen.dart';
+import 'package:my_logue/core/services/contacts_service.dart';
+
 
 class HomeRecommendTab extends ConsumerStatefulWidget {
   const HomeRecommendTab({super.key});
@@ -109,6 +111,56 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
     }
   }
 
+  /// 친구 찾기 처리
+  Future<void> _handleFindFriends() async {
+    try {
+      print('🔍 친구 찾기 시작...');
+      
+      // 먼저 현재 권한 상태를 디버깅
+      await ContactsService.debugPermissionStatus();
+      
+      // 권한 요청 시도
+      final success = await ContactsService.forceRequestContactsPermission();
+      
+      if (success && mounted) {
+        // TODO: 다음 화면으로 이동 (친구 찾기 화면 구현 후)
+        print('✅ 주소록 접근 성공');
+        // Navigator.push(context, MaterialPageRoute(builder: (_) => FindFriendsScreen()));
+      } else if (mounted) {
+        // 권한이 거부되었거나 설정창으로 이동한 경우
+        print('❌ 주소록 접근 권한이 거부되었습니다.');
+        
+        // 권한 상태를 다시 확인하여 영구적으로 거부된 경우 안내 메시지 표시
+        final hasPermission = await ContactsService.hasContactsPermission();
+        print('🔍 권한 재확인 결과: $hasPermission');
+        
+        if (!hasPermission) {
+          // 사용자에게 설정창에서 권한을 활성화하라는 안내 메시지 표시
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('설정 > 개인정보 보호 및 보안 > 주소록에서 권한을 허용해주세요.'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ 친구 찾기 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('권한 요청 중 오류가 발생했습니다.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+
+
   Future<bool> _checkFollowStatus(String targetUserId) async {
     try {
       final currentUserId = client.auth.currentUser?.id;
@@ -183,7 +235,7 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () async {
-
+                      await _handleFindFriends();
                     },
                     style: _outlinedStyle(context),
                     child: const Text(

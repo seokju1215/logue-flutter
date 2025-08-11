@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Android 15: 미디어 접근용 -->
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <!-- 주소록 접근용 -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <application
         android:label="Logue"
         android:name="${applicationName}"
