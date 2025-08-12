@@ -13,7 +13,7 @@ import '../profile/other_profile_screen.dart';
 import '../../../core/providers/follow_state_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'users_with_same_books_screen.dart';
-import 'package:my_logue/core/services/contacts_service.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 
 
 class HomeRecommendTab extends ConsumerStatefulWidget {
@@ -115,13 +115,8 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
   /// 친구 찾기 처리
   Future<void> _handleFindFriends() async {
     try {
-      print('🔍 친구 찾기 시작...');
-      
-      // 먼저 현재 권한 상태를 디버깅
-      await ContactsService.debugPermissionStatus();
-      
-      // 권한 요청 시도
-      final success = await ContactsService.forceRequestContactsPermission();
+      // 주소록 권한 요청 및 확인
+      final success = await FlutterContacts.requestPermission(readonly: true);
       
       if (success && mounted) {
         print('✅ 주소록 접근 성공');

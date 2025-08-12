@@ -26,6 +26,34 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
   String _currentQuery = '';
   Timer? _debounce; // ✅ 디바운싱 타이머
   bool _isSearching = false; // ✅ 중복 검색 방지 플래그
+  int _maxBookCount = 1; // 기본값, book_add_suggestion에서 동적으로 가져옴
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMaxBookCount();
+  }
+
+  /// book_add_suggestion 테이블에서 최대 책 선택 개수를 가져옴
+  Future<void> _loadMaxBookCount() async {
+    try {
+      final response = await client
+          .from('book_add_suggestion')
+          .select('count')
+          .eq('id', 1)
+          .maybeSingle();
+      
+      if (response != null && response['count'] != null) {
+        setState(() {
+          _maxBookCount = response['count'] as int;
+        });
+        print('✅ 최대 책 선택 개수: $_maxBookCount');
+      }
+    } catch (e) {
+      print('❌ 최대 책 선택 개수 로드 실패: $e');
+      // 에러 시 기본값 1 사용
+    }
+  }
 
   void _search(String query) async {
     if (_isSearching) {
@@ -96,7 +124,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       if (_selectedBooks.contains(book)) {
         _selectedBooks.remove(book);
       } else {
-        if (_selectedBooks.length < 1) {
+        if (_selectedBooks.length < _maxBookCount) {
           _selectedBooks.add(book);
         }
       }
@@ -241,16 +269,16 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
         automaticallyImplyLeading: false,
         centerTitle: true,
         title: Text(
-          "인생 책 1권을 선택해주세요",
+          "인생 책 ${_maxBookCount}권을 선택해주세요",
           style: TextStyle(fontSize: 16, color: AppColors.black900),
         ),
         actions: [
           TextButton(
-            onPressed: _selectedBooks.length == 1 ? _submitBooks : null,
+            onPressed: _selectedBooks.length == _maxBookCount ? _submitBooks : null,
             child: Text(
               "확인",
               style: TextStyle(
-                color: _selectedBooks.length == 1
+                color: _selectedBooks.length == _maxBookCount
                     ? AppColors.blue500
                     : Colors.grey,
               ),
@@ -311,7 +339,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                 else
                   const SizedBox(),
                 Text(
-                  '${_selectedBooks.length}/1',
+                  '${_selectedBooks.length}/$_maxBookCount',
                   style: TextStyle(fontSize: 12, color: AppColors.black500),
                 ),
               ],

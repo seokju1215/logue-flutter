@@ -13,7 +13,6 @@ import 'package:my_logue/data/utils/fetch_profile.dart';
 import 'package:my_logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
 import 'dart:ui'; // 맨 위에 추가
 
-
 import '../../../core/widgets/profile/bio_content.dart';
 import '../main_navigation_screen.dart';
 import '../post/my_post_screen.dart';
@@ -29,24 +28,27 @@ class ProfileScreen extends StatefulWidget {
   static Future<void> loadBooksFromContext(BuildContext context) async {
     // context를 통해 profile_screen의 State를 찾아서 loadBooks 호출
     debugPrint('🔍 ProfileScreen.loadBooksFromContext 호출됨');
-    
+
     // 먼저 ProfileScreenState를 찾아보기
-    final profileScreenState = context.findAncestorStateOfType<ProfileScreenState>();
+    final profileScreenState =
+        context.findAncestorStateOfType<ProfileScreenState>();
     if (profileScreenState != null) {
       debugPrint('🔍 ProfileScreenState 찾음, loadBooks 호출');
       await profileScreenState.loadBooks();
       return;
     }
-    
+
     // ProfileScreenState를 찾을 수 없으면 ProfileViewState를 찾아서 Navigator를 통해 접근
-    final profileViewState = context.findAncestorStateOfType<ProfileViewState>();
+    final profileViewState =
+        context.findAncestorStateOfType<ProfileViewState>();
     if (profileViewState != null) {
       debugPrint('🔍 ProfileViewState 찾음, Navigator를 통해 ProfileScreen 접근');
       final navigatorState = profileViewState.widget.navigatorKey.currentState;
       if (navigatorState != null) {
         // Navigator의 context를 통해 ProfileScreen에 접근
         final profileContext = navigatorState.context;
-        final profileScreenState = profileContext.findAncestorStateOfType<ProfileScreenState>();
+        final profileScreenState =
+            profileContext.findAncestorStateOfType<ProfileScreenState>();
         if (profileScreenState != null) {
           debugPrint('🔍 Navigator를 통해 ProfileScreenState 찾음, loadBooks 호출');
           await profileScreenState.loadBooks();
@@ -54,7 +56,7 @@ class ProfileScreen extends StatefulWidget {
         }
       }
     }
-    
+
     debugPrint('🔍 ProfileScreenState를 찾을 수 없음');
   }
 
@@ -67,7 +69,8 @@ class ProfileScreen extends StatefulWidget {
     if (result == true) {
       debugPrint('🔍 포스트 삭제됨, profile_screen 새로고침 시도');
       // profile_screen의 State를 찾아서 loadBooks 호출
-      final profileScreenState = context.findAncestorStateOfType<ProfileScreenState>();
+      final profileScreenState =
+          context.findAncestorStateOfType<ProfileScreenState>();
       if (profileScreenState != null) {
         debugPrint('🔍 ProfileScreenState 찾음, loadBooks 호출');
         await profileScreenState.loadBooks();
@@ -136,13 +139,14 @@ class ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isScrollable = isNowScrollable);
     }
   }
+
   String _truncateTextToFit(
-      String text,
-      TextStyle style,
-      double maxWidth,
-      int maxLines,
-      String trailingText,
-      ) {
+    String text,
+    TextStyle style,
+    double maxWidth,
+    int maxLines,
+    String trailingText,
+  ) {
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
       maxLines: maxLines,
@@ -167,6 +171,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     final safeIndex = (max - trailingText.length).clamp(0, text.length);
     return text.substring(0, safeIndex);
   }
+
   String formatCount(int count) {
     if (count >= 1000) {
       double divided = count / 1000;
@@ -257,7 +262,8 @@ class ProfileScreenState extends State<ProfileScreen> {
     if (user == null) return;
 
     final result = await _getUserBooks(user.id);
-    result.sort((a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
+    result.sort(
+        (a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
 
     setState(() {
       books = result;
@@ -328,45 +334,53 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(profile?['username'] ?? 'User', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
+        title: Text(
+          profile?['username'] ?? 'User',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.black900,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         centerTitle: true,
         leading: Padding(
-          padding: const EdgeInsets.only(left:16),
+          padding: const EdgeInsets.only(left: 16),
           child: IconButton(
             icon: Transform.scale(
               scale: 1.08,
               child: SvgPicture.asset(_hasUnreadNotifications
-              ? 'assets/noticed_alarm_icon.svg'
+                  ? 'assets/noticed_alarm_icon.svg'
                   : 'assets/bell_icon.svg'),
             ),
             onPressed: () async {
               final result = await Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationScreen()),
-            );
-            _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
-            setState(() => _showFullBio = false);
-          },
+                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+              );
+              _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
+              setState(() => _showFullBio = false);
+            },
           ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right:12),
+            padding: const EdgeInsets.only(right: 12),
             child: Transform.scale(
               scale: 0.7,
               child: IconButton(
                 icon: Image.asset('assets/edit_icon.png'),
                 onPressed: () async {
-            setState(() => _showFullBio = false);
-            final result = await Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (_) => SettingScreen(),
+                  setState(() => _showFullBio = false);
+                  final result =
+                      await Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(
+                      builder: (_) => SettingScreen(),
+                    ),
+                  );
+                  if (result == true) {
+                    _fetchProfile();
+                  }
+                },
               ),
-            );
-            if (result == true) {
-              _fetchProfile();
-            }
-          },
-        ),
             ),
           ),
         ],
@@ -393,13 +407,15 @@ class ProfileScreenState extends State<ProfileScreen> {
                         child: _buildProfileHeader(),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 0, horizontal: 16),
                         child: _buildActionButtons(),
                       ),
                       const SizedBox(height: 20),
                       if (books.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 0, horizontal:26),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 0, horizontal: 26),
                           child: _buildBookGrid(),
                         ),
                         const SizedBox(height: 20),
@@ -412,8 +428,14 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 builder: (context) {
                                   return TextButton(
                                     onPressed: () async {
-                                      final result = await Navigator.of(context, rootNavigator: true).push(
-                                        MaterialPageRoute(builder: (_) => AddBookScreen(isLimitReached: books.length >= 9,)),
+                                      final result = await Navigator.of(context,
+                                              rootNavigator: true)
+                                          .push(
+                                        MaterialPageRoute(
+                                            builder: (_) => AddBookScreen(
+                                                  isLimitReached:
+                                                      books.length >= 9,
+                                                )),
                                       );
                                       if (result == true) {
                                         loadBooks(); // ✅ 책 목록 다시 불러오기
@@ -421,7 +443,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                                     },
                                     child: const Text(
                                       "책 추가 +",
-                                      style: TextStyle(fontSize: 12, color: AppColors.black900, fontWeight: FontWeight.w400),
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.black900,
+                                          fontWeight: FontWeight.w400),
                                     ),
                                   );
                                 },
@@ -456,12 +481,16 @@ class ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(profile?['name'] ?? '',
-                      style: TextStyle(fontSize: 20, color: AppColors.black900)),
+                      style:
+                          TextStyle(fontSize: 20, color: AppColors.black900)),
                   const SizedBox(height: 3),
-                  Text(profile?['job'] ?? '',
-                      style: TextStyle(fontSize: 14, color: AppColors.black500)),
+                  if (profile?['job'] != '')
+                    Text(profile?['job'] ?? '',
+                        style: TextStyle(fontSize: 14, color: AppColors.black500)),
                   const SizedBox(height: 9),
                   _buildBio(context),
+                  if (profile?['job'] == '')
+                    Text('', style: TextStyle(fontSize: 14, color: AppColors.black500)),
                   const SizedBox(height: 9),
                 ],
               ),
@@ -480,10 +509,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                   child: CircleAvatar(
                     radius: 40.5,
                     backgroundImage:
-                    avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
+                        avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                     child: avatarUrl == 'basic'
                         ? Image.asset('assets/basic_avatar.png',
-                        width: 80, height: 80)
+                            width: 80, height: 80)
                         : null,
                   ),
                 ),
@@ -569,7 +598,8 @@ class ProfileScreenState extends State<ProfileScreen> {
             style: _outlinedStyle(context),
             onPressed: () async {
               setState(() => _showFullBio = false);
-              final result = await Navigator.of(context, rootNavigator: true).push(
+              final result =
+                  await Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(
                   builder: (_) => ProfileEditScreen(initialProfile: profile!),
                 ),
@@ -587,7 +617,8 @@ class ProfileScreenState extends State<ProfileScreen> {
           child: OutlinedButton(
             style: _outlinedStyle(context),
             onPressed: () async {
-              final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
+              final profileLink =
+                  'https://www.logue.it.kr/u/${profile?['username']}';
               final userId = profile?['id'];
               if (profileLink != null && profileLink.isNotEmpty) {
                 Share.share(profileLink);
@@ -621,6 +652,7 @@ class ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
+
   void _showZoomedAvatar(String avatarUrl) {
     showDialog(
       context: context,
@@ -648,7 +680,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                       fit: BoxFit.cover,
                       image: avatarUrl == 'basic'
                           ? const AssetImage('assets/basic_avatar.png')
-                      as ImageProvider
+                              as ImageProvider
                           : NetworkImage(avatarUrl),
                     ),
                   ),
@@ -668,29 +700,31 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth - avatarSize - horizontalPadding;
+        final availableWidth =
+            constraints.maxWidth - avatarSize - horizontalPadding;
         return BioContent(bio: bio, maxWidth: availableWidth);
       },
     );
   }
 
-
   Widget _buildCount(String label, int count, {bool isTappable = true}) {
     final content = Column(
       children: [
         Text(label,
-            style: const TextStyle(fontSize: 13, color: AppColors.black500, height: 1)),
+            style: const TextStyle(
+                fontSize: 13, color: AppColors.black500, height: 1)),
         const SizedBox(height: 6),
         Text(formatCount(count),
-            style: const TextStyle(fontSize: 13, color: AppColors.black500, height: 1)),
+            style: const TextStyle(
+                fontSize: 13, color: AppColors.black500, height: 1)),
       ],
     );
 
     return isTappable
         ? MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: content,
-    )
+            cursor: SystemMouseCursors.click,
+            child: content,
+          )
         : content;
   }
 
@@ -699,7 +733,7 @@ class ProfileScreenState extends State<ProfileScreen> {
       foregroundColor: MaterialStateProperty.all(AppColors.black900),
       backgroundColor: MaterialStateProperty.all(Colors.white),
       overlayColor: MaterialStateProperty.resolveWith<Color?>(
-            (states) {
+        (states) {
           if (states.contains(MaterialState.pressed)) {
             return AppColors.black100;
           }
@@ -715,9 +749,7 @@ class ProfileScreenState extends State<ProfileScreen> {
       padding: MaterialStateProperty.all(
         EdgeInsets.symmetric(vertical: 8),
       ),
-      minimumSize: MaterialStateProperty.all(
-          const Size.fromHeight(34)
-      ),
+      minimumSize: MaterialStateProperty.all(const Size.fromHeight(34)),
       textStyle: MaterialStateProperty.all(
         const TextStyle(
           fontSize: 12,

@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/themes/app_colors.dart';
 import '../../../../core/themes/stroke_text_style.dart';
-import '../../../../core/services/contacts_service.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'input_phone_number_screen.dart';
 
 class FindFriendsScreen extends StatefulWidget {
@@ -41,17 +41,17 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
       });
 
       // 주소록에서 전화번호 가져오기
-      final phoneNumbers = await ContactsService.getPhoneNumbers();
+      final phoneNumbers = await _getPhoneNumbersFromContacts();
       if (phoneNumbers.isEmpty) {
         print('❌ 주소록에서 전화번호를 가져올 수 없습니다.');
         return;
       }
 
       // 전화번호를 해시로 변환
-      final hashesFull = ContactsService.hashPhoneNumbers(phoneNumbers);
+      final hashesFull = _hashPhoneNumbers(phoneNumbers);
       final hashesLast8 = phoneNumbers
           .where((phone) => phone.length >= 8)
-          .map((phone) => ContactsService.hashPhoneNumber(phone.substring(phone.length - 8)))
+          .map((phone) => _hashPhoneNumber(phone.substring(phone.length - 8)))
           .toList();
 
       print('✅ 전화번호 해시 생성 완료: 전체 ${hashesFull.length}개, 마지막8자리 ${hashesLast8.length}개');
@@ -96,6 +96,59 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
         });
       }
     }
+  }
+
+  /// 주소록에서 전화번호 목록을 가져옴
+  Future<List<String>> _getPhoneNumbersFromContacts() async {
+    try {
+      // 주소록 권한 요청 및 확인
+      if (!await FlutterContacts.requestPermission(readonly: true)) {
+        print('❌ 주소록 접근 권한이 거부되었습니다.');
+        return [];
+      }
+
+      // 주소록 가져오기
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
+      
+      final phoneNumbers = <String>[];
+      
+      for (final contact in contacts) {
+        final phones = contact.phones;
+        if (phones.isNotEmpty) {
+          for (final phone in phones) {
+            // 전화번호에서 특수문자 제거하고 숫자만 추출
+            final cleanNumber = phone.number.replaceAll(RegExp(r'[^\d]'), '');
+            if (cleanNumber.isNotEmpty) {
+              phoneNumbers.add(cleanNumber);
+            }
+          }
+        }
+      }
+      
+      print('✅ 주소록에서 ${phoneNumbers.length}개의 전화번호를 가져왔습니다.');
+      return phoneNumbers;
+    } catch (e) {
+      print('❌ 주소록에서 전화번호 가져오기 실패: $e');
+      return [];
+    }
+  }
+
+  /// 전화번호를 해시로 변환 (간단한 해시 함수)
+  String _hashPhoneNumber(String phoneNumber) {
+    // 간단한 해시 함수 (실제로는 더 안전한 해시 사용 권장)
+    int hash = 0;
+    for (int i = 0; i < phoneNumber.length; i++) {
+      hash = ((hash << 5) - hash + phoneNumber.codeUnitAt(i)) & 0xffffffff;
+    }
+    return hash.toString();
+  }
+
+  /// 전화번호 목록을 해시로 변환
+  List<String> _hashPhoneNumbers(List<String> phoneNumbers) {
+    return phoneNumbers.map((phone) => _hashPhoneNumber(phone)).toList();
   }
 
   Future<void> _editPhoneNumber() async {
