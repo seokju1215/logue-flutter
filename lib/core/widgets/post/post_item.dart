@@ -116,7 +116,17 @@ class PostItem extends StatelessWidget {
                         context: context,
                         backgroundColor: Colors.transparent,
                         barrierColor: Colors.transparent,
-                        builder: (context) => PostActionBottomSheet(is_archived : post.is_archived, fromScreen: fromScreen,),
+                        isScrollControlled: true,
+                        builder: (context) => Stack(
+                          children: [
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: PostActionBottomSheet(is_archived : post.is_archived, fromScreen: fromScreen,),
+                            ),
+                          ],
+                        ),
                       );
                       debugPrint('🔍 PostActionBottomSheet 결과: $action');
 

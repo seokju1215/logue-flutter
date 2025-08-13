@@ -352,7 +352,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: const [
                       Text(
-                        "프로필에서 언제든 수정이 가능해요.",
+                        "프로필에서 언제든 변경이 가능해요.",
                         style:
                             TextStyle(fontSize: 12, color: AppColors.black500),
                       ),

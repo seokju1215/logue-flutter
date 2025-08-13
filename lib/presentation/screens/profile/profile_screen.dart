@@ -444,7 +444,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                                     child: const Text(
                                       "책 추가 +",
                                       style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: 13,
                                           color: AppColors.black900,
                                           fontWeight: FontWeight.w400),
                                     ),
@@ -482,15 +482,18 @@ class ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Text(profile?['name'] ?? '',
                       style:
-                          TextStyle(fontSize: 20, color: AppColors.black900)),
+                          TextStyle(fontSize: 22, color: AppColors.black900)),
                   const SizedBox(height: 3),
                   if (profile?['job'] != '')
                     Text(profile?['job'] ?? '',
-                        style: TextStyle(fontSize: 14, color: AppColors.black500)),
-                  const SizedBox(height: 9),
+                        style: TextStyle(fontSize: 15, color: AppColors.black500)),
+                  if (profile?['job'] != '')
+                    const SizedBox(height: 9),
                   _buildBio(context),
                   if (profile?['job'] == '')
-                    Text('', style: TextStyle(fontSize: 14, color: AppColors.black500)),
+                    const SizedBox(height: 9),
+                  if (profile?['job'] == '')
+                    Text('', style: TextStyle(fontSize: 15, color: AppColors.black500)),
                   const SizedBox(height: 9),
                 ],
               ),

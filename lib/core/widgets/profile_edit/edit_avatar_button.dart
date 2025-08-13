@@ -263,17 +263,30 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
           Positioned(
             bottom: 0,
             right: 0,
-            child: CircleAvatar(
-              radius: 14,
-              backgroundColor: Colors.white,
-              child: _isUploading
-                  ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-                  : const Icon(Icons.camera_alt_outlined, size: 16),
-            ),
+            child: Container(// 테두리 두께만큼 패딩
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.black300, // 테두리 색상
+                  width: 1,           // 테두리 두께
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 14,
+                backgroundColor: Colors.white,
+                child: _isUploading
+                    ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : const Icon(
+                  Icons.camera_alt_outlined,
+                  size: 16,
+                  color: AppColors.black900,
+                ),
+              ),
+            )
           ),
         ],
       ),

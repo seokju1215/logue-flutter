@@ -253,55 +253,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                 ],
               ),
             ),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9F9F9),
-              ),
-              child: Column(
-                children: [
-                  _buildMenuItem(context, '고객센터', () {
-                    _launchUrl('https://general-spatula-561.notion.site/LOGUE-2024e6fb980480dfb0e8d5908dec40bb');
-                  }),
-                  _buildMenuItem(context, '법적 고지사항', () {
-                    _launchUrl('https://general-spatula-561.notion.site/2024e6fb980481589b15c74214c83718');
-                  }),
-                  _buildMenuItem(context, '로그아웃', () {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: true,
-                      builder: (_) => LogoutDialog(
-                        onConfirm: () async {
-                          Navigator.pop(context); // 다이얼로그 닫기
-                          try {
-                            await Supabase.instance.client.auth.signOut();
-                            if (mounted) {
-                              Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-                            }
-                          } catch (e) {
-                            debugPrint('❌ 로그아웃 실패: $e');
-                          }
-                        },
-                      ),
-                    );
-
-                  }),
-                  _buildMenuItem(context, '계정 탈퇴', () {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: true,
-                      builder: (_) => DeleteAccountDialog(
-                        onConfirm: () {
-                          Navigator.pop(context); // 기존 다이얼로그 닫기
-                          Navigator.pushNamed(context, '/delete_account_screen');
-                        },
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/widgets/common/circle_checkbox.dart';
@@ -111,7 +112,7 @@ class _TermsScreenState extends State<TermsScreen> {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 9),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -123,7 +124,7 @@ class _TermsScreenState extends State<TermsScreen> {
             Expanded(
               child: Text(
                 text,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: TextStyle(fontSize: 13, color: AppColors.black900,height: 1),
               ),
             ),
             if (onTap != null)
@@ -156,8 +157,8 @@ class _TermsScreenState extends State<TermsScreen> {
               const SizedBox(height: 28),
               Center(
                 child: SvgPicture.asset(
-                  'assets/logue_logo_with_title.svg', // SVG 파일 경로
-                  height: 64,
+                  'assets/logue_logo_splash.svg', // SVG 파일 경로
+                  height: 32,
                 ),
               ),
               const SizedBox(height: 40),
@@ -167,7 +168,6 @@ class _TermsScreenState extends State<TermsScreen> {
                 onChanged: _toggleAll,
                 text: '약관 전체 동의',
               ),
-              const SizedBox(height: 10),
               const Divider(thickness: 2,),
 
               _buildCheckItem(

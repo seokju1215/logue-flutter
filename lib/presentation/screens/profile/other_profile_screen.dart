@@ -299,12 +299,19 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(profile?['name'] ?? '',
-                      style: TextStyle(fontSize: 20, color: AppColors.black900)),
+                      style:
+                      TextStyle(fontSize: 22, color: AppColors.black900)),
                   const SizedBox(height: 3),
-                  Text(profile?['job'] ?? '',
-                      style: TextStyle(fontSize: 14, color: AppColors.black500)),
-                  const SizedBox(height: 9),
+                  if (profile?['job'] != '')
+                    Text(profile?['job'] ?? '',
+                        style: TextStyle(fontSize: 15, color: AppColors.black500)),
+                  if (profile?['job'] != '')
+                    const SizedBox(height: 9),
                   _buildBio(context),
+                  if (profile?['job'] == '')
+                    const SizedBox(height: 9),
+                  if (profile?['job'] == '')
+                    Text('', style: TextStyle(fontSize: 15, color: AppColors.black500)),
                   const SizedBox(height: 9),
                 ],
               ),

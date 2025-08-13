@@ -43,10 +43,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   ];
 
   List<Widget> get _screens => [
-    HomeScreen(navigatorKey: _navigatorKeys[0]),
-    ProfileView(navigatorKey: _navigatorKeys[1]),
-    AddBookScreen(isLimitReached: false), // 중간 버튼용
-  ];
+        HomeScreen(navigatorKey: _navigatorKeys[0]),
+        ProfileView(navigatorKey: _navigatorKeys[1]),
+        AddBookScreen(isLimitReached: false), // 중간 버튼용
+      ];
 
   @override
   void initState() {
@@ -62,25 +62,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     if (!_hasNavigatedToPostScreen && widget.goToMyBookPostScreen == true) {
       _hasNavigatedToPostScreen = true;
 
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         // profile_screen의 context를 사용하여 MyBookPostScreen으로 이동
         final profileContext = _navigatorKeys[1].currentState?.context;
         if (profileContext != null) {
           // profile_screen의 onTap 콜백을 직접 호출하는 방식으로 변경
           final result = await Navigator.of(profileContext).push(
-          MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
-        );
-          
+            MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
+          );
+
           // 포스트 삭제 후 홈으로 이동했다가 프로필로 이동
           if (result == true) {
             debugPrint('🔍 포스트 삭제됨, 홈으로 이동 후 프로필로 이동');
-            
+
             // 먼저 홈으로 이동
             setState(() {
               _selectedIndex = 0;
               MainNavigationScreen.lastSelectedIndex = 0;
             });
-            
+
             // 잠시 후에 프로필로 이동
             Future.delayed(const Duration(milliseconds: 100), () {
               if (mounted) {
@@ -115,7 +115,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _showAddBookDialog();
       return;
     }
-    
+
     if (index == 2) {
       // 프로필 탭 클릭 시
       if (_selectedIndex == 1) {
@@ -129,7 +129,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       }
       return;
     }
-    
+
     // 홈 탭 클릭 시
     if (_selectedIndex == 0) {
       _navigatorKeys[0].currentState?.popUntil((route) => route.isFirst);
@@ -169,42 +169,58 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         items: [
           BottomNavigationBarItem(
             icon: Container(
-              padding: const EdgeInsets.only(left: 0),
-              child: SvgPicture.asset(
-                'assets/home_bottomnavi.svg',
-                width: 32,
-                height: 32,
-                color: _selectedIndex == 0
-                    ? AppColors.black900
-                    : AppColors.black500,
-              ),
-            ),
+                padding: const EdgeInsets.only(left: 30),
+                child: _selectedIndex == 0
+                    ? SvgPicture.asset(
+                        'assets/home_bottomnavi_selected.svg',
+                        width: 36,
+                        height: 36,
+                        color: AppColors.black900,
+                      )
+                    : SvgPicture.asset(
+                        'assets/home_bottomnavi.svg',
+                        width: 36,
+                        height: 36,
+                        color: AppColors.black500,
+                      )),
             label: '',
           ),
           BottomNavigationBarItem(
             icon: Container(
-              width: 32,
-              height: 32,
-              child: SvgPicture.asset(
-                'assets/add_book_icon.svg',
                 width: 32,
                 height: 32,
-                color: _selectedIndex == 2
-                    ? AppColors.black900
-                    : AppColors.black500,
-              ),
-            ),
+                child: _selectedIndex == 2
+                    ? SvgPicture.asset(
+                        'assets/add_book_icon_selected.svg',
+                        width: 30,
+                        height: 30,
+                        color: AppColors.black900,
+                      )
+                    : SvgPicture.asset(
+                        'assets/add_book_icon.svg',
+                        width: 30,
+                        height: 30,
+                        color: AppColors.black500,
+                      )),
             label: '',
           ),
           BottomNavigationBarItem(
-            icon: Container(
-              child: SvgPicture.asset(
-                'assets/profile_bottomnavi.svg',
-                width: 32,
-                height: 32,
-                color: _selectedIndex == 1
-                    ? AppColors.black900
-                    : AppColors.black500,
+            icon: Padding(
+              padding: const EdgeInsets.only(right: 30),
+              child: Container(
+                child: _selectedIndex == 1
+                    ? SvgPicture.asset(
+                        'assets/profile_bottomnavi_selected.svg',
+                        width: 32,
+                        height: 32,
+                        color: AppColors.black900,
+                      )
+                    : SvgPicture.asset(
+                        'assets/profile_bottomnavi.svg',
+                        width: 32,
+                        height: 32,
+                        color: AppColors.black500,
+                      ),
               ),
             ),
             label: '',
