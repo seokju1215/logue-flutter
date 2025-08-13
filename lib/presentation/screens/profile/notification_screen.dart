@@ -132,31 +132,31 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
             )
           : Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  '서비스 알림 수신 설정',
-                  style: TextStyle(fontSize: 14, color: AppColors.black900),
-                ),
-                Transform.scale(
-                  scale: 0.8,
-                  child: Switch(
-                    value: isNotificationOn,
-                    onChanged: (_) {
-                      AppSettings.openAppSettings();
-                    },
-                    activeColor: AppColors.white500,
-                    activeTrackColor: AppColors.black900,
-                    inactiveThumbColor: AppColors.black900,
-                    inactiveTrackColor: AppColors.white500,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 8.0),
+          //   child: Row(
+          //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //     children: [
+          //       const Text(
+          //         '서비스 알림 수신 설정',
+          //         style: TextStyle(fontSize: 14, color: AppColors.black900),
+          //       ),
+          //       Transform.scale(
+          //         scale: 0.8,
+          //         child: Switch(
+          //           value: isNotificationOn,
+          //           onChanged: (_) {
+          //             AppSettings.openAppSettings();
+          //           },
+          //           activeColor: AppColors.white500,
+          //           activeTrackColor: AppColors.black900,
+          //           inactiveThumbColor: AppColors.black900,
+          //           inactiveTrackColor: AppColors.white500,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
           Expanded(
                   child: ListView.builder(
               itemCount: _notifications.length,

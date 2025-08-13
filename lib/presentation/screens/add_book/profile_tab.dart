@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/add_book/search_book_screen.dart';
-import 'package:my_logue/presentation/screens/post/single_post_screen.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/themes/stroke_text_style.dart';
 import '../../../core/widgets/book/book_frame.dart';
 import '../../../core/widgets/dialogs/book_limit_dialog.dart';
+import '../../../core/widgets/dialogs/archive_bottom_sheet.dart';
+import '../../../data/models/book_model.dart';
 
 class ProfileTab extends StatefulWidget {
   final bool isLimitReached;
@@ -29,6 +31,7 @@ class _ProfileTabState extends State<ProfileTab> {
   final client = Supabase.instance.client;
   List<String> originalOrder = [];
   bool isEdited = false;
+  final GlobalKey _titleKey = GlobalKey(); // 텍스트 위젯의 위치를 측정하기 위한 키
 
   @override
   void initState() {
@@ -119,15 +122,22 @@ class _ProfileTabState extends State<ProfileTab> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       primary: false,
-      padding: const EdgeInsets.fromLTRB(0, 27, 0, 27),
+      padding: const EdgeInsets.fromLTRB(0, 21, 0, 21),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 22),
-            child: Text(
-              '지금의 당신을 만든 인생 책은 무엇인가요?',
-              style: TextStyle(fontSize: 16, color: AppColors.black900),
+            child: Stack(
+              key: _titleKey, // GlobalKey 추가
+              children: [
+                StrokeTextStyle.createStrokeText(
+                  text: "나만의 인생 책을 프로필에 추가해보세요.", 
+                  fontSize: 16, 
+                  fontWeight: FontWeight.w400, 
+                  color: AppColors.black900
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 13),
@@ -146,18 +156,46 @@ class _ProfileTabState extends State<ProfileTab> {
                           builder: (_) => const BookLimitDialog(),
                         );
                       } else {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const SearchBookScreen(fromTab: 'profile')),
+                        // ArchiveBottomSheet 표시
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          barrierColor: Colors.transparent,
+                          builder: (BuildContext context) {
+                            // GlobalKey를 사용하여 텍스트 위젯의 위치 측정
+                            final RenderBox? titleBox = _titleKey.currentContext?.findRenderObject() as RenderBox?;
+                            final titlePosition = titleBox?.localToGlobal(Offset.zero);
+                            final titleBottom = titlePosition?.dy ?? 0;
+                            
+                            return Stack(
+                              children: [
+                                // 배경 터치 영역
+                                Positioned.fill(
+                                  child: GestureDetector(
+                                    onTap: () => Navigator.pop(context),
+                                    child: Container(color: Colors.transparent),
+                                  ),
+                                ),
+                                // 바텀시트
+                                Positioned(
+                                  top: titleBottom + (titleBox?.size.height ?? 0) + 8, // 텍스트 위젯 바로 밑 + 8px
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  child: ArchiveBottomSheet(
+                                    onClose: () => Navigator.pop(context),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         );
-                        if (result == true) {
-                          widget.onRefresh();
-                        }
                       }
                     },
                     style: _outlinedStyle(context),
                     child: const Text(
-                      '책 추가 +',
+                      '책 선택',
                       style: TextStyle(fontSize: 13, color: AppColors.black900, height: 1.25),
                     ),
                   ),
@@ -203,21 +241,6 @@ class _ProfileTabState extends State<ProfileTab> {
                   onReorder: _onReorder,
                   children: widget.books.map((book) {
                     return GestureDetector(
-                                                onTap: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SinglePostScreen(
-                                  bookId: book['book_id'] ?? '',
-                                  userBookId: book['id'],
-                                  userId: client.auth.currentUser?.id,
-                                ),
-                              ),
-                            );
-                            if (result == true) {
-                              widget.onRefresh();
-                            }
-                          },
                       child: SizedBox(
                         key: ValueKey(book['id']),
                         width: itemWidth,

@@ -101,37 +101,63 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
   /// 주소록에서 전화번호 목록을 가져옴
   Future<List<String>> _getPhoneNumbersFromContacts() async {
     try {
+      print('🔍 주소록 접근 시작...');
+      
       // 주소록 권한 요청 및 확인
-      if (!await FlutterContacts.requestPermission(readonly: true)) {
+      final hasPermission = await FlutterContacts.requestPermission(readonly: true);
+      print('🔍 주소록 권한 상태: $hasPermission');
+      
+      if (!hasPermission) {
         print('❌ 주소록 접근 권한이 거부되었습니다.');
         return [];
       }
 
+      print('🔍 주소록 가져오기 시작...');
+      
       // 주소록 가져오기
       final contacts = await FlutterContacts.getContacts(
         withProperties: true,
         withPhoto: false,
       );
       
+      print('🔍 가져온 연락처 수: ${contacts.length}');
+      
       final phoneNumbers = <String>[];
       
-      for (final contact in contacts) {
+      for (int i = 0; i < contacts.length; i++) {
+        final contact = contacts[i];
+        print('🔍 연락처 ${i + 1}: ${contact.displayName}');
+        
         final phones = contact.phones;
+        print('🔍 전화번호 개수: ${phones.length}');
+        
         if (phones.isNotEmpty) {
-          for (final phone in phones) {
+          for (int j = 0; j < phones.length; j++) {
+            final phone = phones[j];
+            print('🔍 전화번호 ${j + 1}: ${phone.number}');
+            
             // 전화번호에서 특수문자 제거하고 숫자만 추출
             final cleanNumber = phone.number.replaceAll(RegExp(r'[^\d]'), '');
+            print('🔍 정리된 전화번호: $cleanNumber');
+            
             if (cleanNumber.isNotEmpty) {
               phoneNumbers.add(cleanNumber);
+              print('✅ 전화번호 추가됨: $cleanNumber');
+            } else {
+              print('❌ 빈 전화번호 제외됨');
             }
           }
+        } else {
+          print('❌ 이 연락처에는 전화번호가 없음');
         }
       }
       
       print('✅ 주소록에서 ${phoneNumbers.length}개의 전화번호를 가져왔습니다.');
+      print('🔍 최종 전화번호 목록: $phoneNumbers');
       return phoneNumbers;
     } catch (e) {
       print('❌ 주소록에서 전화번호 가져오기 실패: $e');
+      print('❌ 에러 상세: ${e.toString()}');
       return [];
     }
   }

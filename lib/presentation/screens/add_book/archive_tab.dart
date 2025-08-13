@@ -5,7 +5,9 @@ import 'package:my_logue/presentation/screens/post/single_post_screen.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/themes/stroke_text_style.dart';
 import '../../../core/widgets/book/book_frame.dart';
+import '../../../core/widgets/dialogs/AnnouncementDialog.dart';
 
 class ArchiveTab extends StatefulWidget {
   final List<Map<String, dynamic>> books;
@@ -142,16 +144,13 @@ class _ArchiveTabState extends State<ArchiveTab> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       primary: false,
-      padding: const EdgeInsets.fromLTRB(0, 27, 0, 27),
+      padding: const EdgeInsets.fromLTRB(0, 21, 0, 21),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(left: 22),
-            child: Text(
-              '살면서 읽었던 책들을 보관함에 정리해보세요.',
-              style: TextStyle(fontSize: 16, color: AppColors.black900),
-            ),
+            child: StrokeTextStyle.createStrokeText(text: "읽었던 책들을 간편하게 정리해보세요.", fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black900)
           ),
           const SizedBox(height: 13),
           Padding(
@@ -162,6 +161,21 @@ class _ArchiveTabState extends State<ArchiveTab> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () async {
+                      // 1000권 제한 확인
+                      if (widget.books.length >= 1000) {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (BuildContext context) {
+                            return const AnnouncementDialog(
+                              title: '안내',
+                              body: '현재 보관함에 추가 가능한\n책의 한도는 1,000권이에요.\n더 많은 책을 추가하실 수 있도록\n빠른 시일 내로 확장해드릴게요!!\n독서를 좋아해 주셔서 감사합니다.',
+                            );
+                          },
+                        );
+                        return;
+                      }
+                      
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(

@@ -132,8 +132,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
               color: Colors.white,
               child: Row(
                 children: [
-                  _buildTab('프로필', 0),
-                  _buildTab('보관함', 1),
+                  _buildTab('보관함', 0),
+                  _buildTab('프로필', 1),
                 ],
               ),
             ),
@@ -147,21 +147,21 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   });
                 },
                 children: [
+                  ArchiveTab(
+                    key: ValueKey(_archiveTabKey),
+                    books: List.from(allBooks)..sort((a, b) {
+                      final aIndex = a['archived_order_index'] ?? 0;
+                      final bIndex = b['archived_order_index'] ?? 0;
+                      return aIndex.compareTo(bIndex);
+                    }),
+                    onRefresh: _fetchAllBooks,
+                  ),
                   ProfileTab(
                     key: ValueKey(_profileTabKey),
                     isLimitReached: widget.isLimitReached,
                     books: List.from(allBooks.where((book) => book['is_archived'] == false))..sort((a, b) {
                       final aIndex = a['order_index'] ?? 0;
                       final bIndex = b['order_index'] ?? 0;
-                      return aIndex.compareTo(bIndex);
-                    }),
-                    onRefresh: _fetchAllBooks,
-                  ),
-                  ArchiveTab(
-                    key: ValueKey(_archiveTabKey),
-                    books: List.from(allBooks)..sort((a, b) {
-                      final aIndex = a['archived_order_index'] ?? 0;
-                      final bIndex = b['archived_order_index'] ?? 0;
                       return aIndex.compareTo(bIndex);
                     }),
                     onRefresh: _fetchAllBooks,

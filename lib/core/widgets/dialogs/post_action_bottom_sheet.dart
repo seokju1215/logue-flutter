@@ -3,8 +3,8 @@ import 'package:my_logue/core/themes/app_colors.dart';
 
 class PostActionBottomSheet extends StatelessWidget {
   final bool? is_archived;
-
-  const PostActionBottomSheet({super.key, this.is_archived});
+  final String? fromScreen;
+  const PostActionBottomSheet({super.key, this.is_archived, this.fromScreen});
 
   @override
   Widget build(BuildContext context) {
@@ -56,44 +56,26 @@ class PostActionBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-          // 보관함 또는 프로필로으로 이동
-          GestureDetector(
-            onTap: () {
-              Navigator.pop(context, is_archived == true ? 'profile' : 'archive');
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 28),
-              child: Text(
-                is_archived == true ? '프로필에 표시' : '보관함으로 이동',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.black900,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-          ),
           // 삭제
-          GestureDetector(
-            onTap: () {
-              Navigator.pop(context, 'delete');
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 28),
-              child: const Text(
-                '삭제',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.red500,
-                  fontWeight: FontWeight.w400,
+          if (fromScreen == 'single_post_screen')
+            GestureDetector(
+              onTap: () {
+                Navigator.pop(context, 'delete');
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 28),
+                child: const Text(
+                  '삭제',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.red500,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
             ),
-          ),
           // 하단 여백
           const SizedBox(height: 39),
         ],
