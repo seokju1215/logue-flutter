@@ -52,7 +52,7 @@ class _LegalNoticeScreenState extends State<LegalNoticeScreen> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap, // ❗️터치 영역 축소
                 alignment: Alignment.centerLeft,
               ),
-              child: Text('개인정보 처리방침', style: TextStyle(color: AppColors.black900, fontSize: 14, height: 1.21),),),
+              child: Text('개인정보 처리방침', style: TextStyle(color: AppColors.black900, fontSize: 14, height: 1.21,),),),
             SizedBox(height: 31,),
             TextButton(onPressed: () {
               Navigator.of(context, rootNavigator: true).push(
@@ -72,7 +72,7 @@ class _LegalNoticeScreenState extends State<LegalNoticeScreen> {
             TextButton(onPressed: () {
               Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(
-                  builder: (_) => LegalNoticeScreen(),
+                  builder: (_) => EcommerceDisclosureScreen(),
                 ),
               );
             },
@@ -84,35 +84,35 @@ class _LegalNoticeScreenState extends State<LegalNoticeScreen> {
               ),
               child: Text('사업자정보', style: TextStyle(color: AppColors.black900, fontSize: 14, height: 1.21),),),
             SizedBox(height: 31,),
-            TextButton(onPressed: () {
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (_) => PaymentAndRefundScreen(),
-                ),
-              );
-            },
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero, // ❗️최소 크기 제거
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap, // ❗️터치 영역 축소
-                alignment: Alignment.centerLeft,
-              ),
-              child: Text('결제 및 환불 정보', style: TextStyle(color: AppColors.black900, fontSize: 14, height: 1.21),),),
-            SizedBox(height: 31,),
-            TextButton(onPressed: () {
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (_) => EcommerceDisclosureScreen(),
-                ),
-              );
-            },
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero, // ❗️최소 크기 제거
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap, // ❗️터치 영역 축소
-                alignment: Alignment.centerLeft,
-              ),
-              child: Text('통신판매업 고지사항', style: TextStyle(color: AppColors.black900, fontSize: 14, height: 1.21),),),
+            // TextButton(onPressed: () {
+            //   Navigator.of(context, rootNavigator: true).push(
+            //     MaterialPageRoute(
+            //       builder: (_) => PaymentAndRefundScreen(),
+            //     ),
+            //   );
+            // },
+            //   style: TextButton.styleFrom(
+            //     padding: EdgeInsets.zero,
+            //     minimumSize: Size.zero, // ❗️최소 크기 제거
+            //     tapTargetSize: MaterialTapTargetSize.shrinkWrap, // ❗️터치 영역 축소
+            //     alignment: Alignment.centerLeft,
+            //   ),
+            //   child: Text('결제 및 환불 정보', style: TextStyle(color: AppColors.black900, fontSize: 14, height: 1.21),),),
+            // SizedBox(height: 31,),
+            // TextButton(onPressed: () {
+            //   Navigator.of(context, rootNavigator: true).push(
+            //     MaterialPageRoute(
+            //       builder: (_) => EcommerceDisclosureScreen(),
+            //     ),
+            //   );
+            // },
+            //   style: TextButton.styleFrom(
+            //     padding: EdgeInsets.zero,
+            //     minimumSize: Size.zero, // ❗️최소 크기 제거
+            //     tapTargetSize: MaterialTapTargetSize.shrinkWrap, // ❗️터치 영역 축소
+            //     alignment: Alignment.centerLeft,
+            //   ),
+            //   child: Text('통신판매업 고지사항', style: TextStyle(color: AppColors.black900, fontSize: 14, height: 1.21),),),
             SizedBox(height: 31,)
           ],
         ),

@@ -107,7 +107,7 @@ class _FollowTabScreenState extends ConsumerState<FollowTabScreen> {
             },
           ),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
+            preferredSize: const Size.fromHeight(30),
             child: Material(
               color: Colors.white,
               child: Row(
@@ -161,7 +161,7 @@ class _FollowTabScreenState extends ConsumerState<FollowTabScreen> {
           alignment: Alignment.bottomCenter,
           children: [
             Container(
-              height: 48,
+              height: 30,
               alignment: Alignment.center,
               decoration: const BoxDecoration(
                 border: Border(

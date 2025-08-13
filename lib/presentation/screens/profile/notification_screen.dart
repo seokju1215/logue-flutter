@@ -119,18 +119,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _notifications.isEmpty
-          ? Center(
-              child: Transform.translate(
-                offset: AppConstants.getCenterOffset(context),
-                child: const Text(
-                  '친구를 팔로우해 서로의 인생 책을 공유해보세요.',
-                  style: TextStyle(color: AppColors.black500, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
-          : Column(
+      body: Column(
         children: [
           // Padding(
           //   padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 8.0),

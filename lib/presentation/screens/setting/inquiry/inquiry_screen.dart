@@ -11,7 +11,9 @@ import '../../../../data/datasources/inquiry_api.dart';
 import 'create_inquiry_screen.dart';
 
 class InquiryScreen extends StatefulWidget {
-  const InquiryScreen({Key? key}) : super(key: key);
+  final bool fromCreateInquiry;
+  
+  const InquiryScreen({Key? key, this.fromCreateInquiry = false}) : super(key: key);
 
   @override
   State<InquiryScreen> createState() => _InquiryScreenState();
@@ -19,7 +21,7 @@ class InquiryScreen extends StatefulWidget {
 
 class _InquiryScreenState extends State<InquiryScreen> {
   late PageController _pageController;
-  int currentIndex = 0;
+  int currentIndex = 0; // 기본값은 0 (책 추가 완료 탭)
   int _completedCount = 0;
   int _requestCount = 0;
   late InquiryRepository _repository;
@@ -30,6 +32,8 @@ class _InquiryScreenState extends State<InquiryScreen> {
   @override
   void initState() {
     super.initState();
+    // 고객센터에서 넘어왔으면 "책 추가 요청" 탭(1), 아니면 "책 추가 완료" 탭(0)
+    currentIndex = widget.fromCreateInquiry ? 1 : 0;
     _pageController = PageController(initialPage: currentIndex);
     _initializeRepository();
     _loadInquiries();
@@ -56,11 +60,19 @@ class _InquiryScreenState extends State<InquiryScreen> {
       final completedInquiries = await _repository.getCompletedInquiries();
       final pendingInquiries = await _repository.getPendingInquiries();
 
+      // inquiry_type이 "없는 책 추가 요청"인 경우만 필터링
+      final filteredCompletedInquiries = completedInquiries
+          .where((inquiry) => inquiry.inquiryType == "없는 책 추가 요청")
+          .toList();
+      final filteredPendingInquiries = pendingInquiries
+          .where((inquiry) => inquiry.inquiryType == "없는 책 추가 요청")
+          .toList();
+
       setState(() {
-        _completedInquiries = completedInquiries;
-        _pendingInquiries = pendingInquiries;
-        _completedCount = completedInquiries.length;
-        _requestCount = pendingInquiries.length;
+        _completedInquiries = filteredCompletedInquiries;
+        _pendingInquiries = filteredPendingInquiries;
+        _completedCount = filteredCompletedInquiries.length;
+        _requestCount = filteredPendingInquiries.length;
         _isLoading = false;
       });
     } catch (e) {
@@ -96,8 +108,8 @@ class _InquiryScreenState extends State<InquiryScreen> {
           Padding(
             padding: const EdgeInsets.only(left: 22, top: 11),
             child: Text(
-              '앱 내에 없는 책, 원하시는 기능이나 콘텐츠\n오류나 악성유저 등이 있다면 언제든 알려주세요!',
-              style: TextStyle(fontSize: 16, color: AppColors.black900),
+              '앱 내에 없는 책, 또는 원하시는 기능이나\n오류/악성유저 등이 있다면 언제든 알려주세요!',
+              style: TextStyle(fontSize: 14, color: AppColors.black900, height: 1.4285),
             ),
           ),
           const SizedBox(
@@ -118,9 +130,14 @@ class _InquiryScreenState extends State<InquiryScreen> {
                           ),
                         );
                         
-                        // 문의가 생성되었으면 새로고침
+                        // 문의가 생성되었으면 "책 추가 요청" 탭이 기본으로 선택된 InquiryScreen으로 새로 생성
                         if (result == true) {
-                          _loadInquiries();
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const InquiryScreen(fromCreateInquiry: true),
+                            ),
+                          );
                         }
                       }),
                 )

@@ -17,7 +17,7 @@ class _EcommerceDisclosureScreenState extends State<EcommerceDisclosureScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text(
-          '결제 및 환불정보',
+          '사업자 정보',
           style: TextStyle(
             fontSize: 16,
             color: AppColors.black900,

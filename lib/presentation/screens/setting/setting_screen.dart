@@ -51,7 +51,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 ),
               );
             }),
-            SizedBox(height: 20,),
+            SizedBox(height: 9,),
             CommonOutlinedButton(text: "알림 설정"),
             SizedBox(height: 63,),
             CommonOutlinedButton(text: "법적 고지사항", onTap: () {
@@ -61,7 +61,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 ),
               );
             }),
-            SizedBox(height: 20,),
+            SizedBox(height: 9,),
             CommonOutlinedButton(text: "로그아웃", onTap: () {
               showDialog(
                 context: context,
@@ -82,7 +82,7 @@ class _SettingScreenState extends State<SettingScreen> {
               );
 
             },),
-            SizedBox(height: 20,),
+            SizedBox(height: 9,),
             CommonOutlinedButton(text: "계정탈퇴", onTap: () {
               showDialog(
                 context: context,

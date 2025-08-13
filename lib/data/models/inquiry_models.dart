@@ -56,6 +56,7 @@ class InquiryListModel {
   final String username;
   final String title;
   final String content;
+  final String inquiryType;
   final DateTime createdAt;
 
   InquiryListModel({
@@ -64,6 +65,7 @@ class InquiryListModel {
     required this.username,
     required this.title,
     required this.content,
+    required this.inquiryType,
     required this.createdAt,
   });
 
@@ -74,6 +76,7 @@ class InquiryListModel {
       username: map['username'] as String,
       title: map['title'] as String,
       content: map['content'] as String,
+      inquiryType: map['inquiry_type'] as String,
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
@@ -85,6 +88,7 @@ class InquiryListModel {
       'username': username,
       'title': title,
       'content': content,
+      'inquiry_type': inquiryType,
       'created_at': createdAt.toIso8601String(),
     };
   }

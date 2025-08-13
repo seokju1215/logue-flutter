@@ -98,7 +98,6 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
 
       await client.from('inquiries').insert(inquiryData);
 
-      _showSnackBar('문의가 성공적으로 접수되었습니다.');
       
       // inquiry_screen으로 돌아가면서 새로고침을 위한 result 전달
       Navigator.pop(context, true);
@@ -160,37 +159,40 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
                 child: Row(
                   children: [
                     SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: Checkbox(
-                        value: _emailReply,
-                        onChanged: (value) {
-                          setState(() {
-                            _emailReply = value ?? false;
-                          });
-                        },
-                        activeColor: AppColors.black900,
-                        fillColor: MaterialStateProperty.resolveWith((states) {
-                          if (states.contains(MaterialState.selected)) {
-                            return AppColors.black900;
-                          }
-                          return AppColors.black300;
-                        }),
-                        checkColor: Colors.white,
-                        side: const BorderSide(
-                          color: AppColors.black300,
-                          width: 1,
+                      width: 24,
+                      height: 24,
+                      child: Transform.scale(
+                        scale: 1.2, // 1.0이 기본, 이 값을 키우면 전체 크기 증가
+                        child: Checkbox(
+                          value: _emailReply,
+                          onChanged: (value) {
+                            setState(() {
+                              _emailReply = value ?? false;
+                            });
+                          },
+                          activeColor: AppColors.black900,
+                          fillColor: MaterialStateProperty.resolveWith((states) {
+                            if (states.contains(MaterialState.selected)) {
+                              return AppColors.black900;
+                            }
+                            return AppColors.black300;
+                          }),
+                          checkColor: Colors.white,
+                          side: const BorderSide(
+                            color: AppColors.black300,
+                            width: 1,
+                          ),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                         ),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
+                      )
                     ),
-                    SizedBox(width: 7,),
+                    SizedBox(width: 9,),
                     const Text(
                       '이메일로 문의 답변 받기 (선택)',
                       style: TextStyle(
-                        fontSize: 13,
-                        height: 1.23,
+                        fontSize: 14,
+                        height: 1.21,
                         color: AppColors.black900,
                       ),
                     ),
