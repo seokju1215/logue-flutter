@@ -48,7 +48,7 @@ class LogoutDialog extends ConsumerWidget {
                           color: Colors.transparent,
                           child: Text(
                             '로그아웃 하시겠어요?',
-                            style: TextStyle(fontSize: 12, color: AppColors.black500),
+                            style: TextStyle(fontSize: 13, color: AppColors.black500),
                           ),
                         ),
                         const SizedBox(height: 20),

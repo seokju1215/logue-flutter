@@ -57,7 +57,7 @@ class UpdateRequiredDialog extends StatelessWidget {
                               line,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: AppColors.black500,
                                 fontWeight: FontWeight.normal,
                                 decoration: TextDecoration.none,

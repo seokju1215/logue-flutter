@@ -29,7 +29,7 @@ Future<void> showLogoutOrDeleteDialog(BuildContext context) async {
                     const SizedBox(height: 34),
                     const Text('로그아웃', style: TextStyle(fontSize: 20, color: AppColors.black900)),
                     const SizedBox(height: 17),
-                    const Text('로그아웃 하시겠어요?', style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                    const Text('로그아웃 하시겠어요?', style: TextStyle(fontSize: 13, color: AppColors.black500)),
                     const SizedBox(height: 17),
                     OutlinedButton(
                       onPressed: () async {

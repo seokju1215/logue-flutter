@@ -203,7 +203,7 @@ class _ProfileTabState extends State<ProfileTab> {
               ],
             ),
           ),
-          const SizedBox(height: 19),
+          const SizedBox(height: 33),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22),
             child: Row(

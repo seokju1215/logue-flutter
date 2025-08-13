@@ -198,19 +198,27 @@ class _ArchiveTabState extends State<ArchiveTab> {
               ],
             ),
           ),
-          const SizedBox(height: 19),
+          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  '책을 길게 눌러 위치를 변경할 수 있어요.',
+                  '책을 눌러 후기를 수정하거나\n책을 길게 눌러 위치를 변경할 수 있어요.',
                   style: TextStyle(fontSize: 12, color: AppColors.black500),
                 ),
-                Text(
-                  '${widget.books.length}권',
-                  style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                Column(
+                  children: [
+                    Text(
+                      '',
+                      style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                    ),
+                    Text(
+                      '${widget.books.length}권',
+                      style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -243,8 +251,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                         children: widget.books.map((book) {
                           return GestureDetector(
                                                       onTap: () async {
-                            final result = await Navigator.push(
-                              context,
+                            final result = await Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
                                 builder: (_) => SinglePostScreen(
                                   bookId: book['book_id'] ?? '',

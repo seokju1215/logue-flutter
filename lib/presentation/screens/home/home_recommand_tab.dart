@@ -334,7 +334,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                                 color: AppColors.black900,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w400,
-                                height: 1.0
                               ),
                             ),
                           ),

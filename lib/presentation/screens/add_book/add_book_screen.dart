@@ -123,7 +123,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: const Text('책 추가', style: TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500)),
+          title: const Text('책장', style: TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500)),
         ),
         body: Column(
           children: [
@@ -201,6 +201,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 label,
                 style: TextStyle(
                   color: isSelected ? AppColors.black900 : AppColors.black500,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
                   fontSize: 14,
                 ),
               ),

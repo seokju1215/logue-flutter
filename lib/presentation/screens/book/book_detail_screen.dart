@@ -332,7 +332,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('이 책을 인생 책으로 설정한 사람',
+              const Text('이 책을 인생 책으로 설정한 친구',
                   style: TextStyle(color: AppColors.black900, fontSize: 14)),
               Text('${lifebookUsers.length}명',
                   style:
