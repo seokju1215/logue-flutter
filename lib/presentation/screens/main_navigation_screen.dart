@@ -166,6 +166,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         unselectedFontSize: 12,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
         items: [
           BottomNavigationBarItem(
             icon: Container(
