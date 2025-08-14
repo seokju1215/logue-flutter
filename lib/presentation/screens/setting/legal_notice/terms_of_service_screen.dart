@@ -31,6 +31,13 @@ class _TermsOfServiceScreenState extends State<TermsOfServiceScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      body: SingleChildScrollView(
+        child: Image.asset(
+          'assets/terms_of_service.png',
+          fit: BoxFit.fitWidth,
+          width: double.infinity,
+        ),
+      ),
     );
   }
 }

@@ -107,3 +107,5 @@ flutter:
     - assets/home_bottomnavi_selected.svg
     - assets/profile_bottomnavi_selected.svg
     - assets/add_book_icon_selected.svg
+    - assets/terms_of_service.png
+    - assets/privacy_policy.png

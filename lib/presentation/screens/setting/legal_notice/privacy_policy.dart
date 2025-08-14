@@ -30,6 +30,13 @@ class _PrivacyPolicyState extends State<PrivacyPolicy> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      body: SingleChildScrollView(
+        child: Image.asset(
+          'assets/privacy_policy.png',
+          fit: BoxFit.fitWidth,
+          width: double.infinity,
+        ),
+      ),
     );
   }
 }

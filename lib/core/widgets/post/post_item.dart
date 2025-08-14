@@ -117,15 +117,11 @@ class PostItem extends StatelessWidget {
                         backgroundColor: Colors.transparent,
                         barrierColor: Colors.transparent,
                         isScrollControlled: true,
-                        builder: (context) => Stack(
-                          children: [
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: PostActionBottomSheet(is_archived : post.is_archived, fromScreen: fromScreen,),
-                            ),
-                          ],
+                        builder: (context) => Padding(
+                          padding: EdgeInsets.only(
+                            bottom: MediaQuery.of(context).padding.bottom + 80, // 바텀 네비게이션바 높이만큼 패딩
+                          ),
+                          child: PostActionBottomSheet(is_archived : post.is_archived, fromScreen: fromScreen,),
                         ),
                       );
                       debugPrint('🔍 PostActionBottomSheet 결과: $action');
