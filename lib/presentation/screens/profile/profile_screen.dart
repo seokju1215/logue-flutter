@@ -428,9 +428,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 builder: (context) {
                                   return TextButton(
                                     onPressed: () async {
-                                      final result = await Navigator.of(context,
-                                              rootNavigator: true)
-                                          .push(
+                                      final result = await Navigator.of(context).push(
                                         MaterialPageRoute(
                                             builder: (_) => AddBookScreen(
                                                   isLimitReached:

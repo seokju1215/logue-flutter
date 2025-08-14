@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/widgets/common/common_outlined_button.dart';
 import 'package:my_logue/presentation/screens/setting/inquiry/inquiry_screen.dart';
 import 'package:my_logue/presentation/screens/setting/legal_notice/legal_notice_screen.dart';
+import 'package:my_logue/presentation/screens/setting/notification_setting_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -52,7 +53,13 @@ class _SettingScreenState extends State<SettingScreen> {
               );
             }),
             SizedBox(height: 9,),
-            CommonOutlinedButton(text: "알림 설정"),
+            CommonOutlinedButton(text: "알림 설정", onTap: () {
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (_) => NotificationSettingScreen(),
+                ),
+              );
+            }),
             SizedBox(height: 63,),
             CommonOutlinedButton(text: "법적 고지사항", onTap: () {
               Navigator.of(context, rootNavigator: true).push(
