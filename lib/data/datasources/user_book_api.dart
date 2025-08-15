@@ -206,4 +206,96 @@ class UserBookApi {
       rethrow;
     }
   }
+
+  /// 여러 책의 is_archived와 order_index를 일괄 업데이트
+  Future<void> updateBooksBatch(List<Map<String, dynamic>> books) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) throw Exception('로그인된 사용자가 없습니다.');
+
+    debugPrint("🔍 updateBooksBatch 시작: ${books.length}개 책 업데이트");
+
+    try {
+      // 각 책에 대해 개별적으로 업데이트
+      for (final book in books) {
+        final userBookId = book['id'] as String;
+        final isArchived = book['is_archived'] as bool;
+        final orderIndex = book['order_index'] as int?;
+
+        if (isArchived) {
+          // 보관함으로 이동: order_index 제거 (archived_order_index는 건드리지 않음)
+          await client
+              .from('user_books')
+              .update({
+                'is_archived': true,
+                'order_index': null,
+              })
+              .eq('id', userBookId)
+              .eq('user_id', userId);
+        } else {
+          // 프로필로 이동: order_index 설정 (archived_order_index는 건드리지 않음)
+          if (orderIndex != null) {
+            await client
+                .from('user_books')
+                .update({
+                  'is_archived': false,
+                  'order_index': orderIndex,
+                })
+                .eq('id', userBookId)
+                .eq('user_id', userId);
+          }
+        }
+      }
+
+      debugPrint("✅ updateBooksBatch 완료");
+    } catch (e, stack) {
+      debugPrint("❌ updateBooksBatch 중 오류: $e");
+      debugPrint("🔍 스택 트레이스: $stack");
+      rethrow;
+    }
+  }
+
+  /// 보관함에 책을 추가할 때 archived_order_index 관리
+  Future<void> addBookToArchive(String bookId) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) throw Exception('로그인된 사용자가 없습니다.');
+
+    debugPrint("🔍 addBookToArchive 시작: bookId=$bookId, userId=$userId");
+
+    try {
+      // 1. 현재 보관함에 있는 책들의 archived_order_index를 1씩 증가
+      final currentArchiveBooks = await client
+          .from('user_books')
+          .select('id, archived_order_index')
+          .eq('user_id', userId)
+          .order('archived_order_index', ascending: true);
+
+      debugPrint("📦 현재 보관함 책 개수: ${currentArchiveBooks.length}");
+
+      // 2. 각 보관함 책의 archived_order_index를 1씩 증가
+      for (final book in currentArchiveBooks) {
+        final currentOrderIndex = book['archived_order_index'] as int? ?? 0;
+        debugPrint("📦 보관함 책 ${book['id']}의 archived_order_index를 ${currentOrderIndex}에서 ${currentOrderIndex + 1}로 변경");
+        await client
+            .from('user_books')
+            .update({'archived_order_index': currentOrderIndex + 1})
+            .eq('id', book['id']);
+      }
+
+      // 3. 새로 추가된 책을 archived_order_index = 0으로 설정
+      debugPrint("📦 책 $bookId를 보관함에 추가 (archived_order_index=0)");
+      await client
+          .from('user_books')
+          .update({
+            'archived_order_index': 0,
+          })
+          .eq('id', bookId)
+          .eq('user_id', userId);
+
+      debugPrint("✅ 책 보관함 추가 성공: $bookId");
+    } catch (e, stack) {
+      debugPrint("❌ 책 보관함 추가 중 오류: $e");
+      debugPrint("🔍 스택 트레이스: $stack");
+      rethrow;
+    }
+  }
 }

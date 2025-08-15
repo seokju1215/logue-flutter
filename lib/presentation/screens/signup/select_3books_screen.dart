@@ -229,6 +229,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           'book_id': bookId,
           'isbn': book.isbn.isNotEmpty ? book.isbn : '',
           'order_index': i,
+          'archived_order_index': i, // archived_order_index도 order_index와 동일하게 설정
           'review_title': '',
           'review_content': '',
         });

@@ -4,6 +4,7 @@ import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/add_book/search_book_screen.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:my_logue/data/datasources/user_book_api.dart';
 
 import '../../../core/themes/stroke_text_style.dart';
 import '../../../core/widgets/book/book_frame.dart';
@@ -88,6 +89,20 @@ class _ProfileTabState extends State<ProfileTab> {
       if (a[i] != b[i]) return false;
     }
     return true;
+  }
+
+  /// archived_order_index 기준으로 책들을 정렬하는 메서드
+  List<Map<String, dynamic>> _getSortedBooks() {
+    final sortedBooks = List<Map<String, dynamic>>.from(widget.allBooks);
+    
+    // archived_order_index 기준으로 정렬
+    sortedBooks.sort((a, b) {
+      final aOrder = a['archived_order_index'] as int? ?? 0;
+      final bOrder = b['archived_order_index'] as int? ?? 0;
+      return aOrder.compareTo(bOrder);
+    });
+    
+    return sortedBooks;
   }
 
   ButtonStyle _outlinedStyle(BuildContext context) {
@@ -190,15 +205,33 @@ class _ProfileTabState extends State<ProfileTab> {
                                   left: 0,
                                   right: 0,
                                   bottom: 0,
-                                  child: ArchiveBottomSheet(
-                                    books: widget.allBooks, // 모든 책 목록 전달 (is_archived 값과 상관없이)
-                                    onClose: (result) {
-                                      Navigator.pop(context);
-                                      if (result == true) {
-                                        // 책 추가가 완료되었을 때 상위로 결과 전달
-                                        if (widget.onBookAdded != null) {
-                                          widget.onBookAdded!(true);
-                                        }
+                                                                      child: ArchiveBottomSheet(
+                                      books: _getSortedBooks(), // archived_order_index 기준으로 정렬된 책 목록 전달
+                                      onBooksUpdated: (updatedBooks) async {
+                                      // 저장 버튼을 눌렀을 때만 실행되는 DB 저장 로직
+                                      print('📚 DB 저장 시작: ${updatedBooks.length}개 책 업데이트');
+                                      
+                                      try {
+                                        // DB 업데이트 로직 구현
+                                        final userBookApi = UserBookApi(Supabase.instance.client);
+                                        
+                                        // 일괄 업데이트로 모든 책의 is_archived와 order_index 업데이트
+                                        await userBookApi.updateBooksBatch(updatedBooks);
+                                        
+                                        print('✅ DB 업데이트 완료');
+                                        
+                                        // DB 저장 완료 후 프로필 탭 새로고침
+                                        widget.onRefresh();
+                                        
+                                        // 바텀시트 닫기
+                                        Navigator.of(context, rootNavigator: true).pop();
+                                        
+                                      } catch (e) {
+                                        print('❌ DB 업데이트 실패: $e');
+                                        // 에러 발생 시 사용자에게 알림
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')),
+                                        );
                                       }
                                     },
                                   ),

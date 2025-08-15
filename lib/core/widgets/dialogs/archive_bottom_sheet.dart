@@ -4,13 +4,13 @@ import 'package:my_logue/core/themes/stroke_text_style.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 
 class ArchiveBottomSheet extends StatefulWidget {
-  final Function(bool)? onClose; // 닫기 콜백, 결과값 전달
-  final List<Map<String, dynamic>> books; // 보관함 책 목록
+  final List<Map<String, dynamic>> books; // 모든 책 목록
+  final Function(List<Map<String, dynamic>>)? onBooksUpdated; // 책 목록 업데이트 콜백
   
   const ArchiveBottomSheet({
     super.key,
-    this.onClose,
     required this.books,
+    this.onBooksUpdated,
   });
 
   @override
@@ -19,28 +19,63 @@ class ArchiveBottomSheet extends StatefulWidget {
 
 class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   int selectedBookCount = 0; // 선택된 책 개수를 독립적으로 관리
+  List<Map<String, dynamic>> updatedBooks = []; // 업데이트된 책 목록
   
   @override
   void initState() {
     super.initState();
     print('ArchiveBottomSheet 초기화: selectedBookCount = $selectedBookCount');
+    
+    // 초기화: is_archived가 false인 책들은 이미 선택된 상태로 설정
+    updatedBooks = List.from(widget.books);
+    for (int i = 0; i < updatedBooks.length; i++) {
+      if (updatedBooks[i]['is_archived'] == false) {
+        _selected.add(i);
+      }
+    }
+    selectedBookCount = _selected.length;
   }
+  
   // 선택 한도
   static const int kMaxSelection = 9;
-
-// 실제 책 데이터 사용
-
-// 선택 상태
+  
+  // 선택 상태
   final Set<int> _selected = {};
 
-// 선택 토글
+  // 선택 토글
   void _toggleSelect(int index) {
     setState(() {
       if (_selected.contains(index)) {
+        // 선택 해제: is_archived를 true로, order_index 제거
         _selected.remove(index);
+        updatedBooks[index]['is_archived'] = true;
+        final removedOrderIndex = updatedBooks[index]['order_index'];
+        updatedBooks[index]['order_index'] = null;
+        
+        // 다른 책들의 order_index를 감소시키기
+        if (removedOrderIndex != null) {
+          for (int i = 0; i < updatedBooks.length; i++) {
+            if (i != index && updatedBooks[i]['order_index'] != null && 
+                updatedBooks[i]['order_index'] > removedOrderIndex) {
+              updatedBooks[i]['order_index'] = (updatedBooks[i]['order_index'] as int) - 1;
+            }
+          }
+        }
       } else {
+        // 선택: is_archived를 false로, order_index를 0으로 설정하고 다른 것들을 1씩 증가
         if (_selected.length >= kMaxSelection) return;
         _selected.add(index);
+        updatedBooks[index]['is_archived'] = false;
+        
+        // 기존에 선택된 책들의 order_index를 1씩 증가
+        for (int i = 0; i < updatedBooks.length; i++) {
+          if (i != index && updatedBooks[i]['order_index'] != null) {
+            updatedBooks[i]['order_index'] = (updatedBooks[i]['order_index'] as int) + 1;
+          }
+        }
+        
+        // 새로 선택된 책의 order_index를 0으로 설정
+        updatedBooks[index]['order_index'] = 0;
       }
       selectedBookCount = _selected.length; // 상단 카운트 연동
     });
@@ -139,11 +174,14 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          // TODO: 선택된 책들을 저장하는 로직 구현
                           print('저장 버튼 클릭됨');
-                          if (widget.onClose != null) {
-                            widget.onClose!(true); // 책 추가 완료 시 true 반환
+                          
+                          // 저장 버튼을 눌렀을 때만 업데이트된 책 목록을 상위로 전달
+                          if (widget.onBooksUpdated != null) {
+                            widget.onBooksUpdated!(updatedBooks);
                           }
+                          
+                          // 바텀시트 닫기는 것은 onBooksUpdated 콜백에서 처리
                         },
                         child: Text(
                           '저장',

@@ -6,6 +6,7 @@ import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
 import '../../../data/utils/mixpanel_util.dart';
+import '../../../data/datasources/user_book_api.dart';
 
 class WriteReviewScreen extends StatefulWidget {
   final BookModel book;
@@ -127,6 +128,10 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             debugPrint('❌ 함수 오류: $errorMessage');
             throw Exception(errorMessage);
           }
+
+          // 보관함에 추가된 책의 archived_order_index 관리
+          final userBookApi = UserBookApi(client);
+          await userBookApi.addBookToArchive(bookId);
         }
 
       // 책 추가 및 리뷰 작성 트래킹
