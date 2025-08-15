@@ -5,6 +5,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/widgets/common/circle_checkbox.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../setting/legal_notice/privacy_policy.dart';
+import '../setting/legal_notice/terms_of_service_screen.dart';
+
 class TermsScreen extends StatefulWidget {
   const TermsScreen({super.key});
 
@@ -174,13 +177,25 @@ class _TermsScreenState extends State<TermsScreen> {
                 value: agreedTerms,
                 onChanged: (v) => _toggleIndividual(terms: v),
                 text: '(필수) 서비스 이용약관 동의',
-                onTap: () => _launchUrl('https://general-spatula-561.notion.site/2024e6fb980480daadd6cd8bafe388a9'),
+                onTap: () {
+                  Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (_) => TermsOfServiceScreen(),
+                  ),
+                );
+                  },
               ),
               _buildCheckItem(
                 value: agreedPrivacy,
                 onChanged: (v) => _toggleIndividual(privacy: v),
                 text: '(필수) 개인정보 수집 및 이용 동의',
-                onTap: () => _launchUrl('https://general-spatula-561.notion.site/2024e6fb980480efa65acb5c7e330be5'),
+                onTap: () {
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(
+                      builder: (_) => PrivacyPolicy(),
+                    ),
+                  );
+                },
               ),
 
               const Spacer(),
