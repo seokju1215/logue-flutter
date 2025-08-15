@@ -14,6 +14,8 @@ class BookFrame extends StatelessWidget {
         : imageUrl;
 
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.black300, width: 0.5),
       ),
@@ -23,6 +25,8 @@ class BookFrame extends StatelessWidget {
             ? CachedNetworkImage(
           imageUrl: safeUrl,
           fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
           placeholder: (context, url) => Container(
             color: Colors.grey[200],
           ),

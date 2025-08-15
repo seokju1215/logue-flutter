@@ -255,34 +255,42 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                         // 책 커버
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(0),
-                                          child: BookFrame(
-                                            imageUrl: imageUrl,
+                                          child: ColorFiltered(
+                                            colorFilter: isSelected 
+                                                ? ColorFilter.mode(
+                                                    Colors.black.withOpacity(0.6),
+                                                    BlendMode.darken,
+                                                  )
+                                                : ColorFilter.mode(
+                                                    Colors.transparent,
+                                                    BlendMode.srcOver,
+                                                  ),
+                                            child: BookFrame(
+                                              imageUrl: imageUrl,
+                                            ),
                                           ),
                                         ),
-                                        // 선택 인디케이터
-                                        Positioned(
-                                          right: 6,
-                                          top: 6,
+                                        // 선택 인디케이터 - Align을 사용하여 안정적인 위치에 배치
+                                        Align(
+                                          alignment: Alignment.topRight,
                                           child: Container(
-                                            width: 26,
-                                            height: 26,
+                                            margin: const EdgeInsets.only(right: 3.24, top: 3),
+                                            width: 18,
+                                            height: 18,
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               border: Border.all(
-                                                color: isSelected ? AppColors.blue500 : AppColors.black100,
-                                                width: isSelected ? 3 : 2,
+                                                color: isSelected ? AppColors.blue500 : AppColors.black300,
+                                                width: isSelected ? 2 : 1.5,
                                               ),
                                             ),
                                             child: AnimatedContainer(
-                                              duration: const Duration(milliseconds: 150),
-                                              margin: const EdgeInsets.all(4),
+                                              duration: const Duration(milliseconds: 50),
+                                              margin: const EdgeInsets.all(2),
                                               decoration: BoxDecoration(
                                                 shape: BoxShape.circle,
                                                 color: isSelected ? AppColors.blue500 : Colors.transparent,
                                               ),
-                                              child: isSelected
-                                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
-                                                  : null,
                                             ),
                                           ),
                                         ),
