@@ -15,6 +15,7 @@ import 'dart:ui'; // 맨 위에 추가
 
 import '../../../core/widgets/profile/bio_content.dart';
 import '../main_navigation_screen.dart';
+import '../add_book/add_book_screen.dart';
 import '../post/my_post_screen.dart';
 import 'follow/follow_tab_screen.dart';
 import 'follow_list_screen.dart';
@@ -428,15 +429,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 builder: (context) {
                                   return TextButton(
                                     onPressed: () async {
-                                      final result = await Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                            builder: (_) => AddBookScreen(
-                                                  isLimitReached:
-                                                      books.length >= 9,
-                                                )),
-                                      );
-                                      if (result == true) {
-                                        loadBooks(); // ✅ 책 목록 다시 불러오기
+                                      // MainNavigationScreen의 AddBookView로 이동
+                                      final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
+                                      if (mainNavigationState != null) {
+                                        mainNavigationState.navigateToAddBookProfileTab();
                                       }
                                     },
                                     child: const Text(

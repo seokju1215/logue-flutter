@@ -25,10 +25,10 @@ class MainNavigationScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class MainNavigationScreenState extends State<MainNavigationScreen> {
   late int _selectedIndex;
   bool _overrideWithChild = true;
   Widget? _child;
@@ -47,6 +47,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ProfileView(navigatorKey: _navigatorKeys[1]),
         AddBookView(navigatorKey: _navigatorKeys[2], isLimitReached: false), // 중간 버튼용
       ];
+
+  void _navigateToAddBookProfileTab() {
+    setState(() {
+      _selectedIndex = 2; // AddBookView 인덱스
+      MainNavigationScreen.lastSelectedIndex = 2;
+    });
+  }
+
+  /// AddBookView의 프로필 탭으로 이동 (public 메서드)
+  void navigateToAddBookProfileTab() {
+    _navigateToAddBookProfileTab();
+  }
 
   @override
   void initState() {
