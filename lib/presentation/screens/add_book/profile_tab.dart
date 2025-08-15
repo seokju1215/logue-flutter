@@ -18,10 +18,11 @@ class ProfileTab extends StatefulWidget {
   final List<Map<String, dynamic>> allBooks; // 모든 책 목록 (보관함 포함)
   final VoidCallback onRefresh;
   final Function(bool)? onBookAdded; // 책 추가 완료 콜백
-  final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
-  
+  final GlobalKey<NavigatorState>?
+      navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
+
   const ProfileTab({
-    Key? key, 
+    Key? key,
     required this.isLimitReached,
     required this.books,
     required this.allBooks,
@@ -60,8 +61,7 @@ class _ProfileTabState extends State<ProfileTab> {
       final bookId = widget.books[i]['id'];
       await client
           .from('user_books')
-          .update({'order_index': i})
-          .eq('id', bookId);
+          .update({'order_index': i}).eq('id', bookId);
     }
 
     setState(() {
@@ -78,7 +78,7 @@ class _ProfileTabState extends State<ProfileTab> {
       final currentOrder = widget.books.map((b) => b['id'] as String).toList();
       isEdited = !_areListsEqual(currentOrder, originalOrder);
     });
-    
+
     // 드래그 앤 드롭 후 즉시 데이터베이스 업데이트
     _updateBookOrder();
   }
@@ -94,14 +94,14 @@ class _ProfileTabState extends State<ProfileTab> {
   /// archived_order_index 기준으로 책들을 정렬하는 메서드
   List<Map<String, dynamic>> _getSortedBooks() {
     final sortedBooks = List<Map<String, dynamic>>.from(widget.allBooks);
-    
+
     // archived_order_index 기준으로 정렬
     sortedBooks.sort((a, b) {
       final aOrder = a['archived_order_index'] as int? ?? 0;
       final bOrder = b['archived_order_index'] as int? ?? 0;
       return aOrder.compareTo(bOrder);
     });
-    
+
     return sortedBooks;
   }
 
@@ -153,11 +153,10 @@ class _ProfileTabState extends State<ProfileTab> {
               key: _titleKey, // GlobalKey 추가
               children: [
                 StrokeTextStyle.createStrokeText(
-                  text: "나만의 인생 책을 프로필에 추가해보세요.", 
-                  fontSize: 16, 
-                  fontWeight: FontWeight.w400, 
-                  color: AppColors.black900
-                ),
+                    text: "나만의 인생 책을 프로필에 추가해보세요.",
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.black900),
               ],
             ),
           ),
@@ -186,10 +185,12 @@ class _ProfileTabState extends State<ProfileTab> {
                           barrierColor: Colors.transparent,
                           builder: (BuildContext context) {
                             // GlobalKey를 사용하여 텍스트 위젯의 위치 측정
-                            final RenderBox? titleBox = _titleKey.currentContext?.findRenderObject() as RenderBox?;
-                            final titlePosition = titleBox?.localToGlobal(Offset.zero);
+                            final RenderBox? titleBox = _titleKey.currentContext
+                                ?.findRenderObject() as RenderBox?;
+                            final titlePosition =
+                                titleBox?.localToGlobal(Offset.zero);
                             final titleBottom = titlePosition?.dy ?? 0;
-                            
+
                             return Stack(
                               children: [
                                 // 배경 터치 영역
@@ -201,36 +202,125 @@ class _ProfileTabState extends State<ProfileTab> {
                                 ),
                                 // 바텀시트
                                 Positioned(
-                                  top: titleBottom + (titleBox?.size.height ?? 0) + 8, // 텍스트 위젯 바로 밑 + 8px
+                                  top: titleBottom +
+                                      (titleBox?.size.height ?? 0) +
+                                      8,
+                                  // 텍스트 위젯 바로 밑 + 8px
                                   left: 0,
                                   right: 0,
                                   bottom: 0,
-                                                                      child: ArchiveBottomSheet(
-                                      books: _getSortedBooks(), // archived_order_index 기준으로 정렬된 책 목록 전달
-                                      onBooksUpdated: (updatedBooks) async {
+                                  child: ArchiveBottomSheet(
+                                    books: _getSortedBooks(),
+                                    // archived_order_index 기준으로 정렬된 책 목록 전달
+                                    onBooksUpdated: (updatedBooks) async {
                                       // 저장 버튼을 눌렀을 때만 실행되는 DB 저장 로직
-                                      print('📚 DB 저장 시작: ${updatedBooks.length}개 책 업데이트');
-                                      
+                                      print(
+                                          '📚 DB 저장 시작: ${updatedBooks.length}개 책 업데이트');
+                                      print('🔍 updatedBooks 내용:');
+                                      for (int i = 0;
+                                          i < updatedBooks.length;
+                                          i++) {
+                                        final book = updatedBooks[i];
+                                        print(
+                                            '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
+                                      }
+
+                                      print('🔍 widget.books 내용:');
+                                      for (int i = 0;
+                                          i < widget.books.length;
+                                          i++) {
+                                        final book = widget.books[i];
+                                        print(
+                                            '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
+                                      }
+
                                       try {
                                         // DB 업데이트 로직 구현
-                                        final userBookApi = UserBookApi(Supabase.instance.client);
-                                        
+                                        final userBookApi = UserBookApi(
+                                            Supabase.instance.client);
+
+                                                                                 // 새로 프로필에 추가된 책이 있는지 확인 (보관함 → 프로필로 이동한 책)
+                                         final newlyAddedBooks =
+                                             <Map<String, dynamic>>[];
+ 
+                                         // 원래 프로필에 있던 책들의 ID 목록
+                                         final originalProfileBookIds = widget.books.map((book) => book['id'] as String).toSet();
+                                         print('🔍 원래 프로필에 있던 책 ID들: $originalProfileBookIds');
+ 
+                                         // 업데이트된 책들 중 프로필로 이동한 책 찾기
+                                         for (final updatedBook in updatedBooks) {
+                                           final updatedBookId = updatedBook['id'] as String;
+                                           final updatedIsArchived = updatedBook['is_archived'] as bool;
+ 
+                                           // 프로필로 이동한 책이고, 원래 프로필에 없던 책인지 확인
+                                           if (updatedIsArchived == false && !originalProfileBookIds.contains(updatedBookId)) {
+                                             newlyAddedBooks.add(updatedBook);
+                                             print('🔍 새로 프로필에 추가된 책 발견: ID=${updatedBookId}, book_id=${updatedBook['book_id']}');
+                                           }
+                                         }
+
+                                        print(
+                                            '🔍 새로 프로필에 추가된 책 개수: ${newlyAddedBooks.length}');
+                                        if (newlyAddedBooks.isNotEmpty) {
+                                          print('🔍 새로 추가된 책들:');
+                                          for (final book in newlyAddedBooks) {
+                                            print(
+                                                '  - ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
+                                          }
+                                        }
+
+                                        print('🔄 updateBooksBatch 호출 시작');
                                         // 일괄 업데이트로 모든 책의 is_archived와 order_index 업데이트
-                                        await userBookApi.updateBooksBatch(updatedBooks);
-                                        
+                                        await userBookApi
+                                            .updateBooksBatch(updatedBooks);
+                                        print('🔄 updateBooksBatch 호출 완료');
+
+                                        // 새로 추가된 책이 있으면 팔로워들에게 알림
+                                        if (newlyAddedBooks.isNotEmpty) {
+                                          final currentUserId = Supabase
+                                              .instance
+                                              .client
+                                              .auth
+                                              .currentUser
+                                              ?.id;
+                                          print(
+                                              '🔍 currentUserId: $currentUserId');
+                                          if (currentUserId != null) {
+                                            // 새로 추가된 각 책에 대해 알림 전송
+                                            for (final book
+                                                in newlyAddedBooks) {
+                                              final bookId =
+                                                  book['book_id'] as String?;
+                                              print(
+                                                  '📢 알림 전송 시도: userId=$currentUserId, bookId=$bookId');
+                                              await userBookApi
+                                                  .notifyFollowersAboutNewBook(
+                                                      currentUserId, bookId);
+                                            }
+                                            print('📢 팔로워들에게 새 책 추가 알림 전송 완료');
+                                          }
+                                        }
+
                                         print('✅ DB 업데이트 완료');
-                                        
+
                                         // DB 저장 완료 후 프로필 탭 새로고침
+                                        print('🔄 widget.onRefresh() 호출');
                                         widget.onRefresh();
-                                        
+
                                         // 바텀시트 닫기
-                                        Navigator.of(context, rootNavigator: true).pop();
-                                        
+                                        print('🔄 Navigator.pop() 호출');
+                                        Navigator.of(context,
+                                                rootNavigator: true)
+                                            .pop();
                                       } catch (e) {
                                         print('❌ DB 업데이트 실패: $e');
+                                        print('❌ 에러 스택: ${StackTrace.current}');
                                         // 에러 발생 시 사용자에게 알림
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('저장 중 오류가 발생했습니다: $e')),
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content:
+                                                  Text('저장 중 오류가 발생했습니다: $e')),
                                         );
                                       }
                                     },
@@ -245,7 +335,10 @@ class _ProfileTabState extends State<ProfileTab> {
                     style: _outlinedStyle(context),
                     child: const Text(
                       '책 선택',
-                      style: TextStyle(fontSize: 13, color: AppColors.black900, height: 1.25),
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.black900,
+                          height: 1.25),
                     ),
                   ),
                 ),
@@ -264,7 +357,8 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
                 Text(
                   '${widget.books.length}/9',
-                  style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppColors.black500),
                 ),
               ],
             ),
@@ -280,7 +374,8 @@ class _ProfileTabState extends State<ProfileTab> {
                 const itemAspectRatio = 98 / 145;
 
                 final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
-                final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                final itemWidth =
+                    (constraints.maxWidth - totalSpacing) / crossAxisCount;
                 final itemHeight = itemWidth / itemAspectRatio;
 
                 return ReorderableWrap(
@@ -297,7 +392,8 @@ class _ProfileTabState extends State<ProfileTab> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(0),
                           child: BookFrame(
-                            imageUrl: book['books']?['image'] ?? 'https://via.placeholder.com/150',
+                            imageUrl: book['books']?['image'] ??
+                                'https://via.placeholder.com/150',
                           ),
                         ),
                       ),
@@ -311,4 +407,4 @@ class _ProfileTabState extends State<ProfileTab> {
       ),
     );
   }
-} 
+}

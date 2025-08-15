@@ -258,6 +258,8 @@ class ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+
+
   Future<void> loadBooks() async {
     final user = client.auth.currentUser;
     if (user == null) return;

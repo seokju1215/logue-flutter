@@ -216,13 +216,17 @@ class UserBookApi {
 
     try {
       // 각 책에 대해 개별적으로 업데이트
-      for (final book in books) {
+      for (int i = 0; i < books.length; i++) {
+        final book = books[i];
         final userBookId = book['id'] as String;
         final isArchived = book['is_archived'] as bool;
         final orderIndex = book['order_index'] as int?;
 
+        debugPrint("📦 [$i] 책 업데이트: ID=$userBookId, is_archived=$isArchived, order_index=$orderIndex");
+
         if (isArchived) {
           // 보관함으로 이동: order_index 제거 (archived_order_index는 건드리지 않음)
+          debugPrint("📦 [$i] 보관함으로 이동: order_index 제거");
           await client
               .from('user_books')
               .update({
@@ -231,9 +235,11 @@ class UserBookApi {
               })
               .eq('id', userBookId)
               .eq('user_id', userId);
+          debugPrint("📦 [$i] 보관함 이동 완료");
         } else {
           // 프로필로 이동: order_index 설정 (archived_order_index는 건드리지 않음)
           if (orderIndex != null) {
+            debugPrint("📦 [$i] 프로필로 이동: order_index=$orderIndex 설정");
             await client
                 .from('user_books')
                 .update({
@@ -242,6 +248,9 @@ class UserBookApi {
                 })
                 .eq('id', userBookId)
                 .eq('user_id', userId);
+            debugPrint("📦 [$i] 프로필 이동 완료");
+          } else {
+            debugPrint("📦 [$i] order_index가 null이므로 업데이트 건너뜀");
           }
         }
       }
@@ -294,6 +303,63 @@ class UserBookApi {
       debugPrint("✅ 책 보관함 추가 성공: $bookId");
     } catch (e, stack) {
       debugPrint("❌ 책 보관함 추가 중 오류: $e");
+      debugPrint("🔍 스택 트레이스: $stack");
+      rethrow;
+    }
+  }
+
+  /// 팔로워들에게 책 추가 알림 보내기 (send-notification-v2 edge function 사용)
+  Future<void> notifyFollowersAboutNewBook(String userId, String? bookId) async {
+    debugPrint("🔍 notifyFollowersAboutNewBook 시작: userId=$userId, bookId=$bookId");
+
+    try {
+      // 1. 해당 사용자를 팔로우하는 사용자들 가져오기
+      debugPrint("🔍 팔로워 조회 시작");
+      final followers = await client
+          .from('follows')
+          .select('follower_id')
+          .eq('following_id', userId);
+
+      if (followers.isEmpty) {
+        debugPrint("📦 팔로워가 없음");
+        return;
+      }
+
+      debugPrint("📦 팔로워 수: ${followers.length}");
+      debugPrint("📦 팔로워 목록: ${followers.map((f) => f['follower_id']).toList()}");
+
+      // 2. 각 팔로워에게 send-notification-v2 edge function으로 알림 보내기
+      for (int i = 0; i < followers.length; i++) {
+        final follower = followers[i];
+        final followerId = follower['follower_id'] as String;
+        
+        debugPrint("📦 [$i] 팔로워 $followerId에게 알림 전송 시도");
+        
+        try {
+          final requestBody = {
+            'recipient_id': followerId,
+            'sender_id': userId,
+            'type': 'post',
+            'book_id': bookId, // 새로 추가된 책의 ID
+          };
+          debugPrint("📦 [$i] Edge function 요청: $requestBody");
+          
+          final response = await client.functions.invoke('send-notification-v2', body: requestBody);
+
+          if (response.status == 200) {
+            final responseData = response.data as Map<String, dynamic>?;
+            debugPrint("📦 [$i] 팔로워 $followerId에게 알림 전송 완료: status=${response.status}, data=$responseData");
+          } else {
+            debugPrint("❌ [$i] 팔로워 $followerId에게 알림 전송 실패: status=${response.status}, data=${response.data}");
+          }
+        } catch (e) {
+          debugPrint("❌ [$i] 팔로워 $followerId에게 알림 전송 중 오류: $e");
+        }
+      }
+
+      debugPrint("✅ 팔로워 알림 전송 완료");
+    } catch (e, stack) {
+      debugPrint("❌ 팔로워 알림 전송 중 오류: $e");
       debugPrint("🔍 스택 트레이스: $stack");
       rethrow;
     }

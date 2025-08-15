@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/home/home_screen.dart';
 import 'package:my_logue/presentation/screens/profile/profile_view.dart';
-import 'package:my_logue/presentation/screens/profile/profile_screen.dart';
+
 import 'package:my_logue/presentation/screens/post/my_post_screen.dart';
 import 'package:my_logue/presentation/screens/add_book/add_book_view.dart';
 
@@ -16,7 +16,6 @@ class MainNavigationScreen extends StatefulWidget {
   final Widget? child;
   final int initialTabIndex;
   final bool goToMyBookPostScreen;
-
   const MainNavigationScreen({
     Key? key,
     this.child,
@@ -59,6 +58,8 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   void navigateToAddBookProfileTab() {
     _navigateToAddBookProfileTab();
   }
+
+
 
   @override
   void initState() {
@@ -107,6 +108,10 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
         }
       });
     }
+
+
+
+
 
     if (!_hasCheckedUpdate) {
       _hasCheckedUpdate = true;

@@ -28,7 +28,7 @@ class AddBookScreen extends StatefulWidget {
 
 class _AddBookScreenState extends State<AddBookScreen> {
   late PageController _pageController;
-  int _currentIndex = 1; // 0: 보관함 탭, 1: 프로필 탭 (프로필 탭을 기본으로 선택)
+  int _currentIndex = 0; // 0: 보관함 탭, 1: 프로필 탭 (프로필 탭을 기본으로 선택)
   String _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
   String _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
   
