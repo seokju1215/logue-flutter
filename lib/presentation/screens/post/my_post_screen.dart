@@ -137,7 +137,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                 bottom: 27,
               ),
                                       child: PostItem(
-                          isMyPost: isMyPost,
+                          isMyPost: false,
                           post: post,
                           onDeleteSuccess: () {
                             setState(() {

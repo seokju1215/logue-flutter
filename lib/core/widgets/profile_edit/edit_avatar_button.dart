@@ -28,15 +28,24 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
   bool _isUploading = false;
 
   Future<void> _showImageSourceDialog() async {
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
+      useRootNavigator: true,            // ✅ 루트 네비게이터 위에 띄워서 BottomNavigationBar까지 덮음
+      isScrollControlled: true,          // ✅ 전체 높이/패딩 제어 가능
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.transparent,
-      builder: (context) => AvatarBottomSheet(
-        onPhotoLibraryTap: _requestPhotoLibraryPermission,
-        onDeleteTap: _deleteAvatar,
-        isDefaultAvatar: widget.avatarUrl == 'basic',
-      ),
+      // barrierColor: Colors.black54,   // 필요하면 반투명 오버레이
+      builder: (ctx) {
+        // ✅ 불필요한 여백 없이 화면 최하단에서 시작
+        return SafeArea(
+          top: false,                    // 상단만 보호, 하단은 홈 인디케이터까지 덮을 수 있도록
+          // bottom: false,              // 홈 인디케이터까지 완전히 덮고 싶으면 주석 해제
+          child: AvatarBottomSheet(
+            onPhotoLibraryTap: _requestPhotoLibraryPermission,
+            onDeleteTap: _deleteAvatar,
+            isDefaultAvatar: widget.avatarUrl == 'basic',
+          ),
+        );
+      },
     );
   }
 
