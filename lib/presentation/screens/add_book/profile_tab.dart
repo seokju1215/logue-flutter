@@ -14,6 +14,7 @@ import '../../../data/models/book_model.dart';
 class ProfileTab extends StatefulWidget {
   final bool isLimitReached;
   final List<Map<String, dynamic>> books;
+  final List<Map<String, dynamic>> allBooks; // 모든 책 목록 (보관함 포함)
   final VoidCallback onRefresh;
   final Function(bool)? onBookAdded; // 책 추가 완료 콜백
   final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
@@ -22,6 +23,7 @@ class ProfileTab extends StatefulWidget {
     Key? key, 
     required this.isLimitReached,
     required this.books,
+    required this.allBooks,
     required this.onRefresh,
     this.onBookAdded,
     this.navigatorKey,
@@ -189,6 +191,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                   right: 0,
                                   bottom: 0,
                                   child: ArchiveBottomSheet(
+                                    books: widget.allBooks, // 모든 책 목록 전달 (is_archived 값과 상관없이)
                                     onClose: (result) {
                                       Navigator.pop(context);
                                       if (result == true) {

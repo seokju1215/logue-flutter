@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/themes/stroke_text_style.dart';
+import 'package:my_logue/core/widgets/book/book_frame.dart';
 
 class ArchiveBottomSheet extends StatefulWidget {
   final Function(bool)? onClose; // 닫기 콜백, 결과값 전달
+  final List<Map<String, dynamic>> books; // 보관함 책 목록
   
   const ArchiveBottomSheet({
     super.key,
     this.onClose,
+    required this.books,
   });
 
   @override
@@ -21,6 +24,59 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   void initState() {
     super.initState();
     print('ArchiveBottomSheet 초기화: selectedBookCount = $selectedBookCount');
+  }
+  // 선택 한도
+  static const int kMaxSelection = 9;
+
+// 실제 책 데이터 사용
+
+// 선택 상태
+  final Set<int> _selected = {};
+
+// 선택 토글
+  void _toggleSelect(int index) {
+    setState(() {
+      if (_selected.contains(index)) {
+        _selected.remove(index);
+      } else {
+        if (_selected.length >= kMaxSelection) return;
+        _selected.add(index);
+      }
+      selectedBookCount = _selected.length; // 상단 카운트 연동
+    });
+  }
+
+  /// 책장(선반) 라인들 생성
+  List<Widget> _buildShelves({
+    required int itemCount,
+    required double itemHeight,
+    required double runSpacing,
+    required double topOffset,
+  }) {
+    const booksPerRow = 5;
+    final rowCount = (itemCount / booksPerRow).ceil();
+
+    return List.generate(rowCount, (i) {
+      final shelfTop = topOffset + (itemHeight + runSpacing) * i;
+      return Positioned(
+        top: shelfTop,
+        left: 0,
+        right: 0,
+        child: Container(
+          height: 5,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF6F6F6),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 4,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
   
   @override
@@ -124,190 +180,128 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     SizedBox(width: 10,),
-                    Text(
-                      '9/9',
-                      style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1.25),
-                    ),
+                                    Text(
+                  '${widget.books.length}/9',
+                  style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1.25),
+                ),
                   ],
                 ),
                 SizedBox(height: 8,),
               ],
             ),
           ),
-          
-          // 보관함 탭의 LayoutBuilder 디자인을 그대로 복사
-          SingleChildScrollView(
-            primary: false,
-            padding: const EdgeInsets.fromLTRB(0, 21, 0, 21),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(left: 22),
-                  child: StrokeTextStyle.createStrokeText(
-                    text: "읽었던 책들을 간편하게 정리해보세요.", 
-                    fontSize: 16, 
-                    fontWeight: FontWeight.w400, 
-                    color: AppColors.black900
-                  )
-                ),
-                const SizedBox(height: 13),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 21),
-                  child: Row(
-                    children: [
-                      const Expanded(child: SizedBox()),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            // TODO: 책 추가 로직 구현
-                            print('책 추가 버튼 클릭됨');
-                          },
-                          style: ButtonStyle(
-                            foregroundColor: MaterialStateProperty.all(AppColors.black900),
-                            backgroundColor: MaterialStateProperty.all(Colors.white),
-                            overlayColor: MaterialStateProperty.resolveWith<Color?>(
-                              (states) {
-                                if (states.contains(MaterialState.pressed)) {
-                                  return AppColors.black100;
-                                }
-                                return null;
-                              },
-                            ),
-                            side: MaterialStateProperty.all(
-                              const BorderSide(color: AppColors.black500, width: 1),
-                            ),
-                            shape: MaterialStateProperty.all(
-                              RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                            ),
-                            padding: MaterialStateProperty.all(
-                              const EdgeInsets.symmetric(horizontal: 9),
-                            ),
-                            minimumSize: MaterialStateProperty.all(
-                              const Size(0, 34),
-                            ),
-                            textStyle: MaterialStateProperty.all(
-                              const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                height: 1.0,
-                              ),
-                            ),
-                          ),
-                          child: const Text(
-                            '책 추가 +',
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.black900,
-                                height: 1.25),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 19),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        '책을 길게 눌러 위치를 변경할 수 있어요.',
-                        style: TextStyle(fontSize: 12, color: AppColors.black500),
-                      ),
-                      Text(
-                        '0권', // TODO: 실제 책 개수로 변경
-                        style: const TextStyle(fontSize: 12, color: AppColors.black500),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 15),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    const crossAxisCount = 5;
-                    const crossAxisSpacing = 11.7;
-                    const itemAspectRatio = 98 / 145;
-                    const bookPadding = 22.0;
 
-                    final availableWidth = constraints.maxWidth - (bookPadding * 2);
-                    final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
-                    final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
-                    final itemHeight = itemWidth / itemAspectRatio;
+          // ⬇️ 그리드 섹션만 스크롤되도록 교체
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 0).copyWith(top: 21, bottom: 21),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // 디자인 파라미터
+                  const crossAxisCount = 5;
+                  const crossAxisSpacing = 11.7;
+                  const runSpacing = 35.0;
+                  const itemAspectRatio = 98 / 145;
+                  const topOffsetForShelf = 90.0; // 선반 시작 오프셋
 
-                    return Stack(
-                      children: [
-                        // Stack의 최소 너비 확보용
-                        SizedBox(
-                          width: double.infinity,
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
-                            child: Container(
-                              // TODO: 실제 책 목록을 여기에 표시
-                              height: itemHeight * 2, // 임시 높이
-                              decoration: BoxDecoration(
-                                color: AppColors.black100,
-                                borderRadius: BorderRadius.circular(8),
+                  final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
+                  final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                  final itemHeight = itemWidth / itemAspectRatio;
+
+                  final rows = (widget.books.length / crossAxisCount).ceil();
+                  final gridHeight = rows * itemHeight + (rows - 1) * runSpacing;
+
+                  return Scrollbar(
+                    child: SingleChildScrollView(
+                      // ✅ 오직 이 영역만 스크롤
+                      padding: EdgeInsets.zero,
+                      child: SizedBox(
+                        height: gridHeight + topOffsetForShelf, // 선반 포함 전체 높이
+                        width: double.infinity,
+                        child: Stack(
+                          children: [
+                            // 선반 라인들 (그리드와 함께 스크롤)
+                            ..._buildShelves(
+                              itemCount: widget.books.length,
+                              itemHeight: itemHeight,
+                              runSpacing: runSpacing,
+                              topOffset: topOffsetForShelf,
+                            ),
+
+                            // 책 그리드
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 22),
+                              child: GridView.builder(
+                                // 🔒 내부 그리드는 스크롤 금지 — 바깥 SingleChildScrollView가 담당
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                itemCount: widget.books.length,
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: crossAxisSpacing,
+                                  mainAxisSpacing: runSpacing,
+                                  childAspectRatio: itemAspectRatio,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final book = widget.books[index];
+                                  final imageUrl = book['books']?['image'] ?? 'https://via.placeholder.com/150';
+                                  final isSelected = _selected.contains(index);
+
+                                  return GestureDetector(
+                                    onTap: () => _toggleSelect(index),
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        // 책 커버
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(0),
+                                          child: BookFrame(
+                                            imageUrl: imageUrl,
+                                          ),
+                                        ),
+                                        // 선택 인디케이터
+                                        Positioned(
+                                          right: 6,
+                                          top: 6,
+                                          child: Container(
+                                            width: 26,
+                                            height: 26,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: isSelected ? AppColors.blue500 : AppColors.black100,
+                                                width: isSelected ? 3 : 2,
+                                              ),
+                                            ),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(milliseconds: 150),
+                                              margin: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: isSelected ? AppColors.blue500 : Colors.transparent,
+                                              ),
+                                              child: isSelected
+                                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                                  : null,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
-                              child: Center(
-                                child: Text(
-                                  '보관함에서 프로필에 추가할 책을 선택할 수 있습니다.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.black500,
-                                  ),
-                                ),
-                              ),
                             ),
-                          ),
+                          ],
                         ),
-                        // 책장 선들 (임시로 2개만 표시)
-                        Positioned(
-                          top: 90,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            width: double.infinity,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF6F6F6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.25),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 90 + itemHeight + 35,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            width: double.infinity,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF6F6F6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.25),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
+          )
+
         ],
       ),
     );

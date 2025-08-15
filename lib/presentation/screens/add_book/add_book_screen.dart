@@ -171,6 +171,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       final bIndex = b['order_index'] ?? 0;
                       return aIndex.compareTo(bIndex);
                     }),
+                    allBooks: allBooks, // 모든 책 목록 전달
                     onRefresh: _fetchAllBooks,
                     onBookAdded: (result) {
                       if (result == true) {
