@@ -163,6 +163,7 @@ class _ProfileTabState extends State<ProfileTab> {
                         // ArchiveBottomSheet 표시
                         showModalBottomSheet(
                           context: context,
+                          useRootNavigator: true,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
                           barrierColor: Colors.transparent,
