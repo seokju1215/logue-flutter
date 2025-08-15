@@ -12,11 +12,13 @@ import '../../../core/widgets/dialogs/AnnouncementDialog.dart';
 class ArchiveTab extends StatefulWidget {
   final List<Map<String, dynamic>> books;
   final VoidCallback onRefresh;
+  final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
 
   const ArchiveTab({
     Key? key,
     required this.books,
     required this.onRefresh,
+    this.navigatorKey,
   }) : super(key: key);
 
   @override
@@ -251,17 +253,35 @@ class _ArchiveTabState extends State<ArchiveTab> {
                         children: widget.books.map((book) {
                           return GestureDetector(
                                                       onTap: () async {
-                            final result = await Navigator.of(context, rootNavigator: true).push(
-                              MaterialPageRoute(
-                                builder: (_) => SinglePostScreen(
-                                  bookId: book['book_id'] ?? '',
-                                  userBookId: book['id'],
-                                  userId: client.auth.currentUser?.id,
+                            // AddBookView의 Navigator를 통해 이동하여 하단 네비게이션바 유지
+                            final navigatorState = widget.navigatorKey?.currentState;
+                            if (navigatorState != null) {
+                              final result = await navigatorState.push(
+                                MaterialPageRoute(
+                                  builder: (_) => SinglePostScreen(
+                                    bookId: book['book_id'] ?? '',
+                                    userBookId: book['id'],
+                                    userId: client.auth.currentUser?.id,
+                                  ),
                                 ),
-                              ),
-                            );
-                            if (result == true) {
-                              widget.onRefresh();
+                              );
+                              if (result == true) {
+                                widget.onRefresh();
+                              }
+                            } else {
+                              // fallback: 기존 방식 사용
+                              final result = await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => SinglePostScreen(
+                                    bookId: book['book_id'] ?? '',
+                                    userBookId: book['id'],
+                                    userId: client.auth.currentUser?.id,
+                                  ),
+                                ),
+                              );
+                              if (result == true) {
+                                widget.onRefresh();
+                              }
                             }
                           },
                             child: SizedBox(

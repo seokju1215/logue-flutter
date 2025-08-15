@@ -15,12 +15,16 @@ class ProfileTab extends StatefulWidget {
   final bool isLimitReached;
   final List<Map<String, dynamic>> books;
   final VoidCallback onRefresh;
+  final Function(bool)? onBookAdded; // 책 추가 완료 콜백
+  final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
   
   const ProfileTab({
     Key? key, 
     required this.isLimitReached,
     required this.books,
     required this.onRefresh,
+    this.onBookAdded,
+    this.navigatorKey,
   }) : super(key: key);
 
   @override
@@ -184,7 +188,15 @@ class _ProfileTabState extends State<ProfileTab> {
                                   right: 0,
                                   bottom: 0,
                                   child: ArchiveBottomSheet(
-                                    onClose: () => Navigator.pop(context),
+                                    onClose: (result) {
+                                      Navigator.pop(context);
+                                      if (result == true) {
+                                        // 책 추가가 완료되었을 때 상위로 결과 전달
+                                        if (widget.onBookAdded != null) {
+                                          widget.onBookAdded!(true);
+                                        }
+                                      }
+                                    },
                                   ),
                                 ),
                               ],

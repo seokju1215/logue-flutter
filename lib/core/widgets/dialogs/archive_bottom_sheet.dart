@@ -3,7 +3,7 @@ import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/themes/stroke_text_style.dart';
 
 class ArchiveBottomSheet extends StatefulWidget {
-  final VoidCallback? onClose; // 닫기 콜백
+  final Function(bool)? onClose; // 닫기 콜백, 결과값 전달
   
   const ArchiveBottomSheet({
     super.key,
@@ -85,6 +85,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                         onTap: () {
                           // TODO: 선택된 책들을 저장하는 로직 구현
                           print('저장 버튼 클릭됨');
+                          if (widget.onClose != null) {
+                            widget.onClose!(true); // 책 추가 완료 시 true 반환
+                          }
                         },
                         child: Text(
                           '저장',

@@ -14,7 +14,13 @@ import 'archive_tab.dart';
 
 class AddBookScreen extends StatefulWidget {
   final bool isLimitReached;
-  const AddBookScreen({Key? key, required this.isLimitReached}) : super(key: key);
+  final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
+  
+  const AddBookScreen({
+    Key? key, 
+    required this.isLimitReached,
+    this.navigatorKey,
+  }) : super(key: key);
 
   @override
   State<AddBookScreen> createState() => _AddBookScreenState();
@@ -118,7 +124,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
     return WillPopScope(
       onWillPop: () async {
         Navigator.of(context).pop(false);
-        return false;
+        return true;
       },
       child: Scaffold(
         appBar: AppBar(
@@ -155,6 +161,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       return aIndex.compareTo(bIndex);
                     }),
                     onRefresh: _fetchAllBooks,
+                    navigatorKey: widget.navigatorKey,
                   ),
                   ProfileTab(
                     key: ValueKey(_profileTabKey),
@@ -165,6 +172,13 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       return aIndex.compareTo(bIndex);
                     }),
                     onRefresh: _fetchAllBooks,
+                    onBookAdded: (result) {
+                      if (result == true) {
+                        // 책 추가가 완료되었을 때 상위로 결과 전달
+                        Navigator.of(context).pop(true);
+                      }
+                    },
+                    navigatorKey: widget.navigatorKey,
                   ),
                 ],
               ),
