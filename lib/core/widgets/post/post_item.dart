@@ -114,15 +114,20 @@ class PostItem extends StatelessWidget {
                       debugPrint('🔍 PostActionBottomSheet 호출: is_archived=${post.is_archived}');
                       final action = await showModalBottomSheet<String>(
                         context: context,
-                        backgroundColor: Colors.transparent,
-                        barrierColor: Colors.transparent,
+                        useRootNavigator: true,           // ✅ 루트 네비게이터 위에 띄움 → 바텀 네비까지 덮음
                         isScrollControlled: true,
-                        builder: (context) => Padding(
-                          padding: EdgeInsets.only(
-                            bottom: MediaQuery.of(context).padding.bottom + 80, // 바텀 네비게이션바 높이만큼 패딩
-                          ),
-                          child: PostActionBottomSheet(is_archived : post.is_archived, fromScreen: fromScreen,),
-                        ),
+                        backgroundColor: Colors.transparent,
+                        builder: (ctx) {
+                          // ✅ 불필요한 padding 제거: 가장 아래에서 시작
+                          return SafeArea(
+                            top: false,
+                            // bottom: false도 가능. 홈 인디케이터 공간까지 덮고 싶으면 false 유지
+                            child: PostActionBottomSheet(
+                              is_archived: post.is_archived,
+                              fromScreen: fromScreen,
+                            ),
+                          );
+                        },
                       );
                       debugPrint('🔍 PostActionBottomSheet 결과: $action');
 
