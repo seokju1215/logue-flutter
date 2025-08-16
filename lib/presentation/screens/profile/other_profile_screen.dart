@@ -228,7 +228,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                   const SizedBox(height: 95),
                   const Center(
                     child: Text(
-                      '책이 아직 없습니다.',
+                      '설정한 인생 책이 없어요.',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 12, color: AppColors.black500),
                     ),

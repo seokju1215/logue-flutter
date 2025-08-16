@@ -34,6 +34,10 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   bool _hasNavigatedToPostScreen = false;
   bool _hasCheckedUpdate = false;
   bool _hasShownAnnouncement = false;
+  
+  // 뒤로가기 두번 눌러야 앱 종료를 위한 변수들
+  DateTime? _lastBackPressTime;
+  static const Duration _backPressThreshold = Duration(seconds: 2);
 
   final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     GlobalKey<NavigatorState>(),
@@ -48,6 +52,9 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
       ];
 
   void _navigateToAddBookProfileTab() {
+    // 탭 변경 시 뒤로가기 타이머 리셋
+    _lastBackPressTime = null;
+    
     setState(() {
       _selectedIndex = 2; // AddBookView 인덱스
       MainNavigationScreen.lastSelectedIndex = 2;
@@ -93,6 +100,8 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
               _selectedIndex = 0;
               MainNavigationScreen.lastSelectedIndex = 0;
             });
+            // 탭 변경 시 뒤로가기 타이머 리셋
+            _lastBackPressTime = null;
 
             // 잠시 후에 프로필로 이동
             Future.delayed(const Duration(milliseconds: 100), () {
@@ -102,6 +111,8 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
                   _selectedIndex = 1;
                   MainNavigationScreen.lastSelectedIndex = 1;
                 });
+                // 탭 변경 시 뒤로가기 타이머 리셋
+                _lastBackPressTime = null;
               }
             });
           }
@@ -127,6 +138,9 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _onItemTapped(int index) {
+    // 탭 변경 시 뒤로가기 타이머 리셋
+    _lastBackPressTime = null;
+    
     if (index == 1) {
       // 중간 버튼 (책 추가) 클릭 시
       _showAddBookDialog();
@@ -160,6 +174,9 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _showAddBookDialog() {
+    // 탭 변경 시 뒤로가기 타이머 리셋
+    _lastBackPressTime = null;
+    
     // 책 추가 화면으로 이동 (index 2)
     setState(() {
       _selectedIndex = 2;
@@ -273,8 +290,20 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
           currentNavigator.pop();
           return false;
         }
-        // pop할 화면이 없으면 앱 종료 허용
-        return true;
+        
+        // 뒤로가기 두번 눌러야 앱 종료
+        final now = DateTime.now();
+        if (_lastBackPressTime == null || 
+            now.difference(_lastBackPressTime!) > _backPressThreshold) {
+          // 첫 번째 뒤로가기 또는 시간 초과
+          _lastBackPressTime = now;
+
+          
+          return false; // 앱 종료 방지
+        } else {
+          // 두 번째 뒤로가기 (시간 내에)
+          return true; // 앱 종료 허용
+        }
       },
       child: Scaffold(
         body: body,
