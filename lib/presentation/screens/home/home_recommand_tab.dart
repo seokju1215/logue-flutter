@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/themes/stroke_text_style.dart';
+import 'package:my_logue/core/widgets/dialogs/contact_permission_dialog.dart';
 import 'package:my_logue/presentation/screens/home/find_friends/input_phone_number_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/core/widgets/post/post_item.dart';
@@ -114,68 +115,76 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
 
   /// 친구 찾기 처리
   Future<void> _handleFindFriends() async {
-    try {
-      // 주소록 권한 요청 및 확인
-      final success = await FlutterContacts.requestPermission(readonly: true);
-      
-              if (success && mounted) {
-          print('✅ 주소록 접근 성공');
-          
-          // 주소록에서 전화번호 가져오기
+    await showDialog(
+      context: context,
+      builder: (deleteDialogContext) => ContactPermissionDialog(
+        onConfirm: () async {
+          Navigator.pop(deleteDialogContext);
           try {
-            final contacts = await FlutterContacts.getContacts(
-              withProperties: true,
-              withPhoto: false,
-            );
-            
-            final phoneNumbers = <String>[];
-            for (final contact in contacts) {
-              if (contact.phones.isNotEmpty) {
-                for (final phone in contact.phones) {
-                  // 전화번호에서 특수문자 제거하고 숫자만 추출
-                  final cleanPhone = phone.number.replaceAll(RegExp(r'[^\d]'), '');
-                  if (cleanPhone.isNotEmpty) {
-                    phoneNumbers.add(cleanPhone);
+            // 주소록 권한 요청 및 확인
+            final success = await FlutterContacts.requestPermission(readonly: true);
+
+            if (success && mounted) {
+              print('✅ 주소록 접근 성공');
+
+              // 주소록에서 전화번호 가져오기
+              try {
+                final contacts = await FlutterContacts.getContacts(
+                  withProperties: true,
+                  withPhoto: false,
+                );
+
+                final phoneNumbers = <String>[];
+                for (final contact in contacts) {
+                  if (contact.phones.isNotEmpty) {
+                    for (final phone in contact.phones) {
+                      // 전화번호에서 특수문자 제거하고 숫자만 추출
+                      final cleanPhone = phone.number.replaceAll(RegExp(r'[^\d]'), '');
+                      if (cleanPhone.isNotEmpty) {
+                        phoneNumbers.add(cleanPhone);
+                      }
+                    }
                   }
                 }
+
+                // 중복 제거
+                final uniquePhoneNumbers = phoneNumbers.toSet().toList();
+
+                debugPrint('📱 주소록에서 가져온 전화번호 목록:');
+                debugPrint('📱 총 전화번호 개수: ${phoneNumbers.length}개');
+                debugPrint('📱 중복 제거 후 개수: ${uniquePhoneNumbers.length}개');
+                debugPrint('📱 전화번호 목록: $uniquePhoneNumbers');
+
+                // 권한 승인 시 친구 찾기 화면으로 이동하면서 연락처 목록 전달
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => InputPhoneNumberScreen(
+                      contactPhoneNumbers: uniquePhoneNumbers,
+                    ),
+                  ),
+                );
+              } catch (e) {
+                print('❌ 주소록에서 전화번호 가져오기 실패: $e');
               }
+            } else if (mounted) {
+              // 권한이 거부되었거나 설정창으로 이동한 경우
+              print('❌ 주소록 접근 권한이 거부되었습니다.');
             }
-            
-            // 중복 제거
-            final uniquePhoneNumbers = phoneNumbers.toSet().toList();
-            
-            debugPrint('📱 주소록에서 가져온 전화번호 목록:');
-            debugPrint('📱 총 전화번호 개수: ${phoneNumbers.length}개');
-            debugPrint('📱 중복 제거 후 개수: ${uniquePhoneNumbers.length}개');
-            debugPrint('📱 전화번호 목록: $uniquePhoneNumbers');
-            
-            // 권한 승인 시 친구 찾기 화면으로 이동하면서 연락처 목록 전달
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => InputPhoneNumberScreen(
-                  contactPhoneNumbers: uniquePhoneNumbers,
-                ),
-              ),
-            );
           } catch (e) {
-            print('❌ 주소록에서 전화번호 가져오기 실패: $e');
+            print('❌ 친구 찾기 실패: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('권한 요청 중 오류가 발생했습니다.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
           }
-        } else if (mounted) {
-        // 권한이 거부되었거나 설정창으로 이동한 경우
-        print('❌ 주소록 접근 권한이 거부되었습니다.');
-      }
-    } catch (e) {
-      print('❌ 친구 찾기 실패: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('권한 요청 중 오류가 발생했습니다.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    }
+        },
+      ),
+    );
   }
 
 
