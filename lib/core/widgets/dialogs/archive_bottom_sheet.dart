@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
-import 'package:my_logue/core/themes/stroke_text_style.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 
 class ArchiveBottomSheet extends StatefulWidget {
-  final List<Map<String, dynamic>> books; // 모든 책 목록
-  final Function(List<Map<String, dynamic>>)? onBooksUpdated; // 책 목록 업데이트 콜백
-  
+  final List<Map<String, dynamic>> books; // DB에서 내려온 최신 책 목록
+  final Function(List<Map<String, dynamic>>)? onBooksUpdated; // 저장 시에만 호출
+
   const ArchiveBottomSheet({
     super.key,
     required this.books,
@@ -18,66 +17,93 @@ class ArchiveBottomSheet extends StatefulWidget {
 }
 
 class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
-  int selectedBookCount = 0; // 선택된 책 개수를 독립적으로 관리
-  List<Map<String, dynamic>> updatedBooks = []; // 업데이트된 책 목록
-  
+  // 화면 내부에서만 쓰는 작업용 리스트 (원본 건드리지 않음)
+  late List<Map<String, dynamic>> updatedBooks;
+
+  // 선택(= is_archived == false) 개수
+  int selectedBookCount = 0;
+
+  // 선택 표시(인덱스 기준)
+  final Set<int> _selected = {};
+
+  // 선택 한도
+  static const int kMaxSelection = 9;
+
   @override
   void initState() {
     super.initState();
-    print('ArchiveBottomSheet 초기화: selectedBookCount = $selectedBookCount');
-    
-    // 초기화: is_archived가 false인 책들은 이미 선택된 상태로 설정
-    updatedBooks = List.from(widget.books);
+    _resetFrom(widget.books);
+  }
+
+  /// 부모에서 내려주는 books가 바뀌면 내부 상태를 **항상 초기화**
+  @override
+  void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.books, widget.books)) {
+      _resetFrom(widget.books);
+    }
+  }
+
+  void _resetFrom(List<Map<String, dynamic>> source) {
+    // 깊은 복사(맵도 카피) – 원본 훼손 방지
+    updatedBooks = source.map((m) => Map<String, dynamic>.from(m)).toList();
+
+    _selected.clear();
     for (int i = 0; i < updatedBooks.length; i++) {
       if (updatedBooks[i]['is_archived'] == false) {
         _selected.add(i);
       }
     }
-    selectedBookCount = _selected.length;
+    selectedBookCount =
+        updatedBooks.where((b) => b['is_archived'] == false).length;
+    setState(() {}); // 초기화 후 즉시 리렌더
   }
-  
-  // 선택 한도
-  static const int kMaxSelection = 9;
-  
-  // 선택 상태
-  final Set<int> _selected = {};
 
-  // 선택 토글
+  // 선택 토글 (작업용 리스트만 변경)
   void _toggleSelect(int index) {
     setState(() {
+      final currentSelected =
+          updatedBooks.where((b) => b['is_archived'] == false).length;
+
       if (_selected.contains(index)) {
-        // 선택 해제: is_archived를 true로, order_index 제거
+        // 선택 해제 → 보관 처리
         _selected.remove(index);
         updatedBooks[index]['is_archived'] = true;
+
         final removedOrderIndex = updatedBooks[index]['order_index'];
         updatedBooks[index]['order_index'] = null;
-        
-        // 다른 책들의 order_index를 감소시키기
+
+        // 뒤쪽 order_index 하나씩 당기기
         if (removedOrderIndex != null) {
           for (int i = 0; i < updatedBooks.length; i++) {
-            if (i != index && updatedBooks[i]['order_index'] != null && 
-                updatedBooks[i]['order_index'] > removedOrderIndex) {
-              updatedBooks[i]['order_index'] = (updatedBooks[i]['order_index'] as int) - 1;
+            if (i == index) continue;
+            final oi = updatedBooks[i]['order_index'];
+            if (oi != null && oi is int && oi > removedOrderIndex) {
+              updatedBooks[i]['order_index'] = oi - 1;
             }
           }
         }
       } else {
-        // 선택: is_archived를 false로, order_index를 0으로 설정하고 다른 것들을 1씩 증가
-        if (_selected.length >= kMaxSelection) return;
+        // 선택 → 선반에 올리기 (최대 9)
+        if (currentSelected >= kMaxSelection) return;
+
         _selected.add(index);
         updatedBooks[index]['is_archived'] = false;
-        
-        // 기존에 선택된 책들의 order_index를 1씩 증가
+
+        // 기존 선택들의 order_index +1
         for (int i = 0; i < updatedBooks.length; i++) {
-          if (i != index && updatedBooks[i]['order_index'] != null) {
-            updatedBooks[i]['order_index'] = (updatedBooks[i]['order_index'] as int) + 1;
+          if (i == index) continue;
+          final oi = updatedBooks[i]['order_index'];
+          if (oi != null && oi is int) {
+            updatedBooks[i]['order_index'] = oi + 1;
           }
         }
-        
-        // 새로 선택된 책의 order_index를 0으로 설정
         updatedBooks[index]['order_index'] = 0;
       }
-      selectedBookCount = _selected.length; // 상단 카운트 연동
+
+      // 카운트 갱신
+      selectedBookCount =
+          updatedBooks.where((book) => book['is_archived'] == false).length;
     });
   }
 
@@ -113,10 +139,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       );
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
-    print('ArchiveBottomSheet 빌드: selectedBookCount = $selectedBookCount');
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -148,12 +173,12 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
               ),
             ),
           ),
-          // 제목과 저장 버튼
+
+          // 제목/저장/선택 카운트
           Container(
             padding: const EdgeInsets.fromLTRB(22, 28, 22, 15),
             child: Stack(
               children: [
-                // 보관함 제목 (정가운데)
                 Center(
                   child: Text(
                     '보관함',
@@ -161,11 +186,10 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                       fontSize: 16,
                       color: AppColors.black900,
                       fontWeight: FontWeight.w400,
-                      height: 1.1875
+                      height: 1.1875,
                     ),
                   ),
                 ),
-                // 저장 버튼 (Positioned로 오른쪽에 배치)
                 Positioned(
                   right: 0,
                   top: 0,
@@ -174,14 +198,14 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          print('저장 버튼 클릭됨');
-                          
-                          // 저장 버튼을 눌렀을 때만 업데이트된 책 목록을 상위로 전달
+                          // ✅ 저장 버튼에서만 반영
                           if (widget.onBooksUpdated != null) {
-                            widget.onBooksUpdated!(updatedBooks);
+                            widget.onBooksUpdated!(
+                              // 원본 건드리지 않도록 다시 복사해서 넘겨도 OK
+                              updatedBooks.map((m) => Map<String, dynamic>.from(m)).toList(),
+                            );
                           }
-                          
-                          // 바텀시트 닫기는 것은 onBooksUpdated 콜백에서 처리
+                          Navigator.pop(context, true); // 부모에서 true로 분기 가능
                         },
                         child: Text(
                           '저장',
@@ -196,9 +220,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                       Text(
                         '$selectedBookCount/9',
                         style: TextStyle(
-                          color: AppColors.black900, // 더 진한 색상으로 변경
-                          fontSize: 14, // 폰트 크기 증가
-                          fontWeight: FontWeight.w500, // 폰트 굵기 증가
+                          color: AppColors.black900,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -207,29 +231,28 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
               ],
             ),
           ),
-          
-          // 보관함 책 목록 (예시)
+
+          // 상단 정보 라인 (선택 수만 노출)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    SizedBox(width: 10,),
-                                    Text(
-                  '${widget.books.length}/9',
-                  style: const TextStyle(fontSize: 12, color: AppColors.black500, height: 1.25),
+                const SizedBox(width: 10),
+                Text(
+                  '$selectedBookCount/9',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.black500,
+                    height: 1.25,
+                  ),
                 ),
-                  ],
-                ),
-                SizedBox(height: 8,),
               ],
             ),
           ),
+          const SizedBox(height: 8),
 
-          // ⬇️ 그리드 섹션만 스크롤되도록 교체
+          // 그리드 영역만 스크롤
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 0).copyWith(top: 21, bottom: 21),
@@ -240,27 +263,26 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                   const crossAxisSpacing = 11.7;
                   const runSpacing = 35.0;
                   const itemAspectRatio = 98 / 145;
-                  const topOffsetForShelf = 90.0; // 선반 시작 오프셋
+                  const topOffsetForShelf = 90.0;
 
                   final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
                   final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
                   final itemHeight = itemWidth / itemAspectRatio;
 
-                  final rows = (widget.books.length / crossAxisCount).ceil();
+                  final rows = (updatedBooks.length / crossAxisCount).ceil();
                   final gridHeight = rows * itemHeight + (rows - 1) * runSpacing;
 
                   return Scrollbar(
                     child: SingleChildScrollView(
-                      // ✅ 오직 이 영역만 스크롤
                       padding: EdgeInsets.zero,
                       child: SizedBox(
-                        height: gridHeight + topOffsetForShelf, // 선반 포함 전체 높이
+                        height: gridHeight + topOffsetForShelf,
                         width: double.infinity,
                         child: Stack(
                           children: [
-                            // 선반 라인들 (그리드와 함께 스크롤)
+                            // 선반 라인 (updatedBooks 기준)
                             ..._buildShelves(
-                              itemCount: widget.books.length,
+                              itemCount: updatedBooks.length,
                               itemHeight: itemHeight,
                               runSpacing: runSpacing,
                               topOffset: topOffsetForShelf,
@@ -270,10 +292,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 22),
                               child: GridView.builder(
-                                // 🔒 내부 그리드는 스크롤 금지 — 바깥 SingleChildScrollView가 담당
                                 physics: const NeverScrollableScrollPhysics(),
                                 shrinkWrap: true,
-                                itemCount: widget.books.length,
+                                itemCount: updatedBooks.length,
                                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: crossAxisCount,
                                   crossAxisSpacing: crossAxisSpacing,
@@ -281,7 +302,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                   childAspectRatio: itemAspectRatio,
                                 ),
                                 itemBuilder: (context, index) {
-                                  final book = widget.books[index];
+                                  final book = updatedBooks[index];
                                   final imageUrl = book['books']?['image'] ?? 'https://via.placeholder.com/150';
                                   final isSelected = _selected.contains(index);
 
@@ -290,25 +311,21 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                     child: Stack(
                                       clipBehavior: Clip.none,
                                       children: [
-                                        // 책 커버
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(0),
                                           child: ColorFiltered(
-                                            colorFilter: isSelected 
+                                            colorFilter: isSelected
                                                 ? ColorFilter.mode(
-                                                    Colors.black.withOpacity(0.6),
-                                                    BlendMode.darken,
-                                                  )
-                                                : ColorFilter.mode(
-                                                    Colors.transparent,
-                                                    BlendMode.srcOver,
-                                                  ),
-                                            child: BookFrame(
-                                              imageUrl: imageUrl,
+                                              Colors.black.withOpacity(0.6),
+                                              BlendMode.darken,
+                                            )
+                                                : const ColorFilter.mode(
+                                              Colors.transparent,
+                                              BlendMode.srcOver,
                                             ),
+                                            child: BookFrame(imageUrl: imageUrl),
                                           ),
                                         ),
-                                        // 선택 인디케이터 - Align을 사용하여 안정적인 위치에 배치
                                         Align(
                                           alignment: Alignment.topRight,
                                           child: Container(
@@ -346,8 +363,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                 },
               ),
             ),
-          )
-
+          ),
         ],
       ),
     );

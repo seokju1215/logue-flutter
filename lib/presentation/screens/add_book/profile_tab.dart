@@ -170,167 +170,164 @@ class _ProfileTabState extends State<ProfileTab> {
                   child: OutlinedButton(
                     onPressed: () async {
                       // 현재 책 개수로 limit 확인
-                      if (widget.books.length >= 9) {
-                        showDialog(
-                          context: context,
-                          builder: (_) => const BookLimitDialog(),
-                        );
-                      } else {
-                        // ArchiveBottomSheet 표시
-                        showModalBottomSheet(
-                          context: context,
-                          useRootNavigator: true,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          barrierColor: Colors.transparent,
-                          builder: (BuildContext context) {
-                            // GlobalKey를 사용하여 텍스트 위젯의 위치 측정
-                            final RenderBox? titleBox = _titleKey.currentContext
-                                ?.findRenderObject() as RenderBox?;
-                            final titlePosition =
-                                titleBox?.localToGlobal(Offset.zero);
-                            final titleBottom = titlePosition?.dy ?? 0;
 
-                            return Stack(
-                              children: [
-                                // 배경 터치 영역
-                                Positioned.fill(
-                                  child: GestureDetector(
-                                    onTap: () => Navigator.pop(context),
-                                    child: Container(color: Colors.transparent),
-                                  ),
+                      // ArchiveBottomSheet 표시
+                      showModalBottomSheet(
+                        context: context,
+                        useRootNavigator: true,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        barrierColor: Colors.transparent,
+                        builder: (BuildContext context) {
+                          // GlobalKey를 사용하여 텍스트 위젯의 위치 측정
+                          final RenderBox? titleBox = _titleKey.currentContext
+                              ?.findRenderObject() as RenderBox?;
+                          final titlePosition =
+                              titleBox?.localToGlobal(Offset.zero);
+                          final titleBottom = titlePosition?.dy ?? 0;
+
+                          return Stack(
+                            children: [
+                              // 배경 터치 영역
+                              Positioned.fill(
+                                child: GestureDetector(
+                                  onTap: () => Navigator.pop(context),
+                                  child: Container(color: Colors.transparent),
                                 ),
-                                // 바텀시트
-                                Positioned(
-                                  top: titleBottom +
-                                      (titleBox?.size.height ?? 0) +
-                                      8,
-                                  // 텍스트 위젯 바로 밑 + 8px
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  child: ArchiveBottomSheet(
-                                    books: _getSortedBooks(),
-                                    // archived_order_index 기준으로 정렬된 책 목록 전달
-                                    onBooksUpdated: (updatedBooks) async {
-                                      // 저장 버튼을 눌렀을 때만 실행되는 DB 저장 로직
+                              ),
+                              // 바텀시트
+                              Positioned(
+                                top: titleBottom +
+                                    (titleBox?.size.height ?? 0) +
+                                    8,
+                                // 텍스트 위젯 바로 밑 + 8px
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: ArchiveBottomSheet(
+                                  books: _getSortedBooks(),
+                                  // archived_order_index 기준으로 정렬된 책 목록 전달
+                                  onBooksUpdated: (updatedBooks) async {
+                                    // 저장 버튼을 눌렀을 때만 실행되는 DB 저장 로직
+                                    print(
+                                        '📚 DB 저장 시작: ${updatedBooks.length}개 책 업데이트');
+                                    print('🔍 updatedBooks 내용:');
+                                    for (int i = 0;
+                                        i < updatedBooks.length;
+                                        i++) {
+                                      final book = updatedBooks[i];
                                       print(
-                                          '📚 DB 저장 시작: ${updatedBooks.length}개 책 업데이트');
-                                      print('🔍 updatedBooks 내용:');
-                                      for (int i = 0;
-                                          i < updatedBooks.length;
-                                          i++) {
-                                        final book = updatedBooks[i];
-                                        print(
-                                            '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
-                                      }
+                                          '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
+                                    }
 
-                                      print('🔍 widget.books 내용:');
-                                      for (int i = 0;
-                                          i < widget.books.length;
-                                          i++) {
-                                        final book = widget.books[i];
-                                        print(
-                                            '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
-                                      }
+                                    print('🔍 widget.books 내용:');
+                                    for (int i = 0;
+                                        i < widget.books.length;
+                                        i++) {
+                                      final book = widget.books[i];
+                                      print(
+                                          '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
+                                    }
 
-                                      try {
-                                        // DB 업데이트 로직 구현
-                                        final userBookApi = UserBookApi(
-                                            Supabase.instance.client);
+                                    try {
+                                      // DB 업데이트 로직 구현
+                                      final userBookApi =
+                                          UserBookApi(Supabase.instance.client);
 
-                                                                                 // 새로 프로필에 추가된 책이 있는지 확인 (보관함 → 프로필로 이동한 책)
-                                         final newlyAddedBooks =
-                                             <Map<String, dynamic>>[];
- 
-                                         // 원래 프로필에 있던 책들의 ID 목록
-                                         final originalProfileBookIds = widget.books.map((book) => book['id'] as String).toSet();
-                                         print('🔍 원래 프로필에 있던 책 ID들: $originalProfileBookIds');
- 
-                                         // 업데이트된 책들 중 프로필로 이동한 책 찾기
-                                         for (final updatedBook in updatedBooks) {
-                                           final updatedBookId = updatedBook['id'] as String;
-                                           final updatedIsArchived = updatedBook['is_archived'] as bool;
- 
-                                           // 프로필로 이동한 책이고, 원래 프로필에 없던 책인지 확인
-                                           if (updatedIsArchived == false && !originalProfileBookIds.contains(updatedBookId)) {
-                                             newlyAddedBooks.add(updatedBook);
-                                             print('🔍 새로 프로필에 추가된 책 발견: ID=${updatedBookId}, book_id=${updatedBook['book_id']}');
-                                           }
-                                         }
+                                      // 새로 프로필에 추가된 책이 있는지 확인 (보관함 → 프로필로 이동한 책)
+                                      final newlyAddedBooks =
+                                          <Map<String, dynamic>>[];
 
-                                        print(
-                                            '🔍 새로 프로필에 추가된 책 개수: ${newlyAddedBooks.length}');
-                                        if (newlyAddedBooks.isNotEmpty) {
-                                          print('🔍 새로 추가된 책들:');
-                                          for (final book in newlyAddedBooks) {
-                                            print(
-                                                '  - ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
-                                          }
-                                        }
+                                      // 원래 프로필에 있던 책들의 ID 목록
+                                      final originalProfileBookIds = widget
+                                          .books
+                                          .map((book) => book['id'] as String)
+                                          .toSet();
+                                      print(
+                                          '🔍 원래 프로필에 있던 책 ID들: $originalProfileBookIds');
 
-                                        print('🔄 updateBooksBatch 호출 시작');
-                                        // 일괄 업데이트로 모든 책의 is_archived와 order_index 업데이트
-                                        await userBookApi
-                                            .updateBooksBatch(updatedBooks);
-                                        print('🔄 updateBooksBatch 호출 완료');
+                                      // 업데이트된 책들 중 프로필로 이동한 책 찾기
+                                      for (final updatedBook in updatedBooks) {
+                                        final updatedBookId =
+                                            updatedBook['id'] as String;
+                                        final updatedIsArchived =
+                                            updatedBook['is_archived'] as bool;
 
-                                        // 새로 추가된 책이 있으면 팔로워들에게 알림
-                                        if (newlyAddedBooks.isNotEmpty) {
-                                          final currentUserId = Supabase
-                                              .instance
-                                              .client
-                                              .auth
-                                              .currentUser
-                                              ?.id;
+                                        // 프로필로 이동한 책이고, 원래 프로필에 없던 책인지 확인
+                                        if (updatedIsArchived == false &&
+                                            !originalProfileBookIds
+                                                .contains(updatedBookId)) {
+                                          newlyAddedBooks.add(updatedBook);
                                           print(
-                                              '🔍 currentUserId: $currentUserId');
-                                          if (currentUserId != null) {
-                                            // 새로 추가된 각 책에 대해 알림 전송
-                                            for (final book
-                                                in newlyAddedBooks) {
-                                              final bookId =
-                                                  book['book_id'] as String?;
-                                              print(
-                                                  '📢 알림 전송 시도: userId=$currentUserId, bookId=$bookId');
-                                              await userBookApi
-                                                  .notifyFollowersAboutNewBook(
-                                                      currentUserId, bookId);
-                                            }
-                                            print('📢 팔로워들에게 새 책 추가 알림 전송 완료');
-                                          }
+                                              '🔍 새로 프로필에 추가된 책 발견: ID=${updatedBookId}, book_id=${updatedBook['book_id']}');
                                         }
-
-                                        print('✅ DB 업데이트 완료');
-
-                                        // DB 저장 완료 후 프로필 탭 새로고침
-                                        print('🔄 widget.onRefresh() 호출');
-                                        widget.onRefresh();
-
-                                        // 바텀시트 닫기
-                                        print('🔄 Navigator.pop() 호출');
-                                        Navigator.of(context,
-                                                rootNavigator: true)
-                                            .pop();
-                                      } catch (e) {
-                                        print('❌ DB 업데이트 실패: $e');
-                                        print('❌ 에러 스택: ${StackTrace.current}');
-                                        // 에러 발생 시 사용자에게 알림
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                              content:
-                                                  Text('저장 중 오류가 발생했습니다: $e')),
-                                        );
                                       }
-                                    },
-                                  ),
+
+                                      print(
+                                          '🔍 새로 프로필에 추가된 책 개수: ${newlyAddedBooks.length}');
+                                      if (newlyAddedBooks.isNotEmpty) {
+                                        print('🔍 새로 추가된 책들:');
+                                        for (final book in newlyAddedBooks) {
+                                          print(
+                                              '  - ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
+                                        }
+                                      }
+
+                                      print('🔄 updateBooksBatch 호출 시작');
+                                      // 일괄 업데이트로 모든 책의 is_archived와 order_index 업데이트
+                                      await userBookApi
+                                          .updateBooksBatch(updatedBooks);
+                                      print('🔄 updateBooksBatch 호출 완료');
+
+                                      // 새로 추가된 책이 있으면 팔로워들에게 알림
+                                      if (newlyAddedBooks.isNotEmpty) {
+                                        final currentUserId = Supabase.instance
+                                            .client.auth.currentUser?.id;
+                                        print(
+                                            '🔍 currentUserId: $currentUserId');
+                                        if (currentUserId != null) {
+                                          // 새로 추가된 각 책에 대해 알림 전송
+                                          for (final book in newlyAddedBooks) {
+                                            final bookId =
+                                                book['book_id'] as String?;
+                                            print(
+                                                '📢 알림 전송 시도: userId=$currentUserId, bookId=$bookId');
+                                            await userBookApi
+                                                .notifyFollowersAboutNewBook(
+                                                    currentUserId, bookId);
+                                          }
+                                          print('📢 팔로워들에게 새 책 추가 알림 전송 완료');
+                                        }
+                                      }
+
+                                      print('✅ DB 업데이트 완료');
+
+                                      // DB 저장 완료 후 프로필 탭 새로고침
+                                      print('🔄 widget.onRefresh() 호출');
+                                      widget.onRefresh();
+
+                                      // 바텀시트 닫기
+                                      print('🔄 Navigator.pop() 호출');
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop();
+                                    } catch (e) {
+                                      print('❌ DB 업데이트 실패: $e');
+                                      print('❌ 에러 스택: ${StackTrace.current}');
+                                      // 에러 발생 시 사용자에게 알림
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content:
+                                                Text('저장 중 오류가 발생했습니다: $e')),
+                                      );
+                                    }
+                                  },
                                 ),
-                              ],
-                            );
-                          },
-                        );
-                      }
+                              ),
+                            ],
+                          );
+                        },
+                      );
                     },
                     style: _outlinedStyle(context),
                     child: const Text(
@@ -356,7 +353,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   style: TextStyle(fontSize: 12, color: AppColors.black500),
                 ),
                 Text(
-                  '${widget.books.length}/9',
+                  '${widget.books.where((book) => book['is_archived'] == false).length}/9',
                   style:
                       const TextStyle(fontSize: 12, color: AppColors.black500),
                 ),

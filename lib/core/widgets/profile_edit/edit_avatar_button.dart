@@ -11,12 +11,14 @@ import 'package:my_logue/core/widgets/dialogs/avatar_bottom_sheet.dart';
 
 class EditAvatarButton extends StatefulWidget {
   final String avatarUrl;
-  final void Function(String) onAvatarChanged;
+  final void Function(String, File?) onAvatarChanged;
+  final File? tempImageFile;
 
   const EditAvatarButton({
     super.key,
     required this.avatarUrl,
     required this.onAvatarChanged,
+    this.tempImageFile,
   });
 
   @override
@@ -26,6 +28,7 @@ class EditAvatarButton extends StatefulWidget {
 class _EditAvatarButtonState extends State<EditAvatarButton> {
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
+  File? _tempImageFile; // 임시 이미지 파일 저장
 
   Future<void> _showImageSourceDialog() async {
     await showModalBottomSheet(
@@ -53,16 +56,11 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
     try {
       setState(() => _isUploading = true);
       
-      final supabase = Supabase.instance.client;
-      final userId = supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('사용자 정보를 찾을 수 없습니다.');
-
-      // 프로필에서 avatar_url을 'basic'으로 변경
-      await supabase.from('profiles').update({
-        'avatar_url': 'basic',
-      }).eq('id', userId);
-
-      widget.onAvatarChanged('basic');
+      // 임시 파일 제거
+      _tempImageFile = null;
+      
+      // 아바타 삭제는 저장 버튼을 눌렀을 때만 데이터베이스에 반영
+      widget.onAvatarChanged('basic', null);
     } catch (e) {
       debugPrint('❌ 프로필 사진 삭제 실패: $e');
     } finally {
@@ -179,31 +177,12 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
 
       setState(() => _isUploading = true);
 
-      final supabase = Supabase.instance.client;
-      final userId = supabase.auth.currentUser?.id;
-      debugPrint('📸 사용자 ID: $userId');
-      if (userId == null) throw Exception('사용자 정보를 찾을 수 없습니다.');
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final extension = fileName.split('.').last.toLowerCase();
-      final uniqueFileName = 'avatar_$timestamp.$extension';
-      final storagePath = 'avatars/$userId/$uniqueFileName';
-      debugPrint('📸 저장 경로: $storagePath');
-
-      debugPrint('📸 Supabase 업로드 시작');
-      await supabase.storage.from('avatars').uploadBinary(
-        storagePath,
-        fileBytes,
-        fileOptions: FileOptions(
-          upsert: true,
-          contentType: 'image/$extension',
-        ),
-      );
-      debugPrint('📸 Supabase 업로드 완료');
-
-      final publicUrl = supabase.storage.from('avatars').getPublicUrl(storagePath);
-      debugPrint('📸 공개 URL: $publicUrl');
-      widget.onAvatarChanged(publicUrl);
+      // 임시 파일로 저장 (Storage 업로드는 저장 버튼 클릭 시에)
+      _tempImageFile = file;
+      debugPrint('📸 임시 파일 저장 완료: ${file.path}');
+      
+      // UI에 즉시 반영 (프론트엔드만)
+      widget.onAvatarChanged('temp_${file.path}', file);
     } catch (e) {
       debugPrint('🔥 프로필 이미지 업로드 실패: $e');
 
@@ -226,6 +205,35 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
       if (mounted) setState(() => _isUploading = false);
       }
     }
+
+  ImageProvider? _getBackgroundImage() {
+    if (widget.tempImageFile != null) {
+      // 임시 파일이 있으면 FileImage 사용
+      return FileImage(widget.tempImageFile!);
+    } else if (widget.avatarUrl != 'basic' && !widget.avatarUrl.startsWith('temp_')) {
+      // 기존 네트워크 이미지
+      return NetworkImage(widget.avatarUrl);
+    }
+    return null;
+  }
+
+  Widget? _getChildImage() {
+    if (widget.tempImageFile != null) {
+      // 임시 파일이 있으면 아무것도 표시하지 않음 (backgroundImage에서 처리)
+      return null;
+    } else if (widget.avatarUrl == 'basic') {
+      // 기본 아바타
+      return ClipOval(
+        child: Image.asset(
+          'assets/basic_avatar.png',
+          width: 96,
+          height: 96,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    return null;
+  }
 
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
@@ -256,17 +264,8 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
             child: CircleAvatar(
               radius: 48,
               backgroundColor: Colors.white,
-              backgroundImage: isBasic ? null : NetworkImage(widget.avatarUrl),
-              child: isBasic
-                  ? ClipOval(
-                child: Image.asset(
-                  'assets/basic_avatar.png',
-                  width: 96,
-                  height: 96,
-                  fit: BoxFit.cover,
-                ),
-              )
-                  : null,
+              backgroundImage: _getBackgroundImage(),
+              child: _getChildImage(),
             ),
           ),
           Positioned(

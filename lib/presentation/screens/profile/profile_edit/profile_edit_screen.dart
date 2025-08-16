@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
@@ -31,6 +32,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late String job;
   late String bio;
   bool isEdited = false;
+  File? tempAvatarFile; // 임시 아바타 파일
 
   @override
   void initState() {
@@ -71,13 +73,45 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     final oldAvatarUrl = oldProfile['avatar_url'] ?? 'basic';
 
     try {
+      String finalAvatarUrl = avatarUrl;
+      
+      // 임시 아바타 파일이 있으면 Storage에 업로드
+      if (tempAvatarFile != null) {
+        try {
+          final fileBytes = await tempAvatarFile!.readAsBytes();
+          final fileName = tempAvatarFile!.path.split('/').last;
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final extension = fileName.split('.').last.toLowerCase();
+          final uniqueFileName = 'avatar_$timestamp.$extension';
+          final storagePath = 'avatars/$userId/$uniqueFileName';
+          
+          debugPrint('📸 Storage 업로드 시작: $storagePath');
+          await client.storage.from('avatars').uploadBinary(
+            storagePath,
+            fileBytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: 'image/$extension',
+            ),
+          );
+          
+          final publicUrl = client.storage.from('avatars').getPublicUrl(storagePath);
+          finalAvatarUrl = publicUrl;
+          debugPrint('📸 Storage 업로드 완료: $publicUrl');
+        } catch (e) {
+          debugPrint('❌ 아바타 Storage 업로드 실패: $e');
+          // Storage 업로드 실패 시 기존 아바타 유지
+          finalAvatarUrl = oldAvatarUrl;
+        }
+      }
+      
       // 프로필 업데이트
       await client.from('profiles').update({
         'username': username,
         'name': name,
         'job': job,
         'bio': bio,
-        'avatar_url': avatarUrl,
+        'avatar_url': finalAvatarUrl,
       }).eq('id', userId);
 
       // 직업 태그 업데이트 (직업이 변경된 경우에만)
@@ -139,9 +173,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   const SizedBox(height: 24),
                   EditAvatarButton(
                     avatarUrl: avatarUrl,
-                    onAvatarChanged: (url) {
+                    tempImageFile: tempAvatarFile,
+                    onAvatarChanged: (url, tempFile) {
                       setState(() {
                         avatarUrl = url;
+                        tempAvatarFile = tempFile;
                         isEdited = true;
                       });
                     },
