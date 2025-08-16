@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
+import 'package:my_logue/core/widgets/dialogs/reject_delete_dialog.dart';
 import 'package:my_logue/core/widgets/post/post_content.dart';
 import 'package:my_logue/data/datasources/user_book_api.dart';
 import 'package:my_logue/data/models/book_post_model.dart';
@@ -169,23 +170,34 @@ class PostItem extends StatelessWidget {
                           );
                         }
                       } else if (action == 'delete') {
-                        await showDialog(
-                          context: context,
-                          builder: (deleteDialogContext) => PostDeleteDialog(
-                            onDelete: () async {
-                              Navigator.pop(deleteDialogContext);
-                              final userBookApi = UserBookApi(Supabase.instance.client);
-                              try {
-                                await userBookApi.deleteBook(post.id);
-                                onDeleteSuccess?.call();
-                              } catch (_) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
-                                );
-                              }
-                            },
-                          ),
-                        );
+                        if(post.is_archived == false) {
+                          await showDialog(
+                            context: context,
+                            builder: (rejectDialogContext) => RejectDeleteDialog(
+                              onDelete: () async {
+                                Navigator.pop(rejectDialogContext);
+                              },
+                            ),
+                          );
+                        } else{
+                          await showDialog(
+                            context: context,
+                            builder: (deleteDialogContext) => PostDeleteDialog(
+                              onDelete: () async {
+                                Navigator.pop(deleteDialogContext);
+                                final userBookApi = UserBookApi(Supabase.instance.client);
+                                try {
+                                  await userBookApi.deleteBook(post.id);
+                                  onDeleteSuccess?.call();
+                                } catch (_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        }
                       }
                     },
                   ),

@@ -168,7 +168,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
               width: 40,
               height: 3,
               decoration: BoxDecoration(
-                color: AppColors.black300,
+                color: AppColors.black900,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
