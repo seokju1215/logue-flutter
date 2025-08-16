@@ -118,24 +118,52 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
       // 주소록 권한 요청 및 확인
       final success = await FlutterContacts.requestPermission(readonly: true);
       
-      if (success && mounted) {
-        print('✅ 주소록 접근 성공');
-        // 권한 승인 시 친구 찾기 화면으로 이동
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const InputPhoneNumberScreen()),
-        );
-      } else if (mounted) {
+              if (success && mounted) {
+          print('✅ 주소록 접근 성공');
+          
+          // 주소록에서 전화번호 가져오기
+          try {
+            final contacts = await FlutterContacts.getContacts(
+              withProperties: true,
+              withPhoto: false,
+            );
+            
+            final phoneNumbers = <String>[];
+            for (final contact in contacts) {
+              if (contact.phones.isNotEmpty) {
+                for (final phone in contact.phones) {
+                  // 전화번호에서 특수문자 제거하고 숫자만 추출
+                  final cleanPhone = phone.number.replaceAll(RegExp(r'[^\d]'), '');
+                  if (cleanPhone.isNotEmpty) {
+                    phoneNumbers.add(cleanPhone);
+                  }
+                }
+              }
+            }
+            
+            // 중복 제거
+            final uniquePhoneNumbers = phoneNumbers.toSet().toList();
+            
+            debugPrint('📱 주소록에서 가져온 전화번호 목록:');
+            debugPrint('📱 총 전화번호 개수: ${phoneNumbers.length}개');
+            debugPrint('📱 중복 제거 후 개수: ${uniquePhoneNumbers.length}개');
+            debugPrint('📱 전화번호 목록: $uniquePhoneNumbers');
+            
+            // 권한 승인 시 친구 찾기 화면으로 이동하면서 연락처 목록 전달
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => InputPhoneNumberScreen(
+                  contactPhoneNumbers: uniquePhoneNumbers,
+                ),
+              ),
+            );
+          } catch (e) {
+            print('❌ 주소록에서 전화번호 가져오기 실패: $e');
+          }
+        } else if (mounted) {
         // 권한이 거부되었거나 설정창으로 이동한 경우
         print('❌ 주소록 접근 권한이 거부되었습니다.');
-        
-        // 사용자에게 설정창에서 권한을 활성화하라는 안내 메시지 표시
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('설정 > 개인정보 보호 및 보안 > 주소록에서 권한을 허용해주세요.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
       }
     } catch (e) {
       print('❌ 친구 찾기 실패: $e');

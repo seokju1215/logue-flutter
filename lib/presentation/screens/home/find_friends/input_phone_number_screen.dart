@@ -8,9 +8,12 @@ import 'find_friends_screen.dart';
 
 class InputPhoneNumberScreen extends StatefulWidget {
   final String? initialPhoneNumber;
+  final List<String>? contactPhoneNumbers; // 연락처 전화번호 목록 추가
+  
   const InputPhoneNumberScreen({
     Key? key,
     this.initialPhoneNumber,
+    this.contactPhoneNumbers,
   }) : super(key: key);
 
   @override
@@ -43,7 +46,7 @@ class _InputPhoneNumberScreenState extends State<InputPhoneNumberScreen> {
     setState(() {
       final text = _searchController.text.trim();
       // 8글자 또는 11글자일 때만 활성화
-      hasSearchText = text.length == 8 || text.length == 11;
+      hasSearchText = text.length == 11;
     });
   }
 
@@ -58,23 +61,24 @@ class _InputPhoneNumberScreenState extends State<InputPhoneNumberScreen> {
       final supabase = Supabase.instance.client;
       final phoneNumber = _searchController.text.trim();
       
-      // update_profile_phone_kr RPC 함수를 사용하여 전화번호 저장
-      await supabase.rpc('update_profile_phone_kr', params: {
-        'p_user_id': supabase.auth.currentUser!.id,
-        'p_raw': phoneNumber, // '72667043' 또는 '01072667043' 등 무엇이든
-      });
+      // profiles 테이블의 contact_number 컬럼에 직접 전화번호 저장
+      await supabase
+          .from('profiles')
+          .update({'contact_number': phoneNumber})
+          .eq('id', supabase.auth.currentUser!.id);
 
-      // 성공 시 find_friends_screen으로 이동하면서 전화번호 전달
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => FindFriendsScreen(
-              contactNumber: phoneNumber,
-            ),
-          ),
-        );
-      }
+                // 성공 시 find_friends_screen으로 이동하면서 전화번호와 연락처 목록 전달
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FindFriendsScreen(
+                  contactNumber: phoneNumber,
+                  contactPhoneNumbers: widget.contactPhoneNumbers,
+                ),
+              ),
+            );
+          }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -134,6 +138,7 @@ class _InputPhoneNumberScreenState extends State<InputPhoneNumberScreen> {
           children: [
             TextField(
               controller: _searchController,
+              maxLength: 11,
               decoration: InputDecoration(
                 contentPadding:
                 const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
@@ -149,9 +154,17 @@ class _InputPhoneNumberScreenState extends State<InputPhoneNumberScreen> {
                 isDense: true,
                 hintText: '전화번호를 입력해주세요!',
                 hintStyle: TextStyle(color: AppColors.black500, fontSize: 14, height: 1.21),
+                counterText: '', // 글자 수 카운터 숨기기
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
               keyboardType: TextInputType.phone,
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: Text(
+                '전화번호는 01012345678 형식으로\n숫자 11글자만 정확하게 입력해주세요.',
+                style: TextStyle(color: AppColors.black500, fontSize: 12),
+              ),
             ),
           ],
         ),
