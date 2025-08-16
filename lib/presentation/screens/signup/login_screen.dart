@@ -50,8 +50,8 @@ class LoginScreen extends ConsumerWidget {
           Align(
             alignment: Alignment(0, 0.0),
             child: SvgPicture.asset(
-              'assets/logue_logo_with_title.svg',
-              height: 64,
+              'assets/logue_logo.svg',
+              height: 30,
             ),
           ),
 
