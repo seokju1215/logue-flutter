@@ -3,9 +3,9 @@ import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 
 class ArchiveBottomSheet extends StatefulWidget {
-  final List<Map<String, dynamic>> books; // DB에서 내려온 최신 책 목록
+  final List<Map<String, dynamic>> books; // 바텀시트 오픈 시점의 스냅샷
   final Function(List<Map<String, dynamic>>)? onBooksUpdated; // 저장 시에만 호출
-  final VoidCallback? onClose; // 바텀 시트가 닫힐 때 호출되는 콜백
+  final VoidCallback? onClose; // 완전히 닫을 때만 호출
 
   const ArchiveBottomSheet({
     super.key,
@@ -15,73 +15,51 @@ class ArchiveBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<ArchiveBottomSheet> createState() => ArchiveBottomSheetState();
+  State<ArchiveBottomSheet> createState() => _ArchiveBottomSheetState();
 }
 
-class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
-  // 화면 내부에서만 쓰는 작업용 리스트 (원본 건드리지 않음)
-  late List<Map<String, dynamic>> updatedBooks;
-
-  // 선택(= is_archived == false) 개수
-  int selectedBookCount = 0;
-
-  // 선택 표시(인덱스 기준)
+class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
+  late List<Map<String, dynamic>> updatedBooks; // 화면 내부 작업용(원본 불변)
   final Set<int> _selected = {};
-
-  // 선택 한도
   static const int kMaxSelection = 9;
+  int selectedBookCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _resetFrom(widget.books);
+    _resetFrom(widget.books); // 오픈 시점 스냅샷으로만 초기화
   }
 
-  /// 부모에서 내려주는 books가 바뀌면 내부 상태를 **항상 초기화**
-  @override
-  void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // 바텀 시트가 완전히 닫힐 때만 초기화
-    if (!identical(oldWidget.books, widget.books)) {
-      _resetFrom(widget.books);
-    }
-  }
+  // ✅ 바텀시트 열려있는 동안에는 외부 리빌드로 초기화하지 않음
+  // @override
+  // void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  //   // 초기화 금지: 완전히 닫힐 때만 초기화
+  // }
 
   void _resetFrom(List<Map<String, dynamic>> source) {
-    // 깊은 복사(맵도 카피) – 원본 훼손 방지
     updatedBooks = source.map((m) => Map<String, dynamic>.from(m)).toList();
-
     _selected.clear();
     for (int i = 0; i < updatedBooks.length; i++) {
-      if (updatedBooks[i]['is_archived'] == false) {
-        _selected.add(i);
-      }
+      if (updatedBooks[i]['is_archived'] == false) _selected.add(i);
     }
     selectedBookCount =
         updatedBooks.where((b) => b['is_archived'] == false).length;
-    setState(() {}); // 초기화 후 즉시 리렌더
+    setState(() {});
   }
 
-  /// 바텀 시트가 완전히 닫힐 때만 호출되는 초기화 메서드
-  void _resetOnDismiss() {
-    _resetFrom(widget.books);
-  }
-
-  // 선택 토글 (작업용 리스트만 변경)
   void _toggleSelect(int index) {
     setState(() {
       final currentSelected =
           updatedBooks.where((b) => b['is_archived'] == false).length;
 
       if (_selected.contains(index)) {
-        // 선택 해제 → 보관 처리
         _selected.remove(index);
         updatedBooks[index]['is_archived'] = true;
 
         final removedOrderIndex = updatedBooks[index]['order_index'];
         updatedBooks[index]['order_index'] = null;
 
-        // 뒤쪽 order_index 하나씩 당기기
         if (removedOrderIndex != null) {
           for (int i = 0; i < updatedBooks.length; i++) {
             if (i == index) continue;
@@ -92,13 +70,11 @@ class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
           }
         }
       } else {
-        // 선택 → 선반에 올리기 (최대 9)
         if (currentSelected >= kMaxSelection) return;
 
         _selected.add(index);
         updatedBooks[index]['is_archived'] = false;
 
-        // 기존 선택들의 order_index +1
         for (int i = 0; i < updatedBooks.length; i++) {
           if (i == index) continue;
           final oi = updatedBooks[i]['order_index'];
@@ -109,13 +85,11 @@ class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
         updatedBooks[index]['order_index'] = 0;
       }
 
-      // 카운트 갱신
       selectedBookCount =
-          updatedBooks.where((book) => book['is_archived'] == false).length;
+          updatedBooks.where((b) => b['is_archived'] == false).length;
     });
   }
 
-  /// 책장(선반) 라인들 생성
   List<Widget> _buildShelves({
     required int itemCount,
     required double itemHeight,
@@ -126,7 +100,7 @@ class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     final rowCount = (itemCount / booksPerRow).ceil();
 
     return List.generate(rowCount, (i) {
-      final shelfTop = topOffset + (itemHeight+22) * i;
+      final shelfTop = topOffset + (itemHeight + 22) * i; // 약간 더 촘촘하게
       return Positioned(
         top: shelfTop,
         left: 0,
@@ -206,18 +180,12 @@ class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          // ✅ 저장 버튼에서만 반영
-                          if (widget.onBooksUpdated != null) {
-                            widget.onBooksUpdated!(
-                              // 원본 건드리지 않도록 다시 복사해서 넘겨도 OK
-                              updatedBooks.map((m) => Map<String, dynamic>.from(m)).toList(),
-                            );
-                          }
-                          // onClose 콜백 호출 후 닫기
-                          if (widget.onClose != null) {
-                            widget.onClose!();
-                          }
-                          Navigator.pop(context, true); // 부모에서 true로 분기 가능
+                          // 저장 시에만 상위에 반영
+                          widget.onBooksUpdated?.call(
+                            updatedBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
+                          );
+                          widget.onClose?.call(); // 완전 닫힘 알림
+                          Navigator.pop(context, true);
                         },
                         child: Text(
                           '저장',
@@ -244,7 +212,7 @@ class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
             ),
           ),
 
-          // 상단 정보 라인 (선택 수만 노출)
+          // 상단 카운트
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22),
             child: Row(
@@ -264,13 +232,12 @@ class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
           ),
           const SizedBox(height: 8),
 
-          // 그리드 영역만 스크롤
+          // 그리드
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 0).copyWith(top: 21, bottom: 21),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  // 디자인 파라미터
                   const crossAxisCount = 5;
                   const crossAxisSpacing = 11.7;
                   const runSpacing = 35.0;
@@ -292,15 +259,12 @@ class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                         width: double.infinity,
                         child: Stack(
                           children: [
-                            // 선반 라인 (updatedBooks 기준)
                             ..._buildShelves(
                               itemCount: updatedBooks.length,
                               itemHeight: itemHeight,
                               runSpacing: runSpacing,
                               topOffset: topOffsetForShelf,
                             ),
-
-                            // 책 그리드
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 22),
                               child: GridView.builder(
