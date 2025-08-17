@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/add_book/search_book_screen.dart';
@@ -29,11 +30,27 @@ class _ArchiveTabState extends State<ArchiveTab> {
   final client = Supabase.instance.client;
   List<String> originalOrder = [];
   bool isEdited = false;
+  
+  // 스크롤 제어를 위한 ScrollController
+  late ScrollController _scrollController;
+  
+  // 자동 스크롤을 위한 변수들
+  bool _isDragging = false;
+  Offset? _dragPosition;
+  Timer? _autoScrollTimer;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _updateOriginalOrder();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _autoScrollTimer?.cancel();
+    super.dispose();
   }
 
   void _updateOriginalOrder() {
@@ -71,6 +88,60 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
     _updateBookOrder();
   }
+
+
+
+  void _startAutoScroll() {
+    _isDragging = true;
+    _autoScrollTimer?.cancel();
+    
+    // 50ms마다 자동 스크롤 체크 (더 빠른 반응)
+    _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!_isDragging || _dragPosition == null) {
+        timer.cancel();
+        return;
+      }
+      
+      _performAutoScroll();
+    });
+  }
+
+  void _performAutoScroll() {
+    if (!mounted) return;
+    
+    final screenHeight = MediaQuery.of(context).size.height;
+    final scrollOffset = _scrollController.offset;
+    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+    
+    // 드래그 위치가 화면 상단 근처면 위로 스크롤
+    if (_dragPosition!.dy < 150) {
+      if (scrollOffset > 0) {
+        _scrollController.animateTo(
+          (scrollOffset - 35).clamp(0.0, maxScrollExtent),
+          duration: const Duration(milliseconds: 80),
+          curve: Curves.easeOut,
+        );
+      }
+    }
+    // 드래그 위치가 화면 하단 근처면 아래로 스크롤
+    else if (_dragPosition!.dy > screenHeight - 150) {
+      if (scrollOffset < maxScrollExtent) {
+        _scrollController.animateTo(
+          (scrollOffset + 35).clamp(0.0, maxScrollExtent),
+          duration: const Duration(milliseconds: 80),
+          curve: Curves.easeOut,
+        );
+      }
+    }
+  }
+
+  void _stopAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _isDragging = false;
+    _dragPosition = null;
+  }
+
+
 
   bool _areListsEqual(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
@@ -145,6 +216,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      controller: _scrollController,
       primary: false,
       padding: const EdgeInsets.fromLTRB(0, 21, 0, 21),
       child: Column(
@@ -245,45 +317,70 @@ class _ArchiveTabState extends State<ArchiveTab> {
                     width: double.infinity,
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
-                                               child: ReorderableWrap(
-                           spacing: crossAxisSpacing,
-                           runSpacing: 35,
-                           needsLongPressDraggable: true,
-                           onReorder: _onReorder,
+                                            child: Listener(
+                        onPointerDown: (event) {
+                          // 포인터 다운 시 드래그 시작
+                          _isDragging = true;
+                          _dragPosition = event.position;
+                          _startAutoScroll();
+                        },
+                        onPointerMove: (event) {
+                          // 포인터 이동 시 위치 업데이트
+                          if (_isDragging) {
+                            _dragPosition = event.position;
+                          }
+                        },
+                        onPointerUp: (event) {
+                          // 포인터 업 시 드래그 종료
+                          _stopAutoScroll();
+                        },
+                        child: ReorderableWrap(
+                          spacing: crossAxisSpacing,
+                          runSpacing: 35,
+                          needsLongPressDraggable: true,
+                          onReorder: _onReorder,
+                          // 드래그 중 자동 스크롤 활성화
+                          buildDraggableFeedback: (context, constraints, child) {
+                            return Material(
+                              elevation: 8.0,
+                              child: child,
+                            );
+                          },
+
                         children: widget.books.map((book) {
                           return GestureDetector(
-                                                      onTap: () async {
-                            // AddBookView의 Navigator를 통해 이동하여 하단 네비게이션바 유지
-                            final navigatorState = widget.navigatorKey?.currentState;
-                            if (navigatorState != null) {
-                              final result = await navigatorState.push(
-                                MaterialPageRoute(
-                                  builder: (_) => SinglePostScreen(
-                                    bookId: book['book_id'] ?? '',
-                                    userBookId: book['id'],
-                                    userId: client.auth.currentUser?.id,
+                            onTap: () async {
+                              // AddBookView의 Navigator를 통해 이동하여 하단 네비게이션바 유지
+                              final navigatorState = widget.navigatorKey?.currentState;
+                              if (navigatorState != null) {
+                                final result = await navigatorState.push(
+                                  MaterialPageRoute(
+                                    builder: (_) => SinglePostScreen(
+                                      bookId: book['book_id'] ?? '',
+                                      userBookId: book['id'],
+                                      userId: client.auth.currentUser?.id,
+                                    ),
                                   ),
-                                ),
-                              );
-                              if (result == true) {
-                                widget.onRefresh();
-                              }
-                            } else {
-                              // fallback: 기존 방식 사용
-                              final result = await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => SinglePostScreen(
-                                    bookId: book['book_id'] ?? '',
-                                    userBookId: book['id'],
-                                    userId: client.auth.currentUser?.id,
+                                );
+                                if (result == true) {
+                                  widget.onRefresh();
+                                }
+                              } else {
+                                // fallback: 기존 방식 사용
+                                final result = await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => SinglePostScreen(
+                                      bookId: book['book_id'] ?? '',
+                                      userBookId: book['id'],
+                                      userId: client.auth.currentUser?.id,
+                                    ),
                                   ),
-                                ),
-                              );
-                              if (result == true) {
-                                widget.onRefresh();
+                                );
+                                if (result == true) {
+                                  widget.onRefresh();
+                                }
                               }
-                            }
-                          },
+                            },
                             child: SizedBox(
                               key: ValueKey(book['id']),
                               width: itemWidth,
@@ -292,12 +389,13 @@ class _ArchiveTabState extends State<ArchiveTab> {
                                 borderRadius: BorderRadius.circular(0),
                                 child: BookFrame(
                                   imageUrl: book['books']?['image'] ??
-                                      'https://via.placeholder.com/150',
+                                      'https://via.placeholder.com150',
                                 ),
                               ),
                             ),
                           );
                         }).toList(),
+                        ),
                       ),
                     ),
                   ),
