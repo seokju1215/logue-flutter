@@ -39,6 +39,14 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
   void _resetFrom(List<Map<String, dynamic>> source) {
     updatedBooks = source.map((m) => Map<String, dynamic>.from(m)).toList();
+    
+    // 디버깅: _resetFrom에서 받은 데이터 구조 확인
+    debugPrint('🔍 _resetFrom - 받은 데이터 구조:');
+    for (int i = 0; i < updatedBooks.length; i++) {
+      final book = updatedBooks[i];
+      debugPrint('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
+    }
+    
     _selected.clear();
     for (int i = 0; i < updatedBooks.length; i++) {
       if (updatedBooks[i]['is_archived'] == false) _selected.add(i);
@@ -49,6 +57,10 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   }
 
   void _toggleSelect(int index) {
+    // 디버깅: 선택 전 데이터 구조 확인
+    debugPrint('🔍 _toggleSelect 시작 - index: $index');
+    debugPrint('🔍 선택 전 updatedBooks[$index]: ID=${updatedBooks[index]['id']}, book_id=${updatedBooks[index]['book_id']}, is_archived=${updatedBooks[index]['is_archived']}');
+    
     setState(() {
       final currentSelected =
           updatedBooks.where((b) => b['is_archived'] == false).length;
@@ -87,6 +99,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
       selectedBookCount =
           updatedBooks.where((b) => b['is_archived'] == false).length;
+      
+      // 디버깅: 선택 후 데이터 구조 확인
+      debugPrint('🔍 선택 후 updatedBooks[$index]: ID=${updatedBooks[index]['id']}, book_id=${updatedBooks[index]['book_id']}, is_archived=${updatedBooks[index]['is_archived']}');
     });
   }
 

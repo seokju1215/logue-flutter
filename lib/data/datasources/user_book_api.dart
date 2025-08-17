@@ -309,8 +309,8 @@ class UserBookApi {
   }
 
   /// 팔로워들에게 책 추가 알림 보내기 (send-notification-v2 edge function 사용)
-  Future<void> notifyFollowersAboutNewBook(String userId, String? bookId) async {
-    debugPrint("🔍 notifyFollowersAboutNewBook 시작: userId=$userId, bookId=$bookId");
+  Future<void> notifyFollowersAboutNewBook(String userId, String? userBookId) async {
+    debugPrint("🔍 notifyFollowersAboutNewBook 시작: userId=$userId, userBookId=$userBookId");
 
     try {
       // 1. 해당 사용자를 팔로우하는 사용자들 가져오기
@@ -340,7 +340,7 @@ class UserBookApi {
             'recipient_id': followerId,
             'sender_id': userId,
             'type': 'post',
-            'book_id': bookId, // 새로 추가된 책의 ID
+            'book_id': userBookId, // user_books 테이블의 ID
           };
           debugPrint("📦 [$i] Edge function 요청: $requestBody");
           

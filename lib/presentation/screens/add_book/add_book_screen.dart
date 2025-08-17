@@ -62,10 +62,18 @@ class _AddBookScreenState extends State<AddBookScreen> {
       // 모든 책을 가져오기
       final data = await Supabase.instance.client
           .from('user_books')
-          .select('id, user_id, order_index, archived_order_index, is_archived, books(image)')
+          .select('id, user_id, order_index, archived_order_index, is_archived, book_id, books(id, image)')
           .eq('user_id', userId);
 
       final fetched = List<Map<String, dynamic>>.from(data);
+      
+      // 디버깅: 로드된 데이터 구조 확인
+      debugPrint('🔍 _fetchAllBooks - 로드된 데이터 구조:');
+      for (int i = 0; i < fetched.length; i++) {
+        final book = fetched[i];
+        debugPrint('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
+      }
+      
       setState(() {
         allBooks = fetched;
         isLoading = false;

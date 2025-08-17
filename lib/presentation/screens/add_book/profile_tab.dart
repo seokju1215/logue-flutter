@@ -108,12 +108,26 @@ class _ProfileTabState extends State<ProfileTab> {
   List<Map<String, dynamic>> _getSortedBooks() {
     final sortedBooks = List<Map<String, dynamic>>.from(widget.allBooks);
 
+    // 디버깅: allBooks 데이터 구조 확인
+    print('🔍 _getSortedBooks - allBooks 데이터 구조:');
+    for (int i = 0; i < sortedBooks.length; i++) {
+      final book = sortedBooks[i];
+      print('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
+    }
+
     // archived_order_index 기준으로 정렬
     sortedBooks.sort((a, b) {
       final aOrder = a['archived_order_index'] as int? ?? 0;
       final bOrder = b['archived_order_index'] as int? ?? 0;
       return aOrder.compareTo(bOrder);
     });
+
+    // 디버깅: 정렬 후 데이터 확인
+    print('🔍 _getSortedBooks - 정렬 후 데이터:');
+    for (int i = 0; i < sortedBooks.length; i++) {
+      final book = sortedBooks[i];
+      print('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, archived_order_index: ${book['archived_order_index']}');
+    }
 
     return sortedBooks;
   }
@@ -245,6 +259,12 @@ class _ProfileTabState extends State<ProfileTab> {
                                           print(
                                               '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
                                         }
+                                        
+                                        // 디버깅: updatedBooks의 모든 키 확인
+                                        if (updatedBooks.isNotEmpty) {
+                                          print('🔍 updatedBooks[0]의 모든 키: ${updatedBooks[0].keys.toList()}');
+                                          print('🔍 updatedBooks[0]의 전체 데이터: ${updatedBooks[0]}');
+                                        }
 
                                         print('🔍 widget.books 내용:');
                                         for (int i = 0;
@@ -301,30 +321,43 @@ class _ProfileTabState extends State<ProfileTab> {
                                            HomeRecommendTab.refreshUsersWithSameBooks();
                                            print('🔄 보관함 변경 후 홈 화면 친구 목록 캐시 새로고침 요청');
                                            
-                                           if (newlyAddedBooks.isNotEmpty) {
-                                             print('🔍 새로 추가된 책들:');
-                                             for (final book in newlyAddedBooks) {
-                                               print(
-                                                   '  - ID: ${book['id']}, book_id: ${book['book_id']}');
-                                             }
-
-                                             // 새로 추가된 책들에 대해 팔로워들에게 알림 전송
-                                             final currentUserId =
-                                                 client.auth.currentUser?.id;
-                                             if (currentUserId != null) {
+                                                                                        if (newlyAddedBooks.isNotEmpty) {
+                                               print('🎯 ===== 팔로워 알림 전송 시작 =====');
+                                               print('🔍 새로 추가된 책들 (${newlyAddedBooks.length}개):');
                                                for (final book in newlyAddedBooks) {
-                                                 final bookId = book['book_id'] as String?;
-                                                 if (bookId != null) {
-                                                   print(
-                                                       '📢 알림 전송 시도: userId=$currentUserId, bookId=$bookId');
-                                                   await userBookApi
-                                                       .notifyFollowersAboutNewBook(
-                                                           currentUserId, bookId);
+                                                 print(
+                                                     '  - ID: ${book['id']}, book_id: ${book['book_id']}');
+                                               }
+
+                                               // 새로 추가된 책들에 대해 팔로워들에게 알림 전송
+                                               final currentUserId =
+                                                   client.auth.currentUser?.id;
+                                               if (currentUserId != null) {
+                                                 print('👤 현재 사용자 ID: $currentUserId');
+                                                 for (int i = 0; i < newlyAddedBooks.length; i++) {
+                                                   final book = newlyAddedBooks[i];
+                                                   final userBookId = book['id'] as String?;
+                                                   if (userBookId != null) {
+                                                     print(
+                                                         '📢 [$i] 알림 전송 시도: userId=$currentUserId, userBookId=$userBookId');
+                                                     
+                                                     try {
+                                                       await userBookApi
+                                                           .notifyFollowersAboutNewBook(
+                                                               currentUserId, userBookId);
+                                                       print('✅ [$i] 알림 전송 성공: userBookId=$userBookId');
+                                                     } catch (e) {
+                                                       print('❌ [$i] 알림 전송 실패: userBookId=$userBookId, error=$e');
+                                                     }
+                                                   } else {
+                                                     print('❌ [$i] user_books ID가 null: ID=${book['id']}');
+                                                   }
                                                  }
-                                                 print('📢 팔로워들에게 새 책 추가 알림 전송 완료');
+                                                 print('🎯 ===== 팔로워 알림 전송 완료 =====');
+                                               } else {
+                                                 print('❌ 현재 사용자 ID를 가져올 수 없음');
                                                }
                                              }
-                                           }
 
                                           print('✅ DB 업데이트 완료');
 
@@ -334,8 +367,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
                                           // 바텀시트 닫기
                                           print('🔄 Navigator.pop() 호출');
-                                          Navigator.of(context, rootNavigator: true)
-                                              .pop();
+                                          Navigator.of(context).pop();
                                         } catch (e) {
                                           print('❌ DB 업데이트 실패: $e');
                                           print('❌ 에러 스택: ${StackTrace.current}');
