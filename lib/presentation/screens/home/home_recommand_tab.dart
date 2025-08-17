@@ -155,78 +155,137 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
 
   /// 친구 찾기 처리
   Future<void> _handleFindFriends() async {
-    await showDialog(
-      context: context,
-      builder: (deleteDialogContext) => ContactPermissionDialog(
-        onConfirm: () async {
-          Navigator.pop(deleteDialogContext);
-          try {
-            // 주소록 권한 요청 및 확인
-            final success =
-                await FlutterContacts.requestPermission(readonly: true);
-
-            if (success && mounted) {
-              print('✅ 주소록 접근 성공');
-
-              // 주소록에서 전화번호 가져오기
+    try {
+      // 주소록 접근 시도 (권한이 이미 있으면 바로 성공, 없으면 권한 요청)
+      try {
+        // 주소록에서 전화번호 가져오기 시도
+        final contacts = await FlutterContacts.getContacts(
+          withProperties: true,
+          withPhoto: false,
+        );
+        
+        // 권한이 이미 있는 경우 바로 진행
+        print('✅ 주소록 권한이 이미 허용됨 - 바로 진행');
+        await _processContactsAndNavigate(contacts);
+        
+      } catch (e) {
+        // 권한이 없는 경우 다이얼로그 표시
+        print('❌ 주소록 권한이 허용되지 않음 - 다이얼로그 표시');
+        await showDialog(
+          context: context,
+          builder: (deleteDialogContext) => ContactPermissionDialog(
+            onConfirm: () async {
+              Navigator.pop(deleteDialogContext);
               try {
-                final contacts = await FlutterContacts.getContacts(
-                  withProperties: true,
-                  withPhoto: false,
-                );
+                // 주소록 권한 요청 및 확인
+                final success =
+                    await FlutterContacts.requestPermission(readonly: true);
 
-                final phoneNumbers = <String>[];
-                for (final contact in contacts) {
-                  if (contact.phones.isNotEmpty) {
-                    for (final phone in contact.phones) {
-                      // 전화번호에서 특수문자 제거하고 숫자만 추출
-                      final cleanPhone =
-                          phone.number.replaceAll(RegExp(r'[^\d]'), '');
-                      if (cleanPhone.isNotEmpty) {
-                        phoneNumbers.add(cleanPhone);
-                      }
-                    }
-                  }
+                if (success && mounted) {
+                  print('✅ 주소록 접근 성공');
+                  await _getContactsAndNavigate();
+                } else if (mounted) {
+                  // 권한이 거부되었거나 설정창으로 이동한 경우
+                  print('❌ 주소록 접근 권한이 거부되었습니다.');
                 }
-
-                // 중복 제거
-                final uniquePhoneNumbers = phoneNumbers.toSet().toList();
-
-                debugPrint('📱 주소록에서 가져온 전화번호 목록:');
-                debugPrint('📱 총 전화번호 개수: ${phoneNumbers.length}개');
-                debugPrint('📱 중복 제거 후 개수: ${uniquePhoneNumbers.length}개');
-                debugPrint('📱 전화번호 목록: $uniquePhoneNumbers');
-
-                // 권한 승인 시 친구 찾기 화면으로 이동하면서 연락처 목록 전달
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => InputPhoneNumberScreen(
-                      contactPhoneNumbers: uniquePhoneNumbers,
-                    ),
-                  ),
-                );
               } catch (e) {
-                print('❌ 주소록에서 전화번호 가져오기 실패: $e');
+                print('❌ 친구 찾기 실패: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('권한 요청 중 오류가 발생했습니다.'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
               }
-            } else if (mounted) {
-              // 권한이 거부되었거나 설정창으로 이동한 경우
-              print('❌ 주소록 접근 권한이 거부되었습니다.');
-            }
-          } catch (e) {
-            print('❌ 친구 찾기 실패: $e');
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('권한 요청 중 오류가 발생했습니다.'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+            },
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ 주소록 권한 확인 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('권한 확인 중 오류가 발생했습니다.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 주소록에서 전화번호를 가져오고 화면 이동
+  Future<void> _getContactsAndNavigate() async {
+    try {
+      // 주소록에서 전화번호 가져오기
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
+
+      await _processContactsAndNavigate(contacts);
+    } catch (e) {
+      print('❌ 주소록에서 전화번호 가져오기 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('주소록에서 전화번호를 가져오는 중 오류가 발생했습니다.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 연락처 목록을 처리하고 화면 이동
+  Future<void> _processContactsAndNavigate(List<Contact> contacts) async {
+    try {
+      final phoneNumbers = <String>[];
+      for (final contact in contacts) {
+        if (contact.phones.isNotEmpty) {
+          for (final phone in contact.phones) {
+            // 전화번호에서 특수문자 제거하고 숫자만 추출
+            final cleanPhone =
+                phone.number.replaceAll(RegExp(r'[^\d]'), '');
+            if (cleanPhone.isNotEmpty) {
+              phoneNumbers.add(cleanPhone);
             }
           }
-        },
-      ),
-    );
+        }
+      }
+
+      // 중복 제거
+      final uniquePhoneNumbers = phoneNumbers.toSet().toList();
+
+      debugPrint('📱 주소록에서 가져온 전화번호 목록:');
+      debugPrint('📱 총 전화번호 개수: ${phoneNumbers.length}개');
+      debugPrint('📱 중복 제거 후 개수: ${uniquePhoneNumbers.length}개');
+      debugPrint('📱 전화번호 목록: $uniquePhoneNumbers');
+
+      // 친구 찾기 화면으로 이동하면서 연락처 목록 전달
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => InputPhoneNumberScreen(
+              contactPhoneNumbers: uniquePhoneNumbers,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ 연락처 처리 중 오류 발생: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('연락처 처리 중 오류가 발생했습니다.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Future<bool> _checkFollowStatus(String targetUserId) async {
