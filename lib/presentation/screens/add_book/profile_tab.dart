@@ -5,6 +5,7 @@ import 'package:my_logue/presentation/screens/add_book/search_book_screen.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/data/datasources/user_book_api.dart';
+import 'package:my_logue/presentation/screens/home/home_recommand_tab.dart';
 
 import '../../../core/themes/stroke_text_style.dart';
 import '../../../core/widgets/book/book_frame.dart';
@@ -69,6 +70,10 @@ class _ProfileTabState extends State<ProfileTab> {
       originalOrder = widget.books.map((b) => b['id'] as String).toList();
       isEdited = false;
     });
+    
+    // 홈 화면의 인생책이 겹치는 친구 목록 캐시 새로고침
+    HomeRecommendTab.refreshUsersWithSameBooks();
+    debugPrint('🔄 책 순서 변경 후 홈 화면 친구 목록 캐시 새로고침 요청');
   }
 
   void _onReorder(int oldIndex, int newIndex) {
@@ -278,6 +283,10 @@ class _ProfileTabState extends State<ProfileTab> {
                                            // 일괄 업데이트로 모든 책의 is_archived와 order_index 업데이트
                                            await userBookApi.updateBooksBatch(updatedBooks);
                                            print('🔄 updateBooksBatch 호출 완료');
+                                           
+                                           // 홈 화면의 인생책이 겹치는 친구 목록 캐시 새로고침
+                                           HomeRecommendTab.refreshUsersWithSameBooks();
+                                           print('🔄 보관함 변경 후 홈 화면 친구 목록 캐시 새로고침 요청');
                                            
                                            if (newlyAddedBooks.isNotEmpty) {
                                              print('🔍 새로 추가된 책들:');
