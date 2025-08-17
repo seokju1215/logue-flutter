@@ -5,18 +5,20 @@ import 'package:my_logue/core/widgets/book/book_frame.dart';
 class ArchiveBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> books; // DB에서 내려온 최신 책 목록
   final Function(List<Map<String, dynamic>>)? onBooksUpdated; // 저장 시에만 호출
+  final VoidCallback? onClose; // 바텀 시트가 닫힐 때 호출되는 콜백
 
   const ArchiveBottomSheet({
     super.key,
     required this.books,
     this.onBooksUpdated,
+    this.onClose,
   });
 
   @override
-  State<ArchiveBottomSheet> createState() => _ArchiveBottomSheetState();
+  State<ArchiveBottomSheet> createState() => ArchiveBottomSheetState();
 }
 
-class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
+class ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   // 화면 내부에서만 쓰는 작업용 리스트 (원본 건드리지 않음)
   late List<Map<String, dynamic>> updatedBooks;
 
@@ -39,6 +41,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   @override
   void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // 바텀 시트가 완전히 닫힐 때만 초기화
     if (!identical(oldWidget.books, widget.books)) {
       _resetFrom(widget.books);
     }
@@ -57,6 +60,11 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     selectedBookCount =
         updatedBooks.where((b) => b['is_archived'] == false).length;
     setState(() {}); // 초기화 후 즉시 리렌더
+  }
+
+  /// 바텀 시트가 완전히 닫힐 때만 호출되는 초기화 메서드
+  void _resetOnDismiss() {
+    _resetFrom(widget.books);
   }
 
   // 선택 토글 (작업용 리스트만 변경)
@@ -118,7 +126,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     final rowCount = (itemCount / booksPerRow).ceil();
 
     return List.generate(rowCount, (i) {
-      final shelfTop = topOffset + (itemHeight + runSpacing) * i;
+      final shelfTop = topOffset + (itemHeight+22) * i;
       return Positioned(
         top: shelfTop,
         left: 0,
@@ -204,6 +212,10 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                               // 원본 건드리지 않도록 다시 복사해서 넘겨도 OK
                               updatedBooks.map((m) => Map<String, dynamic>.from(m)).toList(),
                             );
+                          }
+                          // onClose 콜백 호출 후 닫기
+                          if (widget.onClose != null) {
+                            widget.onClose!();
                           }
                           Navigator.pop(context, true); // 부모에서 true로 분기 가능
                         },

@@ -42,6 +42,8 @@ class _ProfileTabState extends State<ProfileTab> {
   bool isEdited = false;
   final GlobalKey _titleKey = GlobalKey(); // 텍스트 위젯의 위치를 측정하기 위한 키
   bool _isUpdatingBooks = false; // 책 변경 로딩 상태
+  
+
 
   @override
   void initState() {
@@ -184,6 +186,7 @@ class _ProfileTabState extends State<ProfileTab> {
                             context: context,
                             useRootNavigator: true,
                             isScrollControlled: true,
+                            isDismissible: false, // 바텀 시트를 완전히 내려야만 닫힘
                             backgroundColor: Colors.transparent,
                             barrierColor: Colors.transparent,
                             builder: (BuildContext context) {
@@ -214,6 +217,11 @@ class _ProfileTabState extends State<ProfileTab> {
                                     bottom: 0,
                                     child: ArchiveBottomSheet(
                                       books: _getSortedBooks(),
+                                      onClose: () {
+                                        // 바텀 시트가 닫힐 때만 호출됨
+                                        debugPrint('🔒 ArchiveBottomSheet 완전히 닫힘 - 선택 상태 초기화');
+                                        setState(() {});
+                                      },
                                       // archived_order_index 기준으로 정렬된 책 목록 전달
                                       onBooksUpdated: (updatedBooks) async {
                                         // 로딩 상태 시작
