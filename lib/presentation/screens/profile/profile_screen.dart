@@ -368,9 +368,9 @@ class ProfileScreenState extends State<ProfileScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Transform.scale(
-              scale: 0.7,
+              scale: 1,
               child: IconButton(
-                icon: Image.asset('assets/edit_icon.png'),
+                icon: SvgPicture.asset('assets/edit_icon.svg'),
                 onPressed: () async {
                   setState(() => _showFullBio = false);
                   final result =
@@ -480,6 +480,8 @@ class ProfileScreenState extends State<ProfileScreen> {
                       style:
                           TextStyle(fontSize: 22, color: AppColors.black900)),
                   const SizedBox(height: 3),
+                  if (profile?['job'] == '')
+                    const SizedBox(height:2),
                   if (profile?['job'] != '')
                     Text(profile?['job'] ?? '',
                         style: TextStyle(fontSize: 15, color: AppColors.black500)),
@@ -487,7 +489,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 9),
                   _buildBio(context),
                   if (profile?['job'] == '')
-                    const SizedBox(height: 9),
+                    const SizedBox(height : 7),
                   if (profile?['job'] == '')
                     Text('', style: TextStyle(fontSize: 15, color: AppColors.black500)),
                   const SizedBox(height: 9),
