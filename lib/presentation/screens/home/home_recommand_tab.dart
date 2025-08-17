@@ -341,10 +341,8 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                   }).toList(),
                 ),
                 SizedBox(
-                  height: 31,
+                  height: 50,
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (usersWithSameBooks.length > 3)
                         Center(
@@ -360,11 +358,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                               );
                               setState(() {}); // Provider 상태로만 UI 갱신
                             },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
                             child: const Text(
                               "더보기",
                               style: TextStyle(
@@ -375,7 +368,7 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                             ),
                           ),
                         ),
-                     usersWithSameBooks.length <= 3? const SizedBox(height: 31) : SizedBox(height: 10),
+                     usersWithSameBooks.length > 3? const SizedBox(height: 0) : SizedBox(height: 30),
                       const Divider(height: 1, color: AppColors.black300),
                     ],
                   ),
