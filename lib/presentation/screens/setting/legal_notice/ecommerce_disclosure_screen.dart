@@ -30,6 +30,13 @@ class _EcommerceDisclosureScreenState extends State<EcommerceDisclosureScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      body: SingleChildScrollView(
+        child: Image.asset(
+          'assets/ecommerce_disclosure.png',
+          fit: BoxFit.fitWidth,
+          width: double.infinity,
+        ),
+      ),
     );
   }
 }
