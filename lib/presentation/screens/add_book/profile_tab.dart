@@ -18,6 +18,7 @@ class ProfileTab extends StatefulWidget {
   final List<Map<String, dynamic>> books;
   final List<Map<String, dynamic>> allBooks; // 모든 책 목록 (보관함 포함)
   final VoidCallback onRefresh;
+
   final Function(bool)? onBookAdded; // 책 추가 완료 콜백
   final GlobalKey<NavigatorState>?
       navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
@@ -28,6 +29,7 @@ class ProfileTab extends StatefulWidget {
     required this.books,
     required this.allBooks,
     required this.onRefresh,
+
     this.onBookAdded,
     this.navigatorKey,
   }) : super(key: key);
@@ -61,6 +63,8 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _updateBookOrder() async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
+    
+    // DB 업데이트
     for (int i = 0; i < widget.books.length; i++) {
       final bookId = widget.books[i]['id'];
       await client
@@ -73,9 +77,10 @@ class _ProfileTabState extends State<ProfileTab> {
       isEdited = false;
     });
     
-    // 홈 화면의 인생책이 겹치는 친구 목록 캐시 새로고침
-    HomeRecommendTab.refreshUsersWithSameBooks();
-    debugPrint('🔄 책 순서 변경 후 홈 화면 친구 목록 캐시 새로고침 요청');
+    // 부모 위젯에게 순서 변경 알림 (새로고침 요청)
+    widget.onRefresh();
+    
+
   }
 
   void _onReorder(int oldIndex, int newIndex) {

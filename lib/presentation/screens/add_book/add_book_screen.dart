@@ -151,6 +151,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   setState(() {
                     _currentIndex = index;
                   });
+                  // 탭 전환 시마다 데이터 새로고침
+                  _fetchAllBooks();
                 },
                 children: [
                   ArchiveTab(
@@ -173,6 +175,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     }),
                     allBooks: allBooks, // 모든 책 목록 전달
                     onRefresh: _fetchAllBooks,
+
                     onBookAdded: (result) {
                       if (result == true) {
                         // 책 추가가 완료되었을 때 상위로 결과 전달
