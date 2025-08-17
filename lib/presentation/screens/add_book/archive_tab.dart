@@ -13,12 +13,14 @@ import '../../../core/widgets/dialogs/AnnouncementDialog.dart';
 class ArchiveTab extends StatefulWidget {
   final List<Map<String, dynamic>> books;
   final VoidCallback onRefresh;
+  final VoidCallback? onBookAdded; // 책 추가 시 호출되는 콜백
   final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
 
   const ArchiveTab({
     Key? key,
     required this.books,
     required this.onRefresh,
+    this.onBookAdded,
     this.navigatorKey,
   }) : super(key: key);
 
@@ -248,6 +250,11 @@ class _ArchiveTabState extends State<ArchiveTab> {
                           },
                         );
                         return;
+                      }
+                      
+                      // 책 추가 시 로딩 상태 활성화
+                      if (widget.onBookAdded != null) {
+                        widget.onBookAdded!();
                       }
                       
                       final result = await Navigator.push(

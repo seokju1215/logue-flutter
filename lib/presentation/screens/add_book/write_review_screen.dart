@@ -171,7 +171,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isSaving ? null : () => Navigator.pop(context),
         ),
         title: const Text(
           '책 추가',
@@ -180,94 +180,107 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveReview,
-            child: Text(
-              '확인',
-              style: TextStyle(
-                color: _isSaving ? Colors.grey : const Color(0xFF0055FF),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                    ),
+                  )
+                : const Text(
+                    '확인',
+                    style: TextStyle(
+                      color: Color(0xFF0055FF),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: SizedBox(
+                        width: 235,
+                        height: 349,
+                        child: BookFrame(imageUrl: widget.book.image),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 9),
+                          child: const Text('후기 제목',
+                              style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                        ),
+                        Text(
+                          '${_titleController.text.length}/50',
+                          style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                        ),
+                      ],
+                    ),
+                    TextField(
+                      buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                      controller: _titleController,
+                      maxLength: 50,
+                      minLines: 2,
+                      maxLines: null,
+                      style: const TextStyle(fontSize: 14, color: AppColors.black900),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(5),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 9),
+                          child: const Text('후기 내용',
+                              style: TextStyle(fontSize: 12, color: AppColors.black500)),
+                        ),
+                        Text(
+                          '${_contentController.text.length}/1000',
+                          style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                        ),
+                      ],
+                    ),
+                    TextField(
+                      buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                      controller: _contentController,
+                      maxLength: 1000,
+                      minLines: 3,
+                      maxLines: null,
+                      style: const TextStyle(fontSize: 14, color: AppColors.black900),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(5),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
             ),
           ),
         ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: SizedBox(
-                    width: 235,
-                    height: 349,
-                    child: BookFrame(imageUrl: widget.book.image),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left:9),
-                      child: const Text('후기 제목',
-                          style: TextStyle(fontSize: 12, color: AppColors.black500)),
-                    ),
-                    Text(
-                      '${_titleController.text.length}/50',
-                      style: const TextStyle(fontSize: 12, color: AppColors.black500),
-                    ),
-                  ],
-                ),
-                TextField(
-                  buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                  controller: _titleController,
-                  maxLength: 50,
-                  minLines: 2,
-                  maxLines: null,
-                  style: const TextStyle(fontSize: 14, color: AppColors.black900),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: Colors.grey),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left:9),
-                      child: const Text('후기 내용',
-                          style: TextStyle(fontSize: 12, color: AppColors.black500)),
-                    ),
-                    Text(
-                      '${_contentController.text.length}/1000',
-                      style: const TextStyle(fontSize: 12, color: AppColors.black500),
-                    ),
-                  ],
-                ),
-                TextField(
-                  buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                  controller: _contentController,
-                  maxLength: 1000,
-                  minLines: 3,
-                  maxLines: null,
-                  style: const TextStyle(fontSize: 14, color: AppColors.black900),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: Colors.grey),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

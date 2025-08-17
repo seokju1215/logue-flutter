@@ -145,48 +145,59 @@ class _AddBookScreenState extends State<AddBookScreen> {
             ),
             // 탭뷰
             Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                  // 탭 전환 시마다 데이터 새로고침
-                  _fetchAllBooks();
-                },
-                children: [
-                  ArchiveTab(
-                    key: ValueKey(_archiveTabKey),
-                    books: List.from(allBooks)..sort((a, b) {
-                      final aIndex = a['archived_order_index'] ?? 0;
-                      final bIndex = b['archived_order_index'] ?? 0;
-                      return aIndex.compareTo(bIndex);
-                    }),
-                    onRefresh: _fetchAllBooks,
-                    navigatorKey: widget.navigatorKey,
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.black900,
+                      ),
+                    )
+                  : PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                        // 탭 전환 시마다 데이터 새로고침
+                        _fetchAllBooks();
+                      },
+                      children: [
+                        ArchiveTab(
+                          key: ValueKey(_archiveTabKey),
+                          books: List.from(allBooks)..sort((a, b) {
+                            final aIndex = a['archived_order_index'] ?? 0;
+                            final bIndex = b['archived_order_index'] ?? 0;
+                            return aIndex.compareTo(bIndex);
+                          }),
+                          onRefresh: _fetchAllBooks,
+                          onBookAdded: () {
+                            // 책 추가 시 로딩 상태 활성화
+                            setState(() {
+                              isLoading = true;
+                            });
+                          },
+                          navigatorKey: widget.navigatorKey,
+                        ),
+                        ProfileTab(
+                          key: ValueKey(_profileTabKey),
+                          isLimitReached: widget.isLimitReached,
+                          books: List.from(allBooks.where((book) => book['is_archived'] == false))..sort((a, b) {
+                            final aIndex = a['order_index'] ?? 0;
+                            final bIndex = b['order_index'] ?? 0;
+                            return aIndex.compareTo(bIndex);
+                          }),
+                          allBooks: allBooks, // 모든 책 목록 전달
+                          onRefresh: _fetchAllBooks,
+                          onBookAdded: (result) {
+                            if (result == true) {
+                              // 책 추가가 완료되었을 때 상위로 결과 전달
+                              Navigator.of(context).pop(true);
+                            }
+                          },
+                          navigatorKey: widget.navigatorKey,
+                        ),
+                      ],
+                    ),
                   ),
-                  ProfileTab(
-                    key: ValueKey(_profileTabKey),
-                    isLimitReached: widget.isLimitReached,
-                    books: List.from(allBooks.where((book) => book['is_archived'] == false))..sort((a, b) {
-                      final aIndex = a['order_index'] ?? 0;
-                      final bIndex = b['order_index'] ?? 0;
-                      return aIndex.compareTo(bIndex);
-                    }),
-                    allBooks: allBooks, // 모든 책 목록 전달
-                    onRefresh: _fetchAllBooks,
-
-                    onBookAdded: (result) {
-                      if (result == true) {
-                        // 책 추가가 완료되었을 때 상위로 결과 전달
-                        Navigator.of(context).pop(true);
-                      }
-                    },
-                    navigatorKey: widget.navigatorKey,
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
