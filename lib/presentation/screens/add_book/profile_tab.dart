@@ -244,6 +244,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                       // archived_order_index 기준으로 정렬된 책 목록 전달
                                       onBooksUpdated: (updatedBooks) async {
                                         // 로딩 상태 시작
+                                        if (!mounted) return;
                                         setState(() {
                                           _isUpdatingBooks = true;
                                         });
@@ -309,77 +310,101 @@ class _ProfileTabState extends State<ProfileTab> {
                                             }
                                           }
 
-                                                                                     print(
-                                               '🔍 새로 프로필에 추가된 책 개수: ${newlyAddedBooks.length}');
-                                           
-                                           print('🔄 updateBooksBatch 호출 시작');
-                                           // 일괄 업데이트로 모든 책의 is_archived와 order_index 업데이트
-                                           await userBookApi.updateBooksBatch(updatedBooks);
-                                           print('🔄 updateBooksBatch 호출 완료');
-                                           
-                                           // 홈 화면의 인생책이 겹치는 친구 목록 캐시 새로고침
-                                           HomeRecommendTab.refreshUsersWithSameBooks();
-                                           print('🔄 보관함 변경 후 홈 화면 친구 목록 캐시 새로고침 요청');
-                                           
-                                                                                        if (newlyAddedBooks.isNotEmpty) {
-                                               print('🎯 ===== 팔로워 알림 전송 시작 =====');
-                                               print('🔍 새로 추가된 책들 (${newlyAddedBooks.length}개):');
-                                               for (final book in newlyAddedBooks) {
-                                                 print(
-                                                     '  - ID: ${book['id']}, book_id: ${book['book_id']}');
-                                               }
+                                          print(
+                                              '🔍 새로 프로필에 추가된 책 개수: ${newlyAddedBooks.length}');
+                                          
+                                          print('🔄 updateBooksBatch 호출 시작');
+                                          // 일괄 업데이트로 모든 책의 is_archived와 order_index 업데이트
+                                          await userBookApi.updateBooksBatch(updatedBooks);
+                                          print('🔄 updateBooksBatch 호출 완료');
+                                          
+                                          // mounted 체크 - 위젯이 dispose되었는지 확인
+                                          if (!mounted) {
+                                            print('⚠️ 위젯이 dispose됨 - 추가 작업 중단');
+                                            return;
+                                          }
 
-                                               // 새로 추가된 책들에 대해 팔로워들에게 알림 전송
-                                               final currentUserId =
-                                                   client.auth.currentUser?.id;
-                                               if (currentUserId != null) {
-                                                 print('👤 현재 사용자 ID: $currentUserId');
-                                                 for (int i = 0; i < newlyAddedBooks.length; i++) {
-                                                   final book = newlyAddedBooks[i];
-                                                   final userBookId = book['id'] as String?;
-                                                   if (userBookId != null) {
-                                                     print(
-                                                         '📢 [$i] 알림 전송 시도: userId=$currentUserId, userBookId=$userBookId');
-                                                     
-                                                     try {
-                                                       await userBookApi
-                                                           .notifyFollowersAboutNewBook(
-                                                               currentUserId, userBookId);
-                                                       print('✅ [$i] 알림 전송 성공: userBookId=$userBookId');
-                                                     } catch (e) {
-                                                       print('❌ [$i] 알림 전송 실패: userBookId=$userBookId, error=$e');
-                                                     }
-                                                   } else {
-                                                     print('❌ [$i] user_books ID가 null: ID=${book['id']}');
-                                                   }
-                                                 }
-                                                 print('🎯 ===== 팔로워 알림 전송 완료 =====');
-                                               } else {
-                                                 print('❌ 현재 사용자 ID를 가져올 수 없음');
-                                               }
-                                             }
+                                          // 홈 화면의 인생책이 겹치는 친구 목록 캐시 새로고침
+                                          try {
+                                            HomeRecommendTab.refreshUsersWithSameBooks();
+                                            print('🔄 보관함 변경 후 홈 화면 친구 목록 캐시 새로고침 요청');
+                                          } catch (e) {
+                                            print('⚠️ 홈 화면 캐시 새로고침 실패: $e');
+                                          }
+                                          
+                                          if (newlyAddedBooks.isNotEmpty) {
+                                            print('🎯 ===== 팔로워 알림 전송 시작 =====');
+                                            print('🔍 새로 추가된 책들 (${newlyAddedBooks.length}개):');
+                                            for (final book in newlyAddedBooks) {
+                                              print(
+                                                  '  - ID: ${book['id']}, book_id: ${book['book_id']}');
+                                            }
+
+                                            // 새로 추가된 책들에 대해 팔로워들에게 알림 전송
+                                            final currentUserId =
+                                                client.auth.currentUser?.id;
+                                            if (currentUserId != null) {
+                                              print('👤 현재 사용자 ID: $currentUserId');
+                                              for (int i = 0; i < newlyAddedBooks.length; i++) {
+                                                // 각 알림 전송 전에 mounted 체크
+                                                if (!mounted) {
+                                                  print('⚠️ 위젯이 dispose됨 - 알림 전송 중단');
+                                                  return;
+                                                }
+                                                
+                                                final book = newlyAddedBooks[i];
+                                                final userBookId = book['id'] as String?;
+                                                if (userBookId != null) {
+                                                  print(
+                                                      '📢 [$i] 알림 전송 시도: userId=$currentUserId, userBookId=$userBookId');
+                                                  
+                                                  try {
+                                                    await userBookApi
+                                                        .notifyFollowersAboutNewBook(
+                                                            currentUserId, userBookId);
+                                                    print('✅ [$i] 알림 전송 성공: userBookId=$userBookId');
+                                                  } catch (e) {
+                                                    print('❌ [$i] 알림 전송 실패: userBookId=$userBookId, error=$e');
+                                                    // 알림 전송 실패는 치명적이지 않으므로 계속 진행
+                                                  }
+                                                } else {
+                                                  print('❌ [$i] user_books ID가 null: ID=${book['id']}');
+                                                }
+                                              }
+                                              print('🎯 ===== 팔로워 알림 전송 완료 =====');
+                                            } else {
+                                              print('❌ 현재 사용자 ID를 가져올 수 없음');
+                                            }
+                                          }
 
                                           print('✅ DB 업데이트 완료');
+
+                                          // mounted 체크 - 위젯이 dispose되었는지 확인
+                                          if (!mounted) {
+                                            print('⚠️ 위젯이 dispose됨 - UI 업데이트 중단');
+                                            return;
+                                          }
 
                                           // DB 저장 완료 후 프로필 탭 새로고침
                                           print('🔄 widget.onRefresh() 호출');
                                           widget.onRefresh();
 
-                                          // 바텀시트 닫기
-                                          print('🔄 Navigator.pop() 호출');
-                                          Navigator.of(context).pop();
                                         } catch (e) {
                                           print('❌ DB 업데이트 실패: $e');
                                           print('❌ 에러 스택: ${StackTrace.current}');
-                                          // 에러 발생 시 사용자에게 알림
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content:
-                                                    Text('저장 중 오류가 발생했습니다: $e')),
-                                          );
+                                          
+                                          // mounted 체크 후 에러 표시
+                                          if (mounted) {
+                                            // 에러 발생 시 사용자에게 알림
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content:
+                                                      Text('저장 중 오류가 발생했습니다: $e')),
+                                            );
+                                          }
                                         } finally {
-                                          // 로딩 상태 해제
+                                          // 로딩 상태 해제 - mounted 체크 필수
                                           if (mounted) {
                                             setState(() {
                                               _isUpdatingBooks = false;

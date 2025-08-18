@@ -57,9 +57,6 @@ class LoginWithApple {
     Navigator.pushNamedAndRemoveUntil(context, '/splash', (route) => false);
   } catch (e) {
     debugPrint('❌ Apple 로그인 실패: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Apple 로그인 실패: $e')),
-    );
   }
 }
 }

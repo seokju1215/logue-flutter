@@ -153,73 +153,42 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
     }
   }
 
-  /// 친구 찾기 처리
   Future<void> _handleFindFriends() async {
     try {
-      // 주소록 접근 시도 (권한이 이미 있으면 바로 성공, 없으면 권한 요청)
-      try {
-        // 주소록에서 전화번호 가져오기 시도
-        final contacts = await FlutterContacts.getContacts(
-          withProperties: true,
-          withPhoto: false,
-        );
-        
-        // 권한이 이미 있는 경우 바로 진행
-        print('✅ 주소록 권한이 이미 허용됨 - 바로 진행');
-        await _processContactsAndNavigate(contacts);
-        
-      } catch (e) {
-        // 권한이 없는 경우 다이얼로그 표시
-        print('❌ 주소록 권한이 허용되지 않음 - 다이얼로그 표시');
-        await showDialog(
-          context: context,
-          builder: (deleteDialogContext) => ContactPermissionDialog(
-            onConfirm: () async {
-              Navigator.pop(deleteDialogContext);
-              try {
-                // 주소록 권한 요청 및 확인
-                final success =
-                    await FlutterContacts.requestPermission(readonly: true);
+      // 1) 권한 체크 & 요청 (한 번에 처리)
+      final hasPermission = await FlutterContacts.requestPermission(readonly: true);
 
-                if (success && mounted) {
-                  print('✅ 주소록 접근 성공');
-                  await _getContactsAndNavigate();
-                } else if (mounted) {
-                  // 권한이 거부되었거나 설정창으로 이동한 경우
-                  print('❌ 주소록 접근 권한이 거부되었습니다.');
-                }
-              } catch (e) {
-                print('❌ 친구 찾기 실패: $e');
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('권한 요청 중 오류가 발생했습니다.'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              }
-            },
-          ),
-        );
+      if (!mounted) return;
+
+      if (hasPermission) {
+        // 2) 권한 승인된 경우에만 연락처 조회
+        await _getContactsAndNavigate();
+        return;
       }
+
+      // 3) 권한 거부: 안내 다이얼로그 (설정 이동 유도 등)
+      await showDialog(
+        context: context,
+        builder: (ctx) => ContactPermissionDialog(
+          onConfirm: () async {
+            Navigator.pop(ctx);
+            // (선택) permission_handler로 설정 열기 가능
+            // await openAppSettings(); // permission_handler 패키지 사용 시
+          },
+        ),
+      );
     } catch (e) {
-      print('❌ 주소록 권한 확인 실패: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('권한 확인 중 오류가 발생했습니다.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      debugPrint('❌ 친구 찾기 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('친구 찾기 중 오류가 발생했습니다.'), duration: Duration(seconds: 2)),
+      );
     }
   }
 
   /// 주소록에서 전화번호를 가져오고 화면 이동
   Future<void> _getContactsAndNavigate() async {
     try {
-      // 주소록에서 전화번호 가져오기
       final contacts = await FlutterContacts.getContacts(
         withProperties: true,
         withPhoto: false,
@@ -227,15 +196,8 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
 
       await _processContactsAndNavigate(contacts);
     } catch (e) {
-      print('❌ 주소록에서 전화번호 가져오기 실패: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('주소록에서 전화번호를 가져오는 중 오류가 발생했습니다.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      debugPrint('❌ 주소록에서 전화번호 가져오기 실패: $e');
+      if (!mounted) return;
     }
   }
 

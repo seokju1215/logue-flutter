@@ -74,23 +74,29 @@ class _AddBookScreenState extends State<AddBookScreen> {
         debugPrint('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
       }
       
-      setState(() {
-        allBooks = fetched;
-        isLoading = false;
-      });
+      // mounted 체크 추가
+      if (mounted) {
+        setState(() {
+          allBooks = fetched;
+          isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint('❌ 책 불러오기 실패: $e');
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
   void _refreshTabs() {
-    setState(() {
-      _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
-      _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
-    });
+    // 탭 키 재생성은 필요할 때만 하도록 수정
+    // setState(() {
+    //   _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
+    //   _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
+    // });
   }
 
   ButtonStyle _outlinedStyle(BuildContext context) {
@@ -165,8 +171,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                         setState(() {
                           _currentIndex = index;
                         });
-                        // 탭 전환 시마다 데이터 새로고침
-                        _fetchAllBooks();
+                        // 탭 전환 시마다 데이터 새로고침 제거 - 무한 루프 방지
+                        // _fetchAllBooks();
                       },
                       children: [
                         ArchiveTab(
@@ -179,9 +185,19 @@ class _AddBookScreenState extends State<AddBookScreen> {
                           onRefresh: _fetchAllBooks,
                           onBookAdded: () {
                             // 책 추가 시 로딩 상태 활성화
-                            setState(() {
-                              isLoading = true;
-                            });
+                            if (mounted) {
+                              setState(() {
+                                isLoading = true;
+                              });
+                              // 데이터 새로고침 후 로딩 상태 해제
+                              _fetchAllBooks().then((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                }
+                              });
+                            }
                           },
                           navigatorKey: widget.navigatorKey,
                         ),

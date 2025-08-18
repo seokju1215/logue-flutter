@@ -196,11 +196,19 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                       GestureDetector(
                         onTap: () {
                           // 저장 시에만 상위에 반영
-                          widget.onBooksUpdated?.call(
-                            updatedBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
-                          );
-                          widget.onClose?.call(); // 완전 닫힘 알림
-                          Navigator.pop(context, true);
+                          if (mounted) {
+                            try {
+                              widget.onBooksUpdated?.call(
+                                updatedBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
+                              );
+                              widget.onClose?.call(); // 완전 닫힘 알림
+                              Navigator.pop(context, true);
+                            } catch (e) {
+                              debugPrint('❌ 저장 중 오류 발생: $e');
+                              // 에러가 발생해도 바텀시트는 닫기
+                              Navigator.pop(context, false);
+                            }
+                          }
                         },
                         child: Text(
                           '저장',

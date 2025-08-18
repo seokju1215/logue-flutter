@@ -329,6 +329,9 @@ class UserBookApi {
       debugPrint("📦 팔로워 목록: ${followers.map((f) => f['follower_id']).toList()}");
 
       // 2. 각 팔로워에게 send-notification-v2 edge function으로 알림 보내기
+      int successCount = 0;
+      int failureCount = 0;
+      
       for (int i = 0; i < followers.length; i++) {
         final follower = followers[i];
         final followerId = follower['follower_id'] as String;
@@ -349,19 +352,25 @@ class UserBookApi {
           if (response.status == 200) {
             final responseData = response.data as Map<String, dynamic>?;
             debugPrint("📦 [$i] 팔로워 $followerId에게 알림 전송 완료: status=${response.status}, data=$responseData");
+            successCount++;
           } else {
             debugPrint("❌ [$i] 팔로워 $followerId에게 알림 전송 실패: status=${response.status}, data=${response.data}");
+            failureCount++;
           }
         } catch (e) {
           debugPrint("❌ [$i] 팔로워 $followerId에게 알림 전송 중 오류: $e");
+          failureCount++;
+          // 개별 알림 전송 실패는 전체 프로세스를 중단시키지 않음
+          continue;
         }
       }
 
-      debugPrint("✅ 팔로워 알림 전송 완료");
+      debugPrint("✅ 팔로워 알림 전송 완료 - 성공: $successCount, 실패: $failureCount");
     } catch (e, stack) {
       debugPrint("❌ 팔로워 알림 전송 중 오류: $e");
       debugPrint("🔍 스택 트레이스: $stack");
-      rethrow;
+      // 팔로워 알림 전송 실패는 치명적이지 않으므로 rethrow하지 않음
+      // throw e; // 이 줄을 주석 처리하여 에러가 상위로 전파되지 않도록 함
     }
   }
 }

@@ -22,7 +22,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final client = Supabase.instance.client;
-  bool _isSaving = false;
+  // bool _isSaving = false; // 로딩 상태 제거
 
   @override
   void initState() {
@@ -47,7 +47,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
     if (reviewTitle.length > 50 || reviewContent.length > 1000) return;
 
-    setState(() => _isSaving = true);
+    // setState(() => _isSaving = true); // 로딩 상태 제거
 
     try {
       String? bookId;
@@ -159,7 +159,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      // if (mounted) setState(() => _isSaving = false); // 로딩 상태 제거
     }
   }
 
@@ -171,7 +171,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
-          onPressed: _isSaving ? null : () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           '책 추가',
@@ -179,17 +179,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: _isSaving ? null : _saveReview,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                    ),
-                  )
-                : const Text(
+            onPressed: _saveReview,
+            child: const Text(
                     '확인',
                     style: TextStyle(
                       color: Color(0xFF0055FF),
