@@ -366,7 +366,10 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
             ),
           ),
           if (isLoading)
-            const Center(child: CircularProgressIndicator())
+            const Padding(
+              padding: EdgeInsets.only(top: 15), // 원하는 만큼 내림
+              child: Center(child: CircularProgressIndicator()),
+            )
           else
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

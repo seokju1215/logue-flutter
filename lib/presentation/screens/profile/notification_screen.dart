@@ -11,6 +11,8 @@ import 'package:my_logue/presentation/screens/setting/inquiry/inquiry_screen.dar
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
 import 'package:my_logue/presentation/screens/profile/follow/follow_tab_screen.dart';
 
+import '../home/home_screen.dart';
+
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
 
@@ -28,22 +30,22 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
   void initState() {
     super.initState();
     debugPrint('🚀 NotificationScreen 초기화 시작');
-    
+
     _getNotifications = GetNotifications(client);
     debugPrint('✅ GetNotifications 인스턴스 생성 완료');
-    
+
     debugPrint('📖 모든 알림 읽음 처리 시작');
     _markAllAsRead();
-    
+
     debugPrint('📥 알림 로딩 시작');
     _loadNotifications();
-    
+
     debugPrint('🔔 알림 권한 확인 시작');
     _checkNotificationPermission();
-    
+
     WidgetsBinding.instance.addObserver(this);
     debugPrint('👁️ WidgetsBindingObserver 등록 완료');
-    
+
     debugPrint('✅ NotificationScreen 초기화 완료');
   }
 
@@ -73,23 +75,23 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
 
     try {
       debugPrint('📖 모든 알림 읽음 처리 시작 - 사용자 ID: $userId');
-      
+
       // 읽지 않은 알림 개수 확인
       final unreadCount = await client
           .from('notifications')
           .select('id')
           .eq('recipient_id', userId)
           .eq('is_read', false);
-      
+
       debugPrint('📊 읽지 않은 알림 개수: ${unreadCount.length}');
-      
+
       if (unreadCount.isNotEmpty) {
         final result = await client
             .from('notifications')
             .update({'is_read': true})
             .eq('recipient_id', userId)
             .eq('is_read', false);
-        
+
         debugPrint('✅ 알림 읽음 처리 완료 - 업데이트된 행: $result');
       } else {
         debugPrint('ℹ️ 읽지 않은 알림이 없음');
@@ -113,13 +115,12 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
 
     try {
       debugPrint('🚀 알림 로딩 시작 - 사용자 ID: $userId');
-      
+
       final data = await _getNotifications(userId);
-      
+
       debugPrint('📥 백엔드에서 받은 알림 데이터:');
       debugPrint('📊 총 알림 개수: ${data.length}');
-      
-      // 각 알림의 상세 정보 출력
+
       for (int i = 0; i < data.length; i++) {
         final notification = data[i];
         debugPrint('🔔 알림 #$i:');
@@ -127,26 +128,26 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
         debugPrint('   - Type: ${notification['type']}');
         debugPrint('   - Created At: ${notification['created_at']}');
         debugPrint('   - Is Read: ${notification['is_read']}');
-        
+
         if (notification['sender'] != null) {
           final sender = notification['sender'];
           debugPrint('   - Sender ID: ${sender['id']}');
           debugPrint('   - Sender Username: ${sender['username']}');
           debugPrint('   - Sender Avatar: ${sender['avatar_url']}');
         }
-        
+
         if (notification['book_id'] != null) {
           debugPrint('   - Book ID: ${notification['book_id']}');
         }
-        
+
         debugPrint('   - Raw Data: $notification');
         debugPrint('   ---');
       }
-      
+
       setState(() {
         _notifications = data;
       });
-      
+
       debugPrint('✅ 알림 로딩 완료 - UI 업데이트됨');
     } catch (e) {
       debugPrint('❌ 알림 로딩 실패: $e');
@@ -174,13 +175,13 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
   void _goToMyProfileFollowingTab() async {
     final client = Supabase.instance.client;
     final currentUserId = client.auth.currentUser?.id;
-    
+
     if (currentUserId == null) return;
-    
+
     try {
       debugPrint('👤 내 프로필 팔로잉 탭 이동 시작:');
       debugPrint('   - 현재 사용자 ID: $currentUserId');
-      
+
       // 현재 사용자의 프로필 정보 가져오기
       debugPrint('📋 프로필 정보 조회 시작');
       final profileResponse = await client
@@ -188,13 +189,13 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
           .select('username')
           .eq('id', currentUserId)
           .single();
-      
+
       final username = profileResponse['username'] as String;
       debugPrint('✅ 프로필 정보 조회 완료 - Username: $username');
-      
+
       // follows 테이블에서 팔로워/팔로잉 수 계산
       debugPrint('👥 팔로워/팔로잉 수 계산 시작');
-      
+
       final followerRes = await client
           .from('follows')
           .select('id')
@@ -208,26 +209,25 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
           .eq('follower_id', currentUserId);
       final followingCount = followingRes.length;
       debugPrint('   - 팔로잉 수: $followingCount');
-      
+
       debugPrint('🚀 FollowTabScreen으로 네비게이션 시작');
       debugPrint('   - initialTabIndex: 1 (팔로잉 탭)');
       debugPrint('   - isMyProfile: true');
-      
-      // FollowTabScreen으로 이동 (팔로잉 탭 선택)
-      Navigator.push(
+
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (_) => FollowTabScreen(
-            userId: currentUserId,
-            username: username,
-            initialTabIndex: 1, // 팔로잉 탭
-            followerCount: followerCount,
-            followingCount: followingCount,
-            isMyProfile: true,
+          builder: (_) => MainNavigationScreen(
+            initialTabIndex: 0, // 홈 탭
+            child: HomeScreen(
+              navigatorKey: GlobalKey<NavigatorState>(),
+              initialTab: 1, // ✅ "팔로잉" 탭부터
+            ),
           ),
         ),
+            (route) => false,
       );
-      
+
       debugPrint('✅ FollowTabScreen 네비게이션 완료');
     } catch (e) {
       debugPrint('❌ 프로필 정보 가져오기 실패: $e');
@@ -242,7 +242,6 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     }
   }
 
-  /// inquiry_screen으로 이동
   void _goToInquiryScreen() {
     Navigator.push(
       context,
@@ -300,9 +299,6 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     }
   }
 
-
-
-  /// 모든 알림 삭제
   Future<void> _deleteAllNotifications() async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
@@ -312,7 +308,6 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
       debugPrint('   - 사용자 ID: $userId');
       debugPrint('   - 현재 알림 개수: ${_notifications.length}');
 
-      // 모든 알림 삭제
       final result = await client
           .from('notifications')
           .delete()
@@ -320,7 +315,6 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
 
       debugPrint('✅ 모든 알림 삭제 완료 - 삭제된 행: $result');
 
-      // UI 업데이트
       setState(() {
         _notifications.clear();
       });
@@ -330,7 +324,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     } catch (e) {
       debugPrint('❌ 모든 알림 삭제 실패: $e');
       debugPrint('❌ 에러 타입: ${e.runtimeType}');
-      
+
       if (e is PostgrestException) {
         debugPrint('❌ PostgrestException 상세:');
         debugPrint('   - Message: ${e.message}');
@@ -339,7 +333,6 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
         debugPrint('   - Hint: ${e.hint}');
       }
 
-      // 에러 메시지 표시
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -352,50 +345,90 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     }
   }
 
+  // ====== 추가: 알림 가공 + 정렬 유틸 ======
+  DateTime? _parseTs(dynamic v) {
+    if (v is DateTime) return v;
+    if (v is String) return DateTime.tryParse(v);
+    return null;
+  }
+
+  List<Map<String, dynamic>> _processAndSortNotifications(List<Map<String, dynamic>> src) {
+    final processed = <Map<String, dynamic>>[];
+    final postNotifications = <Map<String, dynamic>>[];
+    final postSenders = <String>{};
+
+    // 1) 타입 분류
+    for (final n in src) {
+      final type = n['type'];
+      if (type == 'follow' || type == 'inquiry') {
+        processed.add(n);
+      } else if (type == 'post') {
+        postNotifications.add(n);
+        final senderId = n['sender']?['id'];
+        if (senderId is String) postSenders.add(senderId);
+      }
+    }
+
+    // 2) post 통합 처리
+    if (postNotifications.isNotEmpty) {
+      // 묶인 post 내 가장 최신 timestamp
+      DateTime? latestPostTs;
+      for (final n in postNotifications) {
+        final ts = _parseTs(n['created_at']);
+        if (ts != null && (latestPostTs == null || ts.isAfter(latestPostTs!))) {
+          latestPostTs = ts;
+        }
+      }
+
+      if (postSenders.length > 1) {
+        // 다수 발신자 → 통합
+        final first = postNotifications.first;
+        final integrated = Map<String, dynamic>.from(first);
+        integrated['integrated'] = true;
+        integrated['total_senders'] = postSenders.length;
+
+        // ✅ 가장 최신 created_at로 덮어쓰기
+        if (latestPostTs != null) {
+          integrated['created_at'] = latestPostTs.toIso8601String();
+        }
+        processed.add(integrated);
+      } else {
+        // 한 명이면 최신 1건만
+        Map<String, dynamic>? latestItem;
+        DateTime? latestTs;
+        for (final n in postNotifications) {
+          final ts = _parseTs(n['created_at']);
+          if (ts != null && (latestTs == null || ts.isAfter(latestTs))) {
+            latestTs = ts;
+            latestItem = n;
+          }
+        }
+        if (latestItem != null) {
+          processed.add(latestItem);
+        }
+      }
+    }
+
+    // 3) created_at 기준 내림차순 정렬
+    processed.sort((a, b) {
+      final ta = _parseTs(a['created_at']) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final tb = _parseTs(b['created_at']) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return tb.compareTo(ta);
+    });
+
+    debugPrint('📝 포스트 알림 발신자 수: ${postSenders.length}');
+    debugPrint('📊 처리된 알림 개수(정렬 적용): ${processed.length}');
+    return processed;
+  }
+  // =====================================
+
   @override
   Widget build(BuildContext context) {
     debugPrint('🏗️ NotificationScreen 빌드 시작');
     debugPrint('📊 현재 알림 개수: ${_notifications.length}');
-    
-    // 포스트 알림을 그룹화하여 중복 제거
-    final processedNotifications = <Map<String, dynamic>>[];
-    final postSenders = <String>{};
-    final postNotifications = <Map<String, dynamic>>[];
-    
-    // 알림을 타입별로 분류
-    for (final notification in _notifications) {
-      final type = notification['type'];
-      
-      if (type == 'follow' || type == 'inquiry') {
-        // 팔로우와 문의 알림은 그대로 추가
-        processedNotifications.add(notification);
-      } else if (type == 'post') {
-        // 포스트 알림은 별도로 수집
-        postNotifications.add(notification);
-        postSenders.add(notification['sender']['id']);
-      }
-    }
-    
-    // 포스트 알림이 있으면 하나로 통합
-    if (postNotifications.isNotEmpty) {
-      final firstPostNotification = postNotifications.first;
-      final totalSenders = postSenders.length;
-      
-      if (totalSenders > 1) {
-        // 여러 발신자가 있는 경우 통합된 메시지 생성
-        final integratedNotification = Map<String, dynamic>.from(firstPostNotification);
-        integratedNotification['integrated'] = true;
-        integratedNotification['total_senders'] = totalSenders;
-        processedNotifications.add(integratedNotification);
-      } else {
-        // 발신자가 한 명인 경우 그대로 추가
-        processedNotifications.add(firstPostNotification);
-      }
-    }
-    
-    debugPrint('📝 포스트 알림 발신자 수: ${postSenders.length}');
-    debugPrint('🔍 포스트 알림 발신자 ID들: $postSenders');
-    debugPrint('📊 처리된 알림 개수: ${processedNotifications.length}');
+
+    // 🔧 변경: 여기서 가공 + 정렬
+    final processedNotifications = _processAndSortNotifications(_notifications);
 
     return Scaffold(
       appBar: AppBar(
@@ -417,28 +450,28 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
       ),
       body: Column(
         children: [
-                     Padding(
-             padding: const EdgeInsets.symmetric(horizontal: 22),
-             child: Row(
-               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-               children: [
-                 const Text(
-                   '',
-                   style: TextStyle(fontSize: 12, color: AppColors.black500),
-                 ),
-                 GestureDetector(
-                   onTap: () => _deleteAllNotifications(),
-                   child: Text(
-                     '모두 지우기',
-                     style: const TextStyle(
-                       fontSize: 12, 
-                       color: AppColors.black500,
-                     ),
-                   ),
-                 ),
-               ],
-             ),
-           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '',
+                  style: TextStyle(fontSize: 12, color: AppColors.black500),
+                ),
+                GestureDetector(
+                  onTap: () => _deleteAllNotifications(),
+                  child: const Text(
+                    '모두 지우기',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.black500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               itemCount: processedNotifications.length,
@@ -446,15 +479,14 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
                 final item = processedNotifications[index];
                 final type = item['type'];
                 final sender = item['sender'];
-                final username = sender['username'];
-                final notifId = item['id'];
+                final username = sender?['username'] ?? '알 수 없음';
 
                 String content = '';
                 if (type == 'follow') {
                   content = '$username님이 팔로우하기 시작했어요.';
                 } else if (type == 'post') {
                   if (item['integrated'] == true) {
-                    final totalSenders = item['total_senders'];
+                    final totalSenders = (item['total_senders'] as int?) ?? 1;
                     content = '$username님 외 ${totalSenders - 1}명이 새로운 인생 책을 추가했어요.';
                   } else {
                     content = '$username님이 새로운 인생 책을 추가했어요.';
@@ -471,13 +503,12 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
                   ),
                   onTap: () {
                     if (type == 'follow') {
-                      // 팔로우 알림: 상대방 프로필로 이동
-                      _goToProfile(sender['id']);
+                      if (sender?['id'] != null) {
+                        _goToProfile(sender['id']);
+                      }
                     } else if (type == 'post') {
-                      // 포스트 알림: 내 프로필의 팔로잉 탭으로 이동
                       _goToMyProfileFollowingTab();
                     } else if (type == 'inquiry') {
-                      // 문의 알림: inquiry_screen으로 이동
                       _goToInquiryScreen();
                     }
                   },

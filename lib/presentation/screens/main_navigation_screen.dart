@@ -63,6 +63,7 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
+
   /// AddBookView의 프로필 탭으로 이동 (public 메서드)
   void navigateToAddBookProfileTab() {
     _navigateToAddBookProfileTab();
@@ -75,6 +76,19 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
     MainNavigationScreen.lastSelectedIndex = widget.initialTabIndex;
+
+    // ✅ child 적용
+    _child = widget.child;
+    _overrideWithChild = _child != null;
+  }
+  @override
+  void didUpdateWidget(covariant MainNavigationScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.child != widget.child) {
+      _child = widget.child;
+      _overrideWithChild = _child != null;
+      setState(() {});
+    }
   }
 
   @override
@@ -95,7 +109,7 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
 
           // 포스트 삭제 후 홈으로 이동했다가 프로필로 이동
           if (result == true) {
-            debugPrint('🔍 포스트 삭제됨, 홈으로 이동 후 프로필로 이동');
+            debugPrint('�� 포스트 삭제됨, 홈으로 이동 후 프로필로 이동');
 
             // 먼저 홈으로 이동
             setState(() {
@@ -121,10 +135,6 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
         }
       });
     }
-
-
-
-
 
     if (!_hasCheckedUpdate) {
       _hasCheckedUpdate = true;
