@@ -8,6 +8,7 @@ import '../../../../core/themes/app_colors.dart';
 import 'find_friends_screen.dart';
 
 class InputPhoneNumberScreen extends StatefulWidget {
+  final String? fromScreen;
   final String? initialPhoneNumber;
   final List<String>? contactPhoneNumbers; // 연락처 전화번호 목록 추가
   
@@ -15,6 +16,7 @@ class InputPhoneNumberScreen extends StatefulWidget {
     Key? key,
     this.initialPhoneNumber,
     this.contactPhoneNumbers,
+    this.fromScreen
   }) : super(key: key);
 
   @override
@@ -70,6 +72,9 @@ class _InputPhoneNumberScreenState extends State<InputPhoneNumberScreen> {
 
                 // 성공 시 find_friends_screen으로 이동하면서 전화번호와 연락처 목록 전달
           if (mounted) {
+            if(widget.fromScreen == 'find_friends_screen'){
+              Navigator.pop(context);
+            }
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(

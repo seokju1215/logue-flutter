@@ -225,7 +225,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                 _buildBookGrid()
               else
                 ...[
-                  const SizedBox(height: 95),
+                  const SizedBox(height: 130),
                   const Center(
                     child: Text(
                       '설정한 인생 책이 없어요.',

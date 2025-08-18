@@ -246,6 +246,7 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
         builder: (context) => InputPhoneNumberScreen(
           initialPhoneNumber: contactNumber,
           contactPhoneNumbers: widget.contactPhoneNumbers,
+          fromScreen: 'find_friends_screen',
         ),
       ),
     );

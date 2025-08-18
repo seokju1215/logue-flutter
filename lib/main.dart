@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:my_logue/presentation/routes/on_generate_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'core/themes/app_colors.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,13 +18,20 @@ import 'package:my_logue/data/utils/mixpanel_util.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: false);
 
-void main() {
+void main() async {
   runZonedGuarded(() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+    // Firebase 초기화
+    try {
+      await Firebase.initializeApp();
+      print('✅ Firebase 초기화 성공');
+    } catch (e) {
+      print('❌ Firebase 초기화 실패: $e');
+    }
 
     try {
-  await dotenv.load(fileName: ".env");
+      await dotenv.load(fileName: ".env");
 
       final supabaseUrl = dotenv.env['SUPABASE_URL'];
       final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
@@ -31,11 +40,20 @@ void main() {
         return;
       }
 
-  await Supabase.initialize(
+      await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseAnonKey,
         debug: true,
-  );
+      );
+
+      // Firebase Analytics 설정
+      try {
+        final analytics = FirebaseAnalytics.instance;
+        await analytics.setAnalyticsCollectionEnabled(true);
+        print('✅ Firebase Analytics 설정 완료');
+      } catch (e) {
+        print('❌ Firebase Analytics 설정 실패: $e');
+      }
 
 
     } catch (e, s) {
@@ -56,27 +74,46 @@ void main() {
     } catch (e, s) {}
 
     try {
-  Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
         try {
-    final session = data.session;
+          final session = data.session;
 
           if (data.event == AuthChangeEvent.signedIn && session != null) {
-      final user = session.user;
-      final email = user.email;
-      if (email != null) {
-        try {
-          final response = await Supabase.instance.client.functions.invoke(
-            'check_deleted_user',
-            body: {'email': email},
-          );
+            final user = session.user;
+            final email = user.email;
+            
+            // Firebase Analytics 로그인 이벤트
+            try {
+              await FirebaseAnalytics.instance.logLogin(loginMethod: 'email');
+              await FirebaseAnalytics.instance.setUserId(id: user.id);
+              print('✅ Firebase Analytics 로그인 이벤트 전송 완료');
+            } catch (e) {
+              print('❌ Firebase Analytics 로그인 이벤트 전송 실패: $e');
+            }
+            
+            if (email != null) {
+              try {
+                final response = await Supabase.instance.client.functions.invoke(
+                  'check_deleted_user',
+                  body: {'email': email},
+                );
                 final data = response.data as Map<String, dynamic>;
                 if (data['blocked'] == true) {
-            await Supabase.instance.client.auth.signOut();
-            navigatorKey.currentState?.pushReplacementNamed('/login_blocked');
-            return;
-          }
+                  await Supabase.instance.client.auth.signOut();
+                  navigatorKey.currentState?.pushReplacementNamed('/login_blocked');
+                  return;
+                }
               } catch (e, s) {}
-      }
+            }
+          } else if (data.event == AuthChangeEvent.signedOut) {
+            // Firebase Analytics 로그아웃 이벤트
+            try {
+              await FirebaseAnalytics.instance.logEvent(name: 'user_logout');
+              await FirebaseAnalytics.instance.setUserId(id: null);
+              print('✅ Firebase Analytics 로그아웃 이벤트 전송 완료');
+            } catch (e) {
+              print('❌ Firebase Analytics 로그아웃 이벤트 전송 실패: $e');
+            }
           }
         } catch (e, s) {}
       });
@@ -97,9 +134,29 @@ void main() {
       builder: (context) => const ProviderScope(child: MyApp()),
     ),
   );
-    Future.microtask(() async {
-      await MixpanelUtil.initialize();
-    });
+  
+  // Firebase Analytics 앱 시작 이벤트
+  try {
+    await FirebaseAnalytics.instance.logAppOpen();
+    print('✅ Firebase Analytics 앱 시작 이벤트 전송 완료');
+    
+    // 테스트 이벤트 전송
+    await FirebaseAnalytics.instance.logEvent(
+      name: 'app_initialized',
+      parameters: {
+        'timestamp': DateTime.now().toIso8601String(),
+        'version': '1.1.7',
+        'platform': Platform.isAndroid ? 'android' : 'ios',
+      },
+    );
+    print('✅ Firebase Analytics 테스트 이벤트 전송 완료');
+  } catch (e) {
+    print('❌ Firebase Analytics 앱 시작 이벤트 전송 실패: $e');
+  }
+  
+  Future.microtask(() async {
+    await MixpanelUtil.initialize();
+  });
   }, (error, stack) {});
 
 }

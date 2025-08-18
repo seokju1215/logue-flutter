@@ -331,10 +331,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               : _query.isEmpty
                   ? const SizedBox.shrink()
                   : _userResults.isEmpty && _bookResults.isEmpty
-                      ? Center(
-                          child: Transform.translate(
-                            offset: AppConstants.getCenterOffset(context),
-                            child: const Text(
+                      ? const SizedBox.expand(
+                          child: Center(
+                            child: Text(
                               "검색 결과가 없어요.",
                               style: TextStyle(
                                   fontSize: 14, color: AppColors.black500),
@@ -495,10 +494,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               : _query.isEmpty
                   ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
                   : _userResults.isEmpty
-                      ? Center(
-                          child: Transform.translate(
-                            offset: AppConstants.getCenterOffset(context),
-                            child: const Text(
+                      ? const SizedBox.expand(
+                          child: Center(
+                            child: Text(
                               "검색 결과가 없어요.",
                               style: TextStyle(
                                   fontSize: 14, color: AppColors.black500),
@@ -615,10 +613,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               : _query.isEmpty
                   ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
                   : _bookResults.isEmpty
-                      ? Center(
-                          child: Transform.translate(
-                            offset: AppConstants.getCenterOffset(context),
-                            child: const Text(
+                      ? const SizedBox.expand(
+                          child: Center(
+                            child: Text(
                               "검색 결과가 없어요.",
                               style: TextStyle(
                                   fontSize: 14, color: AppColors.black500),

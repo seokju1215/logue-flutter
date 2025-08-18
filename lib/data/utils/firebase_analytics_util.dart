@@ -654,6 +654,237 @@ class FirebaseAnalyticsUtil {
     }
   }
 
+  // ===== DAU, WAU, MAU 분석 이벤트 =====
+  
+  /// 일일 활성 사용자 (DAU) 이벤트
+  static Future<void> logDailyActiveUser({
+    required String userId,
+    required String userType, // 'new', 'returning', 'active'
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'daily_active_user',
+        parameters: {
+          'user_id': userId,
+          'user_type': userType,
+          'timestamp': DateTime.now().toIso8601String(),
+          'date': DateTime.now().toIso8601String().split('T')[0],
+        },
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics DAU 이벤트 실패: $e');
+    }
+  }
+
+  /// 주간 활성 사용자 (WAU) 이벤트
+  static Future<void> logWeeklyActiveUser({
+    required String userId,
+    required String userType, // 'new', 'returning', 'active'
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'weekly_active_user',
+        parameters: {
+          'user_id': userId,
+          'user_type': userType,
+          'timestamp': DateTime.now().toIso8601String(),
+          'date': DateTime.now().toIso8601String().split('T')[0],
+          'week_start': _getWeekStartDate().toIso8601String().split('T')[0],
+        },
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics WAU 이벤트 실패: $e');
+    }
+  }
+
+  /// 월간 활성 사용자 (MAU) 이벤트
+  static Future<void> logMonthlyActiveUser({
+    required String userId,
+    required String userType, // 'new', 'returning', 'active'
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'monthly_active_user',
+        parameters: {
+          'user_id': userId,
+          'user_type': userType,
+          'timestamp': DateTime.now().toIso8601String(),
+          'date': DateTime.now().toIso8601String().split('T')[0],
+          'month_start': _getMonthStartDate().toIso8601String().split('T')[0],
+        },
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics MAU 이벤트 실패: $e');
+    }
+  }
+
+  // ===== 신규 가입자 및 프로필 생성자 분석 이벤트 =====
+  
+  /// 신규 가입자 이벤트
+  static Future<void> logNewUserRegistration({
+    required String userId,
+    required String registrationMethod, // 'email', 'phone', 'social'
+    required String source, // 'organic', 'referral', 'campaign'
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'new_user_registration',
+        parameters: {
+          'user_id': userId,
+          'registration_method': registrationMethod,
+          'source': source,
+          'timestamp': DateTime.now().toIso8601String(),
+          'date': DateTime.now().toIso8601String().split('T')[0],
+        },
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics 신규 가입자 이벤트 실패: $e');
+    }
+  }
+
+  /// 프로필 생성자 이벤트
+  static Future<void> logProfileCreation({
+    required String userId,
+    required bool hasProfilePhoto,
+    required bool hasBio,
+    required bool hasJob,
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'profile_creation',
+        parameters: {
+          'user_id': userId,
+          'has_profile_photo': hasProfilePhoto,
+          'has_bio': hasBio,
+          'has_job': hasJob,
+          'timestamp': DateTime.now().toIso8601String(),
+          'date': DateTime.now().toIso8601String().split('T')[0],
+        },
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics 프로필 생성 이벤트 실패: $e');
+    }
+  }
+
+  // ===== UGC (User Generated Content) 분석 이벤트 =====
+  
+  /// UGC 생성 이벤트
+  static Future<void> logUGCGeneration({
+    required String userId,
+    required String contentType, // 'book_review', 'profile_book', 'archive_book'
+    required String contentId,
+    required Map<String, dynamic> contentMetadata,
+  }) async {
+    try {
+      final parameters = <String, Object>{
+        'user_id': userId,
+        'content_type': contentType,
+        'content_id': contentId,
+        'timestamp': DateTime.now().toIso8601String(),
+        'date': DateTime.now().toIso8601String().split('T')[0],
+      };
+      
+      // contentMetadata의 모든 값을 Object로 변환
+      for (final entry in contentMetadata.entries) {
+        parameters[entry.key] = entry.value ?? '';
+      }
+      
+      await _analytics.logEvent(
+        name: 'ugc_generated',
+        parameters: parameters,
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics UGC 생성 이벤트 실패: $e');
+    }
+  }
+
+  /// UGC 상호작용 이벤트
+  static Future<void> logUGCInteraction({
+    required String userId,
+    required String contentType, // 'book_review', 'profile_book', 'archive_book'
+    required String contentId,
+    required String interactionType, // 'view', 'like', 'share', 'comment'
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'ugc_interaction',
+        parameters: {
+          'user_id': userId,
+          'content_type': contentType,
+          'content_id': contentId,
+          'interaction_type': interactionType,
+          'timestamp': DateTime.now().toIso8601String(),
+          'date': DateTime.now().toIso8601String().split('T')[0],
+        },
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics UGC 상호작용 이벤트 실패: $e');
+    }
+  }
+
+  // ===== 사용자 행동 패턴 상세 분석 이벤트 =====
+  
+  /// 사용자 앱 이용 시간 이벤트
+  static Future<void> logAppUsageTime({
+    required String userId,
+    required int sessionDurationMinutes,
+    required String sessionType, // 'active', 'passive', 'background'
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'app_usage_time',
+        parameters: {
+          'user_id': userId,
+          'session_duration_minutes': sessionDurationMinutes,
+          'session_type': sessionType,
+          'timestamp': DateTime.now().toIso8601String(),
+          'date': DateTime.now().toIso8601String().split('T')[0],
+        },
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics 앱 이용 시간 이벤트 실패: $e');
+    }
+  }
+
+  /// 사용자 기능 사용 빈도 이벤트
+  static Future<void> logFeatureUsageFrequency({
+    required String userId,
+    required String featureName,
+    required int usageCount,
+    required String timePeriod, // 'daily', 'weekly', 'monthly'
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'feature_usage_frequency',
+        parameters: {
+          'user_id': userId,
+          'feature_name': featureName,
+          'usage_count': usageCount,
+          'time_period': timePeriod,
+          'timestamp': DateTime.now().toIso8601String(),
+          'date': DateTime.now().toIso8601String().split('T')[0],
+        },
+      );
+    } catch (e) {
+      print('❌ Firebase Analytics 기능 사용 빈도 이벤트 실패: $e');
+    }
+  }
+
+  // ===== 헬퍼 메서드 =====
+  
+  /// 주 시작 날짜 계산
+  static DateTime _getWeekStartDate() {
+    final now = DateTime.now();
+    final daysFromMonday = now.weekday - 1;
+    return now.subtract(Duration(days: daysFromMonday));
+  }
+
+  /// 월 시작 날짜 계산
+  static DateTime _getMonthStartDate() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, 1);
+  }
+
   // ===== 커스텀 이벤트 로깅 =====
   
   /// 커스텀 이벤트 로깅
