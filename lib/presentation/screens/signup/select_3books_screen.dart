@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../data/datasources/aladin_book_api.dart';
 import '../../../data/datasources/user_book_api.dart';
 import '../../../data/models/book_model.dart';
@@ -42,7 +43,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           .select('count')
           .eq('id', 1)
           .maybeSingle();
-      
+
       if (response != null && response['count'] != null) {
         setState(() {
           _maxBookCount = response['count'] as int;
@@ -59,7 +60,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
     if (_isSearching) {
       return;
     }
-    
+
     _currentQuery = query;
     if (query.isEmpty) {
       setState(() => _results = []);
@@ -73,34 +74,36 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       // 1️⃣ 내 DB에서 검색
       final userBookApi = UserBookApi(client);
       final dbResults = await userBookApi.searchBooksFromDB(query);
-      
+
       // 2️⃣ Aladin API에서 검색
       final aladinResults = await AladinBookApi().searchBooks(query);
-      
+
       // 3️⃣ 결과 합치기 및 중복 제거
       final allBooks = <BookModel>[];
       final seenIsbns = <String>{};
       final seenTitles = <String>{};
-      
+
       // DB 결과 먼저 추가
       for (final dbBook in dbResults) {
         final book = BookModel.fromJson(dbBook);
         if (book.isbn.isNotEmpty && !seenIsbns.contains(book.isbn)) {
           allBooks.add(book);
           seenIsbns.add(book.isbn);
-        } else if (book.isbn.isEmpty && !seenTitles.contains(book.title.toLowerCase())) {
+        } else if (book.isbn.isEmpty &&
+            !seenTitles.contains(book.title.toLowerCase())) {
           allBooks.add(book);
           seenTitles.add(book.title.toLowerCase());
         }
       }
-      
+
       // Aladin 결과 추가 (중복 제거)
       for (final aladinBook in aladinResults) {
         final book = BookModel.fromJson(aladinBook);
         if (book.isbn.isNotEmpty && !seenIsbns.contains(book.isbn)) {
           allBooks.add(book);
           seenIsbns.add(book.isbn);
-        } else if (book.isbn.isEmpty && !seenTitles.contains(book.title.toLowerCase())) {
+        } else if (book.isbn.isEmpty &&
+            !seenTitles.contains(book.title.toLowerCase())) {
           allBooks.add(book);
           seenTitles.add(book.title.toLowerCase());
         }
@@ -229,7 +232,8 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
           'book_id': bookId,
           'isbn': book.isbn.isNotEmpty ? book.isbn : '',
           'order_index': i,
-          'archived_order_index': i, // archived_order_index도 order_index와 동일하게 설정
+          'archived_order_index': i,
+          // archived_order_index도 order_index와 동일하게 설정
           'review_title': '',
           'review_content': '',
         });
@@ -275,7 +279,8 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: _selectedBooks.length == _maxBookCount ? _submitBooks : null,
+            onPressed:
+                _selectedBooks.length == _maxBookCount ? _submitBooks : null,
             child: Text(
               "확인",
               style: TextStyle(
@@ -355,15 +360,27 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                       Text(
                         "프로필에서 언제든 변경이 가능해요.",
                         style:
-                            TextStyle(fontSize: 12, color: AppColors.black500),
+                            TextStyle(fontSize: 13, color: AppColors.black500),
                       ),
-                      SizedBox(height: 140,)
+                      SizedBox(
+                        height: 140,
+                      )
                     ],
                   )
                 : _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _results.isEmpty
-                        ? const Center(child: Text("검색 결과가 없습니다."))
+                        ? Center(
+                            child: Transform.translate(
+                              offset: AppConstants.getCenterOffset(context),
+                              child: const Text(
+                                "검색 결과가 없어요.",
+                                style: TextStyle(
+                                    fontSize: 14, color: AppColors.black500),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          )
                         : GridView.builder(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 21, vertical: 20),

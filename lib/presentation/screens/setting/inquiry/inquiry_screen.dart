@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:my_logue/core/themes/stroke_text_style.dart';
 import 'package:my_logue/core/widgets/common/common_outlined_button.dart';
 import 'package:my_logue/core/widgets/inquiry/inquiry_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/themes/app_colors.dart';
 import '../../../../data/models/inquiry_models.dart';
 import '../../../../data/repositories/inquiry_repository.dart';
@@ -12,8 +14,9 @@ import 'create_inquiry_screen.dart';
 
 class InquiryScreen extends StatefulWidget {
   final bool fromCreateInquiry;
-  
-  const InquiryScreen({Key? key, this.fromCreateInquiry = false}) : super(key: key);
+
+  const InquiryScreen({Key? key, this.fromCreateInquiry = false})
+      : super(key: key);
 
   @override
   State<InquiryScreen> createState() => _InquiryScreenState();
@@ -106,12 +109,13 @@ class _InquiryScreenState extends State<InquiryScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 22, top: 11),
-            child: Text(
-              '앱 내에 없는 책, 또는 원하시는 기능이나\n오류/악성유저 등이 있다면 언제든 알려주세요!',
-              style: TextStyle(fontSize: 14, color: AppColors.black900, height: 1.4285),
-            ),
-          ),
+              padding: const EdgeInsets.only(left: 22, top: 11),
+              child: StrokeTextStyle.createStrokeText(
+                  text: '검색결과가 없는 책, 또는 원하시는 기능이나\n오류/악성유저 등이 있다면 언제든지 알려주세요!',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.black900,
+                  height: 1.4285)),
           const SizedBox(
             height: 15,
           ),
@@ -124,18 +128,21 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   child: CommonOutlinedButton(
                       text: "고객센터",
                       onTap: () async {
-                        final result = await Navigator.of(context, rootNavigator: true).push(
+                        final result =
+                            await Navigator.of(context, rootNavigator: true)
+                                .push(
                           MaterialPageRoute(
                             builder: (_) => const CreateInquiryScreen(),
                           ),
                         );
-                        
+
                         // 문의가 생성되었으면 "책 추가 요청" 탭이 기본으로 선택된 InquiryScreen으로 새로 생성
                         if (result == true) {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const InquiryScreen(fromCreateInquiry: true),
+                              builder: (_) =>
+                                  const InquiryScreen(fromCreateInquiry: true),
                             ),
                           );
                         }
@@ -236,12 +243,13 @@ class _InquiryScreenState extends State<InquiryScreen> {
 
   Widget _buildInquiryList(List<InquiryListModel> inquiries) {
     if (inquiries.isEmpty) {
-      return const Center(
-        child: Text(
-          '요청이 없습니다.',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.black500,
+      return Center(
+        child: Transform.translate(
+          offset: AppConstants.getCenterOffset(context),
+          child: const Text(
+            "새로운 요청이 없어요.",
+            style: TextStyle(fontSize: 13, color: AppColors.black500),
+            textAlign: TextAlign.center,
           ),
         ),
       );

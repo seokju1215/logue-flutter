@@ -131,7 +131,7 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
               offset: AppConstants.getCenterOffset(context),
               child: const Text(
                 "친구를 팔로우해 인생 책을 공유해보세요.",
-                style: TextStyle(fontSize: 12, color: AppColors.black500),
+                style: TextStyle(fontSize: 13, color: AppColors.black500),
                 textAlign: TextAlign.center,
               ),
             ),

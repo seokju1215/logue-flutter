@@ -229,7 +229,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
             children: [
               Padding(
                 padding: EdgeInsets.only(left: 22),
-                child: StrokeTextStyle.createStrokeText(text: "읽었던 책들을 간편하게 정리해보세요.", fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black900)
+                child: StrokeTextStyle.createStrokeText(text: "읽었던 책들을 보관함에 정리해보세요.", fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.black900)
               ),
               const SizedBox(height: 13),
               Padding(
@@ -324,7 +324,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                         ),
                         Text(
                           '${widget.books.length}권',
-                          style: const TextStyle(fontSize: 12, color: AppColors.black500),
+                          style: const TextStyle(fontSize: 13, color: AppColors.black500),
                         ),
                       ],
                     ),

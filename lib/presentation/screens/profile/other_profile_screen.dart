@@ -230,7 +230,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                     child: Text(
                       '설정한 인생 책이 없어요.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: AppColors.black500),
+                      style: TextStyle(fontSize: 13, color: AppColors.black500),
                     ),
                   ),
                   const SizedBox(height: 90),
@@ -302,6 +302,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                       style:
                       TextStyle(fontSize: 22, color: AppColors.black900)),
                   const SizedBox(height: 3),
+                  if (profile?['job'] == '')
+                    const SizedBox(height:4),
                   if (profile?['job'] != '')
                     Text(profile?['job'] ?? '',
                         style: TextStyle(fontSize: 15, color: AppColors.black500)),
@@ -309,7 +311,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                     const SizedBox(height: 9),
                   _buildBio(context),
                   if (profile?['job'] == '')
-                    const SizedBox(height: 9),
+                    const SizedBox(height : 5),
                   if (profile?['job'] == '')
                     Text('', style: TextStyle(fontSize: 15, color: AppColors.black500)),
                   const SizedBox(height: 9),

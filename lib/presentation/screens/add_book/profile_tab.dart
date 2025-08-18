@@ -182,7 +182,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   key: _titleKey, // GlobalKey 추가
                   children: [
                     StrokeTextStyle.createStrokeText(
-                        text: "나만의 인생 책을 프로필에 추가해보세요.",
+                        text: "인생 책을 골라 프로필에 소개해보세요.",
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
                         color: AppColors.black900),
@@ -445,7 +445,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     Text(
                       '${widget.books.where((book) => book['is_archived'] == false).length}/9',
                       style:
-                          const TextStyle(fontSize: 12, color: AppColors.black500),
+                          const TextStyle(fontSize: 13, color: AppColors.black500),
                     ),
                   ],
                 ),

@@ -333,10 +333,10 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('이 책을 인생 책으로 설정한 친구',
-                  style: TextStyle(color: AppColors.black900, fontSize: 14)),
+                  style: TextStyle(color: AppColors.black900, fontSize: 15)),
               Text('${lifebookUsers.length}명',
                   style:
-                      const TextStyle(fontSize: 14, color: AppColors.black500)),
+                      const TextStyle(fontSize: 15, color: AppColors.black500)),
             ],
           ),
         ),
@@ -430,7 +430,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
               : const SizedBox(height : 22),
               Text(title,
                   style:
-                      const TextStyle(color: AppColors.black900, fontSize: 14)),
+                      const TextStyle(color: AppColors.black900, fontSize: 15)),
               const SizedBox(height: 12),
               ...lines
                   .take(expanded ? lines.length : maxLines)
@@ -469,7 +469,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 22),
           child: Text('저자의 다른 작품',
-              style: TextStyle(fontSize: 14, color: AppColors.black900)),
+              style: TextStyle(fontSize: 15, color: AppColors.black900)),
         ),
         const SizedBox(height: 16),
         Padding(

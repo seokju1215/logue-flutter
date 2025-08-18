@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../data/datasources/aladin_book_api.dart';
 import '../../../data/datasources/user_book_api.dart';
 import '../../../data/models/book_model.dart';
@@ -12,7 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SearchBookScreen extends StatefulWidget {
   final String fromTab; // 'profile' 또는 'archive'
-  
+
   const SearchBookScreen({super.key, required this.fromTab});
 
   @override
@@ -32,7 +33,7 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
     if (_isSearching) {
       return;
     }
-    
+
     _currentQuery = query;
     if (query.isEmpty) {
       setState(() {
@@ -54,34 +55,36 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
       // 1️⃣ 내 DB에서 검색 (원본 쿼리로)
       final userBookApi = UserBookApi(Supabase.instance.client);
       final dbResults = await userBookApi.searchBooksFromDB(query);
-      
+
       // 2️⃣ Aladin API에서 검색 (원본 쿼리로)
       final aladinResults = await AladinBookApi().searchBooks(query);
-      
+
       // 3️⃣ 결과 합치기 및 중복 제거
       final allBooks = <BookModel>[];
       final seenIsbns = <String>{};
       final seenTitles = <String>{};
-      
+
       // DB 결과 먼저 추가
       for (final dbBook in dbResults) {
         final book = BookModel.fromJson(dbBook);
         if (book.isbn.isNotEmpty && !seenIsbns.contains(book.isbn)) {
           allBooks.add(book);
           seenIsbns.add(book.isbn);
-        } else if (book.isbn.isEmpty && !seenTitles.contains(book.title.toLowerCase())) {
+        } else if (book.isbn.isEmpty &&
+            !seenTitles.contains(book.title.toLowerCase())) {
           allBooks.add(book);
           seenTitles.add(book.title.toLowerCase());
         }
       }
-      
+
       // Aladin 결과 추가 (중복 제거)
       for (final aladinBook in aladinResults) {
         final book = BookModel.fromJson(aladinBook);
         if (book.isbn.isNotEmpty && !seenIsbns.contains(book.isbn)) {
           allBooks.add(book);
           seenIsbns.add(book.isbn);
-        } else if (book.isbn.isEmpty && !seenTitles.contains(book.title.toLowerCase())) {
+        } else if (book.isbn.isEmpty &&
+            !seenTitles.contains(book.title.toLowerCase())) {
           allBooks.add(book);
           seenTitles.add(book.title.toLowerCase());
         }
@@ -144,7 +147,8 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                       onSubmitted: _search,
                       onChanged: (value) {
                         if (_debounce?.isActive ?? false) _debounce!.cancel();
-                        _debounce = Timer(const Duration(milliseconds: 500), () {
+                        _debounce =
+                            Timer(const Duration(milliseconds: 500), () {
                           _search(value);
                         });
                       },
@@ -155,18 +159,22 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
                       ),
                       decoration: InputDecoration(
                         hintText: "책 이름을 검색해주세요.",
-                        hintStyle: const TextStyle(fontSize: 14, color: AppColors.black500),
+                        hintStyle: const TextStyle(
+                            fontSize: 14, color: AppColors.black500),
                         filled: true,
                         fillColor: AppColors.black200,
                         enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: AppColors.black200, width: 1.0),
+                          borderSide: const BorderSide(
+                              color: AppColors.black200, width: 1.0),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(color: AppColors.black200, width: 1.0),
+                          borderSide: const BorderSide(
+                              color: AppColors.black200, width: 1.0),
                           borderRadius: BorderRadius.circular(5),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 9),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0, horizontal: 9),
                       ),
                     ),
                   ),
@@ -180,42 +188,54 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
       body: Column(
         children: [
           if (_searchController.text.isNotEmpty)
-          Expanded(
-            child: _searchController.text.isEmpty
-                ? const SizedBox.shrink()
-                : _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _results.isEmpty
-                ? const Center(child: Text("검색 결과가 없습니다.", style: TextStyle(
-    fontSize: 14, color: AppColors.black500),
-    ),)
-                : GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.7,
-              ),
-              itemCount: _results.length,
-              itemBuilder: (context, index) {
-                final book = _results[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => WriteReviewScreen(book: book, fromTab: widget.fromTab),
-                      ),
-                    );
-                  },
-                  child: ClipRRect(
-                    child: BookFrame(imageUrl: book.image),
-                  ),
-                );
-              },
+            Expanded(
+              child: _searchController.text.isEmpty
+                  ? const SizedBox.shrink()
+                  : _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _results.isEmpty
+                          ? Center(
+                              child: Transform.translate(
+                                offset: AppConstants.getCenterOffset(context),
+                                child: const Text(
+                                  "검색 결과가 없어요.",
+                                  style: TextStyle(
+                                      fontSize: 14, color: AppColors.black500),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            )
+                          : GridView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 22, vertical: 12),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.7,
+                              ),
+                              itemCount: _results.length,
+                              itemBuilder: (context, index) {
+                                final book = _results[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => WriteReviewScreen(
+                                            book: book,
+                                            fromTab: widget.fromTab),
+                                      ),
+                                    );
+                                  },
+                                  child: ClipRRect(
+                                    child: BookFrame(imageUrl: book.image),
+                                  ),
+                                );
+                              },
+                            ),
             ),
-          ),
         ],
       ),
     );
