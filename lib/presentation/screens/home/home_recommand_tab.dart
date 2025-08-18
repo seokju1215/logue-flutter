@@ -46,6 +46,7 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
   List<Map<String, dynamic>> recentActiveUsers = [];
   bool isLoading = true;
   bool isLoadingUsers = true;
+  bool isFindingFriends = false;
 
   // 캐싱을 위한 변수들
   static List<Map<String, dynamic>> _cachedUsersWithSameBooks = [];
@@ -462,17 +463,53 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                 const Expanded(child: SizedBox()),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () async {
-                      await _handleFindFriends();
-                    },
+                    onPressed: isFindingFriends
+                        ? null
+                        : () async {
+                            setState(() {
+                              isFindingFriends = true;
+                            });
+                            try {
+                              await _handleFindFriends();
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  isFindingFriends = false;
+                                });
+                              }
+                            }
+                          },
                     style: _outlinedStyle(context),
-                    child: const Text(
-                      '친구 찾기',
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.black900,
-                          height: 1.25),
-                    ),
+                    child: isFindingFriends
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Text(
+                                '친구 찾기',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.black900,
+                                  height: 1.25,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            '친구 찾기',
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.black900,
+                                height: 1.25),
+                          ),
                   ),
                 ),
               ],
