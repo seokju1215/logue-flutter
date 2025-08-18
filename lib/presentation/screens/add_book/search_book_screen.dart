@@ -41,25 +41,22 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
       return;
     }
 
-    // 검색 쿼리에서 공백 제거
-    final cleanQuery = query.replaceAll(' ', '');
-    print('🔍 원본 검색어: "$query"');
-    print('🔍 공백 제거된 검색어: "$cleanQuery"');
+    // 검색 쿼리 그대로 사용 (공백 제거하지 않음)
+    print('🔍 검색어: "$query"');
 
-    // 책 검색 트래킹 (원본 쿼리로)
+    // 책 검색 트래킹
     MixpanelUtil.trackBookSearch(query);
 
     setState(() => _isLoading = true);
     _isSearching = true;
 
     try {
-      // 1️⃣ 내 DB에서 검색 (공백 제거된 쿼리로)
+      // 1️⃣ 내 DB에서 검색 (원본 쿼리로)
       final userBookApi = UserBookApi(Supabase.instance.client);
-      final dbResults = await userBookApi.searchBooksFromDB(cleanQuery);
+      final dbResults = await userBookApi.searchBooksFromDB(query);
       
-      // 2️⃣ Aladin API에서 검색 (공백 제거된 쿼리로)
-      // 2️⃣ Aladin API에서 검색 (공백 제거된 쿼리로)
-      final aladinResults = await AladinBookApi().searchBooks(cleanQuery);
+      // 2️⃣ Aladin API에서 검색 (원본 쿼리로)
+      final aladinResults = await AladinBookApi().searchBooks(query);
       
       // 3️⃣ 결과 합치기 및 중복 제거
       final allBooks = <BookModel>[];

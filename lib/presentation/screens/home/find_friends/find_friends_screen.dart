@@ -39,14 +39,22 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
     // widget.contactNumber가 있으면 사용, 없으면 null
     contactNumber = widget.contactNumber;
     
-    // 전달받은 연락처 목록이 있으면 권한이 있다고 간주하고 바로 친구 검색 시작
-    if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
+    if (contactNumber != null && contactNumber!.isNotEmpty) {
+      // 이미 등록된 연락처가 있으면 바로 친구 검색 시작
+      debugPrint('📱 이미 등록된 연락처로 바로 친구 검색 시작: $contactNumber');
+      setState(() {
+        hasContactPermission = true; // 권한이 있다고 설정
+      });
+      _searchFriendsFromContacts();
+    } else if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
+      // 전달받은 연락처 목록이 있으면 권한이 있다고 간주하고 바로 친구 검색 시작
       debugPrint('📱 전달받은 연락처 목록으로 바로 친구 검색 시작');
       setState(() {
         hasContactPermission = true; // 권한이 있다고 설정
       });
       _searchFriendsFromContacts();
     } else {
+      // 전달받은 연락처 목록이 없어서 권한 확인 필요
       debugPrint('📱 전달받은 연락처 목록이 없어서 권한 확인 필요');
       _checkContactPermissionAndSearchFriends();
     }
@@ -109,10 +117,14 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
         isSearchingFriends = true;
       });
 
-      // 전달받은 연락처 전화번호 목록 사용 또는 주소록에서 가져오기
+      // 전화번호 목록 준비
       List<String> phoneNumbers;
       
-      if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
+      if (contactNumber != null && contactNumber!.isNotEmpty) {
+        // 이미 등록된 contact_number가 있으면 이를 사용
+        debugPrint('📱 이미 등록된 연락처 사용: $contactNumber');
+        phoneNumbers = [contactNumber!];
+      } else if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
         debugPrint('📱 전달받은 연락처 전화번호 목록 사용');
         phoneNumbers = widget.contactPhoneNumbers!;
         debugPrint('📱 전달받은 전화번호 개수: ${phoneNumbers.length}개');
@@ -277,7 +289,7 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
 
 
   Future<void> _editPhoneNumber() async {
-    Navigator.pushReplacement(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => InputPhoneNumberScreen(),

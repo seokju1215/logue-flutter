@@ -17,6 +17,7 @@ import 'users_with_same_books_screen.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
+import 'package:my_logue/presentation/screens/home/find_friends/find_friends_screen.dart';
 
 class HomeRecommendTab extends ConsumerStatefulWidget {
   const HomeRecommendTab({super.key});
@@ -155,40 +156,87 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
     }
   }
 
+  /// 친구 찾기 버튼 클릭 시 처리
   Future<void> _handleFindFriends() async {
     try {
-      // 1) 권한 체크 & 요청 (한 번에 처리)
-      final hasPermission = await FlutterContacts.requestPermission(readonly: true);
-
-      if (!mounted) return;
-
-      if (hasPermission) {
-        // 2) 권한 승인된 경우에만 연락처 조회
-        await _getContactsAndNavigate();
+      // 1) 먼저 profiles 테이블에 contact_number가 있는지 확인
+      final currentUserId = client.auth.currentUser?.id;
+      if (currentUserId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인이 필요합니다.'), duration: Duration(seconds: 2)),
+        );
         return;
       }
 
-      // 3) 권한 거부: 안내 다이얼로그 (설정 이동 유도 등)
-      await showDialog(
-        context: context,
-        builder: (ctx) => ContactPermissionDialog(
-          onConfirm: () async {
-            Navigator.pop(ctx);
-            // 설정창 열기
-            try {
-              await AppSettings.openAppSettings();
-            } catch (e) {
-              debugPrint('❌ 설정창 열기 실패: $e');
-              // fallback: permission_handler 사용
-              try {
-                await openAppSettings();
-              } catch (e2) {
-                debugPrint('❌ permission_handler로도 설정창 열기 실패: $e2');
-              }
-            }
-          },
-        ),
-      );
+      // profiles 테이블에서 contact_number 확인
+      final profileResponse = await client
+          .from('profiles')
+          .select('contact_number')
+          .eq('id', currentUserId)
+          .maybeSingle();
+
+      final contactNumber = profileResponse?['contact_number'] as String?;
+      
+      if (contactNumber != null && contactNumber.isNotEmpty) {
+        // contact_number가 있으면 바로 find_friends_screen으로 이동
+        debugPrint('📱 이미 연락처가 등록되어 있음: $contactNumber');
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FindFriendsScreen(
+                contactNumber: contactNumber,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // 2) contact_number가 없으면 연락처 권한 확인
+      // 먼저 현재 권한 상태 확인
+      final currentPermission = await FlutterContacts.requestPermission(readonly: true);
+      debugPrint('🔐 현재 연락처 권한 상태: $currentPermission');
+
+      if (currentPermission) {
+        // 권한이 이미 있음, 주소록에서 전화번호 가져와서 input_phone_number_screen으로 이동
+        debugPrint('✅ 권한이 이미 있음, 주소록에서 전화번호 가져오기 시작');
+        await _getContactsAndNavigate();
+      } else {
+        // 권한이 없음, 권한 요청
+        debugPrint('❌ 권한이 없음, 권한 요청 시작');
+        final permission = await FlutterContacts.requestPermission();
+        debugPrint('🔐 권한 요청 결과: $permission');
+
+        if (permission) {
+          // 권한 승인됨, 주소록에서 전화번호 가져와서 input_phone_number_screen으로 이동
+          debugPrint('✅ 권한 승인됨, 주소록에서 전화번호 가져오기 시작');
+          await _getContactsAndNavigate();
+        } else {
+          // 권한 거부됨
+          debugPrint('❌ 권한 거부됨');
+          await showDialog(
+            context: context,
+            builder: (ctx) => ContactPermissionDialog(
+              onConfirm: () async {
+                Navigator.pop(ctx);
+                // 설정창 열기
+                try {
+                  await AppSettings.openAppSettings();
+                } catch (e) {
+                  debugPrint('❌ 설정창 열기 실패: $e');
+                  // fallback: permission_handler 사용
+                  try {
+                    await openAppSettings();
+                  } catch (e2) {
+                    debugPrint('❌ permission_handler로도 설정창 열기 실패: $e2');
+                  }
+                }
+              },
+            ),
+          );
+        }
+      }
     } catch (e) {
       debugPrint('❌ 친구 찾기 실패: $e');
       if (!mounted) return;
