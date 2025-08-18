@@ -15,6 +15,8 @@ import '../../../core/providers/follow_state_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'users_with_same_books_screen.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:app_settings/app_settings.dart';
 
 class HomeRecommendTab extends ConsumerStatefulWidget {
   const HomeRecommendTab({super.key});
@@ -172,8 +174,18 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
         builder: (ctx) => ContactPermissionDialog(
           onConfirm: () async {
             Navigator.pop(ctx);
-            // (선택) permission_handler로 설정 열기 가능
-            // await openAppSettings(); // permission_handler 패키지 사용 시
+            // 설정창 열기
+            try {
+              await AppSettings.openAppSettings();
+            } catch (e) {
+              debugPrint('❌ 설정창 열기 실패: $e');
+              // fallback: permission_handler 사용
+              try {
+                await openAppSettings();
+              } catch (e2) {
+                debugPrint('❌ permission_handler로도 설정창 열기 실패: $e2');
+              }
+            }
           },
         ),
       );

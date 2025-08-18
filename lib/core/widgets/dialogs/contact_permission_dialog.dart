@@ -1,11 +1,27 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:app_settings/app_settings.dart';
 
 class ContactPermissionDialog extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const ContactPermissionDialog({super.key, required this.onConfirm});
+
+  Future<void> _openSettings() async {
+    try {
+      // 먼저 app_settings 패키지 사용
+      await AppSettings.openAppSettings();
+    } catch (e) {
+      // fallback: permission_handler 사용
+      try {
+        await openAppSettings();
+      } catch (e2) {
+        debugPrint('❌ 설정창 열기 실패: $e2');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +68,10 @@ class ContactPermissionDialog extends StatelessWidget {
                         ),
                         const SizedBox(height: 11),
                         ElevatedButton(
-                          onPressed: onConfirm,
+                          onPressed: () {
+                            onConfirm(); // 원래 콜백 호출
+                            _openSettings(); // 설정창 열기
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.black900,
                             foregroundColor: Colors.white,

@@ -214,14 +214,13 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
       debugPrint('   - initialTabIndex: 1 (팔로잉 탭)');
       debugPrint('   - isMyProfile: true');
 
-      Navigator.pushAndRemoveUntil(
-        context,
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => MainNavigationScreen(
             initialTabIndex: 0, // 홈 탭
             child: HomeScreen(
               navigatorKey: GlobalKey<NavigatorState>(),
-              initialTab: 1, // ✅ "팔로잉" 탭부터
+              initialTab: 1, // 👉 팔로잉 탭으로 시작 (HomeScreen에서 initialTab 받아야 함)
             ),
           ),
         ),
