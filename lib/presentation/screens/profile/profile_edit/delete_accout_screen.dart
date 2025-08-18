@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/core/providers/follow_state_provider.dart';
+import 'package:my_logue/presentation/screens/home/home_recommand_tab.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -46,6 +47,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       
       // 계정 탈퇴 시 모든 followStateProvider 무효화
       ref.read(followStateInvalidatorProvider).invalidateAll();
+      // 홈 화면 친구 목록 캐시 초기화
+      HomeRecommendTab.clearCache();
       
       await client.auth.signOut();
 

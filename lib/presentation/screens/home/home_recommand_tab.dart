@@ -30,6 +30,14 @@ class HomeRecommendTab extends ConsumerStatefulWidget {
     debugPrint('🔄 책 변경 감지 - 홈 화면 친구 목록 캐시 새로고침 요청');
     _HomeRecommendTabState._needsRefresh = true;
   }
+
+  /// 로그아웃 시 캐시 초기화 (로그아웃 다이얼로그에서 호출)
+  static void clearCache() {
+    debugPrint('🧹 로그아웃 감지 - 홈 화면 친구 목록 캐시 초기화');
+    _HomeRecommendTabState._cachedUsersWithSameBooks.clear();
+    _HomeRecommendTabState._hasCachedData = false;
+    _HomeRecommendTabState._needsRefresh = false;
+  }
 }
 
 class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
@@ -74,7 +82,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
 
   Future<void> _fetchUsersWithSameBooks() async {
     try {
-      debugPrint('🚀 인생책이 겹치는 사람 조회 시작');
       final userRepository = UserRepository(client);
       final users = await userRepository.getUsersWithSameBooks();
 
@@ -87,7 +94,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
         _hasCachedData = true;
         _needsRefresh = false; // 새로고침 플래그 리셋
 
-        debugPrint('✅ 인생책이 겹치는 사람 조회 완료 - ${sortedUsers.length}명, 캐시 저장됨');
 
         setState(() {
           usersWithSameBooks = sortedUsers;
@@ -176,22 +182,17 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
           .maybeSingle();
 
       final contactNumber = profileResponse?['contact_number'] as String?;
-      
-      // 2) 주소록에서 모든 전화번호 목록 가져오기
-      debugPrint('📱 주소록에서 전화번호 목록 가져오기 시작');
+
       
       // 연락처 권한 확인
       final currentPermission = await FlutterContacts.requestPermission(readonly: true);
-      debugPrint('🔐 현재 연락처 권한 상태: $currentPermission');
 
       if (currentPermission) {
         // 권한이 이미 있음, 주소록에서 전화번호 가져오기
-        debugPrint('✅ 권한이 이미 있음, 주소록에서 전화번호 가져오기 시작');
         final contactPhoneNumbers = await _getPhoneNumbersFromContacts();
         
         if (contactNumber != null && contactNumber.isNotEmpty) {
           // contact_number가 있으면 바로 FindFriendsScreen으로 이동
-          debugPrint('📱 사용자 전화번호가 등록되어 있음: $contactNumber');
           if (mounted) {
             Navigator.push(
               context,
@@ -204,8 +205,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
             );
           }
         } else {
-          // contact_number가 없으면 input_phone_number_screen으로 이동
-          debugPrint('📱 사용자 전화번호가 등록되지 않음, input_phone_number_screen으로 이동');
           if (mounted) {
             Navigator.push(
               context,
@@ -219,18 +218,14 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
         }
       } else {
         // 권한이 없음, 권한 요청
-        debugPrint('❌ 권한이 없음, 권한 요청 시작');
         final permission = await FlutterContacts.requestPermission();
-        debugPrint('🔐 권한 요청 결과: $permission');
 
         if (permission) {
           // 권한 승인됨, 주소록에서 전화번호 가져오기
-          debugPrint('✅ 권한 승인됨, 주소록에서 전화번호 가져오기 시작');
           final contactPhoneNumbers = await _getPhoneNumbersFromContacts();
           
           if (contactNumber != null && contactNumber.isNotEmpty) {
             // contact_number가 있으면 바로 FindFriendsScreen으로 이동
-            debugPrint('📱 사용자 전화번호가 등록되어 있음: $contactNumber');
             if (mounted) {
               Navigator.push(
                 context,
@@ -243,8 +238,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
               );
             }
           } else {
-            // contact_number가 없으면 input_phone_number_screen으로 이동
-            debugPrint('📱 사용자 전화번호가 등록되지 않음, input_phone_number_screen으로 이동');
             if (mounted) {
               Navigator.push(
                 context,
@@ -258,7 +251,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
           }
         } else {
           // 권한 거부됨
-          debugPrint('❌ 권한 거부됨');
           await showDialog(
             context: context,
             builder: (ctx) => ContactPermissionDialog(
@@ -308,8 +300,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
   /// 연락처 목록을 처리하고 화면 이동
   Future<void> _processContactsAndNavigate(List<Contact> contacts) async {
     try {
-      debugPrint('📱 ===== 주소록 정보 상세 출력 =====');
-      debugPrint('📱 전체 연락처 개수: ${contacts.length}개');
       
       final phoneNumbers = <String>[];
       final contactDetails = <String>[];
@@ -318,18 +308,15 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
         final contact = contacts[i];
         final contactName = contact.displayName ?? '이름 없음';
         final contactId = contact.id;
-        
-        debugPrint('📱 연락처 [$i]: ID=$contactId, 이름="$contactName"');
+
         
         if (contact.phones.isNotEmpty) {
-          debugPrint('📱   전화번호 개수: ${contact.phones.length}개');
           
           for (int j = 0; j < contact.phones.length; j++) {
             final phone = contact.phones[j];
             final originalNumber = phone.number;
             final cleanPhone = phone.number.replaceAll(RegExp(r'[^\d]'), '');
-            
-            debugPrint('📱     전화번호 [$j]: 원본="$originalNumber", 정리="$cleanPhone"');
+
             
             if (cleanPhone.isNotEmpty) {
               phoneNumbers.add(cleanPhone);
@@ -350,14 +337,6 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
       // 중복 제거
       final uniquePhoneNumbers = phoneNumbers.toSet().toList();
 
-      debugPrint('📱 ===== 전화번호 처리 결과 =====');
-      debugPrint('📱 총 전화번호 개수: ${phoneNumbers.length}개');
-      debugPrint('📱 중복 제거 후 개수: ${uniquePhoneNumbers.length}개');
-      debugPrint('📱 전화번호 샘플 (처음 10개): ${uniquePhoneNumbers.take(10).toList()}');
-      
-      if (uniquePhoneNumbers.length > 10) {
-        debugPrint('📱 ... (이하 ${uniquePhoneNumbers.length - 10}개 전화번호 생략)');
-      }
 
       // 친구 찾기 화면으로 이동하면서 연락처 목록 전달
       if (mounted) {

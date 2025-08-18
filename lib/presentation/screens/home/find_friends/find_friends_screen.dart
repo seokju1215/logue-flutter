@@ -41,32 +41,27 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
     
     if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
       // 주소록에서 가져온 전화번호 목록이 있으면 권한이 있다고 간주하고 바로 친구 검색 시작
-      debugPrint('📱 주소록에서 가져온 전화번호 목록으로 바로 친구 검색 시작');
       setState(() {
         hasContactPermission = true; // 권한이 있다고 설정
       });
       _searchFriendsFromContacts();
     } else {
       // 전달받은 전화번호 목록이 없어서 권한 확인 필요
-      debugPrint('📱 전화번호 목록이 없어서 권한 확인 필요');
       _checkContactPermissionAndSearchFriends();
     }
   }
 
   Future<void> _checkContactPermission() async {
     try {
-      debugPrint('🔐 연락처 권한 확인 시작');
       
       // 연락처 권한 상태 확인
       final permission = await FlutterContacts.requestPermission();
-      debugPrint('🔐 연락처 권한 상태: $permission');
       
       setState(() {
         hasContactPermission = permission;
       });
       
       if (permission) {
-        debugPrint('✅ 권한 승인됨, 친구 검색 시작');
         // 권한이 있으면 친구 검색 시작
         _searchFriendsFromContacts();
       } else {
@@ -80,18 +75,15 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
 
   Future<void> _checkContactPermissionAndSearchFriends() async {
     try {
-      debugPrint('🔐 연락처 권한 확인 및 친구 찾기 시작');
       
       // 연락처 권한 상태 확인
       final permission = await FlutterContacts.requestPermission();
-      debugPrint('🔐 연락처 권한 상태: $permission');
       
       setState(() {
         hasContactPermission = permission;
       });
       
       if (permission) {
-        debugPrint('✅ 권한 승인됨, 친구 검색 시작');
         // 권한이 있으면 바로 친구 검색 시작
         _searchFriendsFromContacts();
       } else {
@@ -105,7 +97,6 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
 
   Future<void> _searchFriendsFromContacts() async {
     try {
-      debugPrint('🔍 _searchFriendsFromContacts 시작');
       setState(() {
         isSearchingFriends = true;
       });
@@ -115,19 +106,13 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
       
       if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
         // 주소록에서 가져온 전화번호 목록 사용
-        debugPrint('📱 주소록에서 가져온 전화번호 목록 사용');
         phoneNumbers = widget.contactPhoneNumbers!;
-        debugPrint('📱 전화번호 개수: ${phoneNumbers.length}개');
-        debugPrint('📱 전화번호 샘플: ${phoneNumbers.take(5).toList()}');
       } else {
         // 주소록에서 전화번호 가져오기
-        debugPrint('📱 주소록에서 전화번호 가져오기 시작');
         phoneNumbers = await _getPhoneNumbersFromContacts();
-        debugPrint('📱 가져온 전화번호 개수: ${phoneNumbers.length}개');
       }
       
       if (phoneNumbers.isEmpty) {
-        debugPrint('❌ 전화번호 목록이 비어있습니다.');
         setState(() {
           isSearchingFriends = false;
         });
@@ -136,15 +121,12 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
 
       // 전화번호 샘플 출력 (처음 5개)
       final sampleNumbers = phoneNumbers.take(5).toList();
-      debugPrint('📱 전화번호 샘플 (처음 5개): $sampleNumbers');
 
       // RPC 함수 match_contacts를 사용하여 친구 찾기
       final supabase = Supabase.instance.client;
       final currentUserId = supabase.auth.currentUser?.id;
-      debugPrint('🔍 현재 사용자 ID: $currentUserId');
       
       if (currentUserId == null) {
-        debugPrint('❌ 현재 사용자 ID를 가져올 수 없습니다.');
         setState(() {
           isSearchingFriends = false;
         });
@@ -152,8 +134,6 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
       }
 
       try {
-        debugPrint('🚀 match_contacts RPC 함수 호출 시작');
-        debugPrint('📤 전달할 전화번호 개수: ${phoneNumbers.length}개');
         
         // match_contacts RPC 함수 호출
         final response = await supabase.rpc(
@@ -161,18 +141,12 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
           params: {'contact_list': phoneNumbers},
         );
 
-        debugPrint('📥 RPC 응답: $response');
-        debugPrint('📥 RPC 응답 타입: ${response.runtimeType}');
 
         if (response != null) {
           final List<Map<String, dynamic>> friends = List<Map<String, dynamic>>.from(response);
-          debugPrint('👥 파싱된 친구 목록: $friends');
-          debugPrint('👥 친구 목록 타입: ${friends.runtimeType}');
-          debugPrint('👥 친구 목록 길이: ${friends.length}');
           
           // 자기 자신 제외
           final filteredFriends = friends.where((friend) => friend['user_id'] != currentUserId).toList();
-          debugPrint('👥 자기 자신 제외 후 친구 수: ${filteredFriends.length}명');
           
           if (mounted) {
             setState(() {
@@ -180,10 +154,8 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
               isSearchingFriends = false;
             });
           }
-          
-          debugPrint('✅ 친구 검색 완료: ${foundFriends.length}명의 친구를 찾았습니다.');
+
         } else {
-          debugPrint('⚠️ RPC 응답이 null입니다.');
           if (mounted) {
             setState(() {
               foundFriends = [];
@@ -215,48 +187,38 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
   /// 주소록에서 전화번호 목록을 가져옴
   Future<List<String>> _getPhoneNumbersFromContacts() async {
     try {
-      debugPrint('🔍 주소록 접근 시작...');
-      
       // 주소록 권한 요청 및 확인
       final hasPermission = await FlutterContacts.requestPermission(readonly: true);
-      debugPrint('🔍 주소록 권한 상태: $hasPermission');
       
       if (!hasPermission) {
         debugPrint('❌ 주소록 접근 권한이 거부되었습니다.');
         return [];
       }
 
-      debugPrint('🔍 주소록 가져오기 시작...');
       
       // 주소록 가져오기
       final contacts = await FlutterContacts.getContacts(
         withProperties: true,
         withPhoto: false,
       );
-      
-      debugPrint('🔍 가져온 연락처 수: ${contacts.length}');
+
       
       final phoneNumbers = <String>[];
       
       for (int i = 0; i < contacts.length; i++) {
         final contact = contacts[i];
-        debugPrint('🔍 연락처 ${i + 1}: ${contact.displayName}');
         
         final phones = contact.phones;
-        debugPrint('🔍 전화번호 개수: ${phones.length}');
         
         if (phones.isNotEmpty) {
           for (int j = 0; j < phones.length; j++) {
             final phone = phones[j];
-            debugPrint('🔍 전화번호 ${j + 1}: ${phone.number}');
             
             // 전화번호에서 특수문자 제거하고 숫자만 추출
             final cleanNumber = phone.number.replaceAll(RegExp(r'[^\d]'), '');
-            debugPrint('🔍 정리된 전화번호: $cleanNumber');
             
             if (cleanNumber.isNotEmpty) {
               phoneNumbers.add(cleanNumber);
-              debugPrint('✅ 전화번호 추가됨: $cleanNumber');
             } else {
               debugPrint('❌ 빈 전화번호 제외됨');
             }
@@ -265,9 +227,7 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
           debugPrint('❌ 이 연락처에는 전화번호가 없음');
         }
       }
-      
-      debugPrint('✅ 주소록에서 ${phoneNumbers.length}개의 전화번호를 가져왔습니다.');
-      debugPrint('🔍 최종 전화번호 목록: $phoneNumbers');
+
       return phoneNumbers;
     } catch (e) {
       debugPrint('❌ 주소록에서 전화번호 가져오기 실패: $e');
