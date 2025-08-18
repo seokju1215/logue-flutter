@@ -177,31 +177,46 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
 
       final contactNumber = profileResponse?['contact_number'] as String?;
       
-      if (contactNumber != null && contactNumber.isNotEmpty) {
-        // contact_number가 있으면 바로 find_friends_screen으로 이동
-        debugPrint('📱 이미 연락처가 등록되어 있음: $contactNumber');
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => FindFriendsScreen(
-                contactNumber: contactNumber,
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
-      // 2) contact_number가 없으면 연락처 권한 확인
-      // 먼저 현재 권한 상태 확인
+      // 2) 주소록에서 모든 전화번호 목록 가져오기
+      debugPrint('📱 주소록에서 전화번호 목록 가져오기 시작');
+      
+      // 연락처 권한 확인
       final currentPermission = await FlutterContacts.requestPermission(readonly: true);
       debugPrint('🔐 현재 연락처 권한 상태: $currentPermission');
 
       if (currentPermission) {
-        // 권한이 이미 있음, 주소록에서 전화번호 가져와서 input_phone_number_screen으로 이동
+        // 권한이 이미 있음, 주소록에서 전화번호 가져오기
         debugPrint('✅ 권한이 이미 있음, 주소록에서 전화번호 가져오기 시작');
-        await _getContactsAndNavigate();
+        final contactPhoneNumbers = await _getPhoneNumbersFromContacts();
+        
+        if (contactNumber != null && contactNumber.isNotEmpty) {
+          // contact_number가 있으면 바로 FindFriendsScreen으로 이동
+          debugPrint('📱 사용자 전화번호가 등록되어 있음: $contactNumber');
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => FindFriendsScreen(
+                  contactNumber: contactNumber,
+                  contactPhoneNumbers: contactPhoneNumbers,
+                ),
+              ),
+            );
+          }
+        } else {
+          // contact_number가 없으면 input_phone_number_screen으로 이동
+          debugPrint('📱 사용자 전화번호가 등록되지 않음, input_phone_number_screen으로 이동');
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => InputPhoneNumberScreen(
+                  contactPhoneNumbers: contactPhoneNumbers,
+                ),
+              ),
+            );
+          }
+        }
       } else {
         // 권한이 없음, 권한 요청
         debugPrint('❌ 권한이 없음, 권한 요청 시작');
@@ -209,9 +224,38 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
         debugPrint('🔐 권한 요청 결과: $permission');
 
         if (permission) {
-          // 권한 승인됨, 주소록에서 전화번호 가져와서 input_phone_number_screen으로 이동
+          // 권한 승인됨, 주소록에서 전화번호 가져오기
           debugPrint('✅ 권한 승인됨, 주소록에서 전화번호 가져오기 시작');
-          await _getContactsAndNavigate();
+          final contactPhoneNumbers = await _getPhoneNumbersFromContacts();
+          
+          if (contactNumber != null && contactNumber.isNotEmpty) {
+            // contact_number가 있으면 바로 FindFriendsScreen으로 이동
+            debugPrint('📱 사용자 전화번호가 등록되어 있음: $contactNumber');
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FindFriendsScreen(
+                    contactNumber: contactNumber,
+                    contactPhoneNumbers: contactPhoneNumbers,
+                  ),
+                ),
+              );
+            }
+          } else {
+            // contact_number가 없으면 input_phone_number_screen으로 이동
+            debugPrint('📱 사용자 전화번호가 등록되지 않음, input_phone_number_screen으로 이동');
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => InputPhoneNumberScreen(
+                    contactPhoneNumbers: contactPhoneNumbers,
+                  ),
+                ),
+              );
+            }
+          }
         } else {
           // 권한 거부됨
           debugPrint('❌ 권한 거부됨');
@@ -264,27 +308,56 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
   /// 연락처 목록을 처리하고 화면 이동
   Future<void> _processContactsAndNavigate(List<Contact> contacts) async {
     try {
+      debugPrint('📱 ===== 주소록 정보 상세 출력 =====');
+      debugPrint('📱 전체 연락처 개수: ${contacts.length}개');
+      
       final phoneNumbers = <String>[];
-      for (final contact in contacts) {
+      final contactDetails = <String>[];
+      
+      for (int i = 0; i < contacts.length; i++) {
+        final contact = contacts[i];
+        final contactName = contact.displayName ?? '이름 없음';
+        final contactId = contact.id;
+        
+        debugPrint('📱 연락처 [$i]: ID=$contactId, 이름="$contactName"');
+        
         if (contact.phones.isNotEmpty) {
-          for (final phone in contact.phones) {
-            // 전화번호에서 특수문자 제거하고 숫자만 추출
-            final cleanPhone =
-                phone.number.replaceAll(RegExp(r'[^\d]'), '');
+          debugPrint('📱   전화번호 개수: ${contact.phones.length}개');
+          
+          for (int j = 0; j < contact.phones.length; j++) {
+            final phone = contact.phones[j];
+            final originalNumber = phone.number;
+            final cleanPhone = phone.number.replaceAll(RegExp(r'[^\d]'), '');
+            
+            debugPrint('📱     전화번호 [$j]: 원본="$originalNumber", 정리="$cleanPhone"');
+            
             if (cleanPhone.isNotEmpty) {
               phoneNumbers.add(cleanPhone);
+              contactDetails.add('$contactName: $cleanPhone');
             }
           }
+        } else {
+          debugPrint('📱   전화번호 없음');
+        }
+        
+        // 연락처 정보가 너무 많으면 처음 10개만 출력
+        if (i >= 9) {
+          debugPrint('📱 ... (이하 ${contacts.length - 10}개 연락처 생략)');
+          break;
         }
       }
 
       // 중복 제거
       final uniquePhoneNumbers = phoneNumbers.toSet().toList();
 
-      debugPrint('📱 주소록에서 가져온 전화번호 목록:');
+      debugPrint('📱 ===== 전화번호 처리 결과 =====');
       debugPrint('📱 총 전화번호 개수: ${phoneNumbers.length}개');
       debugPrint('📱 중복 제거 후 개수: ${uniquePhoneNumbers.length}개');
-      debugPrint('📱 전화번호 목록: $uniquePhoneNumbers');
+      debugPrint('📱 전화번호 샘플 (처음 10개): ${uniquePhoneNumbers.take(10).toList()}');
+      
+      if (uniquePhoneNumbers.length > 10) {
+        debugPrint('📱 ... (이하 ${uniquePhoneNumbers.length - 10}개 전화번호 생략)');
+      }
 
       // 친구 찾기 화면으로 이동하면서 연락처 목록 전달
       if (mounted) {
@@ -307,6 +380,30 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
           ),
         );
       }
+    }
+  }
+
+  Future<List<String>> _getPhoneNumbersFromContacts() async {
+    try {
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
+      final phoneNumbers = <String>[];
+      for (final contact in contacts) {
+        if (contact.phones.isNotEmpty) {
+          for (final phone in contact.phones) {
+            final cleanPhone = phone.number.replaceAll(RegExp(r'[^\d]'), '');
+            if (cleanPhone.isNotEmpty) {
+              phoneNumbers.add(cleanPhone);
+            }
+          }
+        }
+      }
+      return phoneNumbers;
+    } catch (e) {
+      debugPrint('❌ 주소록에서 전화번호 가져오기 실패: $e');
+      return [];
     }
   }
 
@@ -593,3 +690,4 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
     );
   }
 }
+

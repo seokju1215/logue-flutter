@@ -39,23 +39,16 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
     // widget.contactNumber가 있으면 사용, 없으면 null
     contactNumber = widget.contactNumber;
     
-    if (contactNumber != null && contactNumber!.isNotEmpty) {
-      // 이미 등록된 연락처가 있으면 바로 친구 검색 시작
-      debugPrint('📱 이미 등록된 연락처로 바로 친구 검색 시작: $contactNumber');
-      setState(() {
-        hasContactPermission = true; // 권한이 있다고 설정
-      });
-      _searchFriendsFromContacts();
-    } else if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
-      // 전달받은 연락처 목록이 있으면 권한이 있다고 간주하고 바로 친구 검색 시작
-      debugPrint('📱 전달받은 연락처 목록으로 바로 친구 검색 시작');
+    if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
+      // 주소록에서 가져온 전화번호 목록이 있으면 권한이 있다고 간주하고 바로 친구 검색 시작
+      debugPrint('📱 주소록에서 가져온 전화번호 목록으로 바로 친구 검색 시작');
       setState(() {
         hasContactPermission = true; // 권한이 있다고 설정
       });
       _searchFriendsFromContacts();
     } else {
-      // 전달받은 연락처 목록이 없어서 권한 확인 필요
-      debugPrint('📱 전달받은 연락처 목록이 없어서 권한 확인 필요');
+      // 전달받은 전화번호 목록이 없어서 권한 확인 필요
+      debugPrint('📱 전화번호 목록이 없어서 권한 확인 필요');
       _checkContactPermissionAndSearchFriends();
     }
   }
@@ -117,19 +110,17 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
         isSearchingFriends = true;
       });
 
-      // 전화번호 목록 준비
+      // 전화번호 목록 준비 - 주소록에서 가져온 전화번호들만 사용
       List<String> phoneNumbers;
       
-      if (contactNumber != null && contactNumber!.isNotEmpty) {
-        // 이미 등록된 contact_number가 있으면 이를 사용
-        debugPrint('📱 이미 등록된 연락처 사용: $contactNumber');
-        phoneNumbers = [contactNumber!];
-      } else if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
-        debugPrint('📱 전달받은 연락처 전화번호 목록 사용');
+      if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
+        // 주소록에서 가져온 전화번호 목록 사용
+        debugPrint('📱 주소록에서 가져온 전화번호 목록 사용');
         phoneNumbers = widget.contactPhoneNumbers!;
-        debugPrint('📱 전달받은 전화번호 개수: ${phoneNumbers.length}개');
-        debugPrint('📱 전화번호 목록: $phoneNumbers');
+        debugPrint('📱 전화번호 개수: ${phoneNumbers.length}개');
+        debugPrint('📱 전화번호 샘플: ${phoneNumbers.take(5).toList()}');
       } else {
+        // 주소록에서 전화번호 가져오기
         debugPrint('📱 주소록에서 전화번호 가져오기 시작');
         phoneNumbers = await _getPhoneNumbersFromContacts();
         debugPrint('📱 가져온 전화번호 개수: ${phoneNumbers.length}개');
@@ -292,7 +283,10 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => InputPhoneNumberScreen(),
+        builder: (context) => InputPhoneNumberScreen(
+          initialPhoneNumber: contactNumber,
+          contactPhoneNumbers: widget.contactPhoneNumbers,
+        ),
       ),
     );
   }
