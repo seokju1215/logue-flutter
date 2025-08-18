@@ -173,7 +173,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
           // 제목/저장/선택 카운트
           Container(
-            padding: const EdgeInsets.fromLTRB(22, 28, 22, 15),
+            padding: const EdgeInsets.fromLTRB(12, 28, 12, 15),
             child: Stack(
               children: [
                 Center(
@@ -195,27 +195,29 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          // 저장 시에만 상위에 반영
                           if (mounted) {
                             try {
                               widget.onBooksUpdated?.call(
                                 updatedBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
                               );
-                              widget.onClose?.call(); // 완전 닫힘 알림
+                              widget.onClose?.call();
                               Navigator.pop(context, true);
                             } catch (e) {
-                              debugPrint('❌ 저장 중 오류 발생: $e');
-                              // 에러가 발생해도 바텀시트는 닫기
                               Navigator.pop(context, false);
                             }
                           }
                         },
-                        child: Text(
-                          '저장',
-                          style: TextStyle(
-                            color: AppColors.blue500,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0), // 👈 클릭 영역 확장
+                          color: Colors.transparent, // 👈 배경은 투명
+                          child: Text(
+                            '저장',
+                            style: TextStyle(
+                              color: AppColors.blue500,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                              height: 1.15,
+                            ),
                           ),
                         ),
                       ),
