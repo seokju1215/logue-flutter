@@ -14,7 +14,7 @@ class SearchUsers {
         .select('id, username,name, avatar_url')
         .ilike('username', '%$keyword%')
         .neq('id', currentUserId) // 자기 자신 제외
-        .limit(10); // 더 많은 결과를 가져오도록 수정
+        .limit(1000); // 더 많은 결과를 가져오도록 수정
 
     final List<dynamic> rawUsers = response;
 
