@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ArchiveBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> books; // 바텀시트 오픈 시점의 스냅샷
@@ -105,6 +106,52 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     });
   }
 
+  /// is_archived가 false로 변경된 책들에 대해 unarchived_at 컬럼을 업데이트
+  Future<void> _updateUnarchivedAt() async {
+    try {
+      final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      // 원본 데이터와 비교해서 새로 is_archived가 false로 바뀐 책들의 ID 목록
+      final newlyUnarchivedBookIds = <String>[];
+      
+      for (int i = 0; i < updatedBooks.length; i++) {
+        final currentBook = updatedBooks[i];
+        final originalBook = widget.books.firstWhere(
+          (book) => book['id'] == currentBook['id'],
+          orElse: () => {},
+        );
+        
+        // 원본에서는 is_archived가 true였는데, 현재는 false로 바뀐 경우
+        if (originalBook.isNotEmpty && 
+            originalBook['is_archived'] == true && 
+            currentBook['is_archived'] == false) {
+          newlyUnarchivedBookIds.add(currentBook['id']);
+          debugPrint('🔄 새로 unarchived된 책 발견: ID=${currentBook['id']}, book_id=${currentBook['book_id']}');
+        }
+      }
+
+      if (newlyUnarchivedBookIds.isNotEmpty) {
+        // unarchived_at을 현재 timestamp로 업데이트
+        final currentTimestamp = DateTime.now().toUtc().toIso8601String();
+        
+        await client
+            .from('user_books')
+            .update({'unarchived_at': currentTimestamp})
+            .inFilter('id', newlyUnarchivedBookIds);
+        
+        debugPrint('✅ unarchived_at 업데이트 완료: ${newlyUnarchivedBookIds.length}개 책');
+        debugPrint('📅 업데이트된 timestamp: $currentTimestamp');
+        debugPrint('📚 업데이트된 책 ID들: $newlyUnarchivedBookIds');
+      } else {
+        debugPrint('ℹ️ 새로 unarchived된 책이 없습니다');
+      }
+    } catch (e) {
+      debugPrint('❌ unarchived_at 업데이트 실패: $e');
+    }
+  }
+
   List<Widget> _buildShelves({
     required int itemCount,
     required double itemHeight,
@@ -194,9 +241,12 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       GestureDetector(
-                        onTap: () {
+                        onTap: () async {
                           if (mounted) {
                             try {
+                              // is_archived가 false로 변경된 책들에 대해 unarchived_at 업데이트
+                              await _updateUnarchivedAt();
+                              
                               widget.onBooksUpdated?.call(
                                 updatedBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
                               );
