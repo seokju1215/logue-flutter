@@ -26,6 +26,15 @@ void main() async {
     try {
       await Firebase.initializeApp();
       print('✅ Firebase 초기화 성공');
+      
+      // Firebase Analytics 설정
+      try {
+        final analytics = FirebaseAnalytics.instance;
+        await analytics.setAnalyticsCollectionEnabled(true);
+        print('✅ Firebase Analytics 설정 완료');
+      } catch (e) {
+        print('❌ Firebase Analytics 설정 실패: $e');
+      }
     } catch (e) {
       print('❌ Firebase 초기화 실패: $e');
     }
@@ -45,15 +54,6 @@ void main() async {
         anonKey: supabaseAnonKey,
         debug: true,
       );
-
-      // Firebase Analytics 설정
-      try {
-        final analytics = FirebaseAnalytics.instance;
-        await analytics.setAnalyticsCollectionEnabled(true);
-        print('✅ Firebase Analytics 설정 완료');
-      } catch (e) {
-        print('❌ Firebase Analytics 설정 실패: $e');
-      }
 
 
     } catch (e, s) {
@@ -90,6 +90,8 @@ void main() async {
             } catch (e) {
               print('❌ Firebase Analytics 로그인 이벤트 전송 실패: $e');
             }
+            
+
             
             if (email != null) {
               try {
@@ -157,8 +159,24 @@ void main() async {
   Future.microtask(() async {
     await MixpanelUtil.initialize();
   });
-  }, (error, stack) {});
+}, (error, stack) {});
 
+}
+
+// last_seen_at 업데이트 함수
+Future<void> updateLastSeenAt() async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return;
+
+  try {
+    await Supabase.instance.client
+        .from('profiles')
+        .update({'last_seen_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('id', user.id);
+    print('✅ last_seen_at 업데이트 완료: ${user.id}');
+  } catch (e) {
+    print('❌ last_seen_at 업데이트 실패: $e');
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -177,13 +195,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     _updateLastSeenAt();
   }
   Future<void> _updateLastSeenAt() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    await Supabase.instance.client
-        .from('profiles')
-        .update({'last_seen_at': DateTime.now().toUtc().toIso8601String()})
-        .eq('id', user.id);
+    await updateLastSeenAt();
   }
 
   @override

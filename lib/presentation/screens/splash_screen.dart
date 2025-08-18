@@ -96,6 +96,17 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     } else {
       debugPrint('🔍 약관 동의 완료 - 다음 단계로 진행');
+      
+      // last_seen_at 업데이트
+      try {
+        await client
+            .from('profiles')
+            .update({'last_seen_at': DateTime.now().toUtc().toIso8601String()})
+            .eq('id', user.id);
+        debugPrint('✅ last_seen_at 업데이트 완료: ${user.id}');
+      } catch (e) {
+        debugPrint('❌ last_seen_at 업데이트 실패: $e');
+      }
     }
 
     // 책 3권 선택 여부 확인
