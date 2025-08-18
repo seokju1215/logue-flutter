@@ -443,62 +443,58 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.only(right: 30, bottom: 21),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            SizedBox(
-              width: 200,
-              height: 36,
-              child: ElevatedButton(
-                onPressed: (isFormValid && !_isSubmitting) ? _submitInquiry : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isFormValid ? AppColors.black900 : AppColors.black300,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
+            SizedBox(height: 50,),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SizedBox(
+                  width: 200,
+                  height: 36,
+                  child: ElevatedButton(
+                    onPressed: (isFormValid && !_isSubmitting) ? _submitInquiry : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isFormValid ? AppColors.black900 : AppColors.black300,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
+                      ),
+                    )
+                        : isFormValid
+                        ? Stack(
+                      children: [
+                        // 테두리용 텍스트
+                        Text(
+                          '문의 접수',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            foreground: Paint()
+                              ..style = PaintingStyle.stroke
+                              ..strokeWidth = 0.2 // 테두리 두께
+                              ..color = AppColors.white500, // 테두리 색상
+                          ),
                         ),
-                      )
-                    : isFormValid
-                ? Stack(
-                  children: [
-                    // 테두리용 텍스트
-                    Text(
-                      '문의 접수',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        foreground: Paint()
-                          ..style = PaintingStyle.stroke
-                          ..strokeWidth = 0.2 // 테두리 두께
-                          ..color = AppColors.white500, // 테두리 색상
-                      ),
-                    ),
-                    // 내부 텍스트 (원래 스타일)
-                    const Text(
-                      '문의 접수',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.white500, // 내부 텍스트 색상
-                      ),
-                    ),
-                  ],
-                )
-                    :
+                        // 내부 텍스트 (원래 스타일)
+                        const Text(
+                          '문의 접수',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.white500, // 내부 텍스트 색상
+                          ),
+                        ),
+                      ],
+                    )
+                        :
                     // 내부 텍스트 (원래 스타일)
                     const Text(
                       '문의 접수',
@@ -507,8 +503,11 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
                         color: AppColors.black500, // 내부 텍스트 색상
                       ),
                     ),
-              ),
+                  ),
+                ),
+              ],
             ),
+            SizedBox(height: 60,)
           ],
         ),
       ),
