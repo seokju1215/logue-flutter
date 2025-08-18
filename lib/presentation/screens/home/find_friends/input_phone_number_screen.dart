@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -140,16 +141,15 @@ class _InputPhoneNumberScreenState extends State<InputPhoneNumberScreen> {
               controller: _searchController,
               maxLength: 11,
               decoration: InputDecoration(
-                contentPadding:
-                const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
+                contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
                 border: OutlineInputBorder(
-                  borderSide: BorderSide(color:  AppColors.black500),
+                  borderSide: BorderSide(color: AppColors.black500),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: AppColors.black500),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color:  AppColors.black500),
+                  borderSide: BorderSide(color: AppColors.black500),
                 ),
                 isDense: true,
                 hintText: '전화번호를 입력해주세요!',
@@ -157,7 +157,10 @@ class _InputPhoneNumberScreenState extends State<InputPhoneNumberScreen> {
                 counterText: '', // 글자 수 카운터 숨기기
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.number, // 🔢 숫자 키보드
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly, // ✅ 숫자만 허용
+              ],
             ),
             const Padding(
               padding: EdgeInsets.only(top: 4),

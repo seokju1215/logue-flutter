@@ -391,7 +391,7 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
                         },
                         style: _outlinedStyle(context),
                         child: const Text(
-                          '프로필 공유',
+                          '친구 초대',
                           style: TextStyle(fontSize: 13, color: AppColors.black900, height: 1.25),
                         ),
                       ),

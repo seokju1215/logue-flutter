@@ -485,7 +485,7 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 StrokeTextStyle.createStrokeText(
-                    text: "나와 인생책이 겹치는 친구",
+                    text: "나와 인생 책이 겹치는 친구",
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
                     color: AppColors.black900,
