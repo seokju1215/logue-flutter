@@ -20,6 +20,7 @@ class ArchiveBottomSheet extends StatefulWidget {
 }
 
 class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
+  bool _isSaving = false;
   late List<Map<String, dynamic>> updatedBooks; // 화면 내부 작업용(원본 불변)
   final Set<int> _selected = {};
   static const int kMaxSelection = 9;
@@ -242,19 +243,20 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                     children: [
                       GestureDetector(
                         onTap: () async {
-                          if (mounted) {
-                            try {
-                              // is_archived가 false로 변경된 책들에 대해 unarchived_at 업데이트
-                              await _updateUnarchivedAt();
-                              
-                              widget.onBooksUpdated?.call(
-                                updatedBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
-                              );
-                              widget.onClose?.call();
-                              Navigator.pop(context, true);
-                            } catch (e) {
-                              Navigator.pop(context, false);
-                            }
+                          if (_isSaving) return; // ✅ 연타 방지
+                          setState(() => _isSaving = true);
+
+                          try {
+                            await _updateUnarchivedAt();
+                            widget.onBooksUpdated?.call(
+                              updatedBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
+                            );
+                            widget.onClose?.call();
+                            if (mounted) Navigator.pop(context, true);
+                          } catch (e) {
+                            if (mounted) Navigator.pop(context, false);
+                          } finally {
+                            if (mounted) setState(() => _isSaving = false);
                           }
                         },
                         child: Container(
