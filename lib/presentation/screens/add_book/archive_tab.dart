@@ -14,6 +14,7 @@ class ArchiveTab extends StatefulWidget {
   final List<Map<String, dynamic>> books;
   final VoidCallback onRefresh;
   final VoidCallback? onBookAdded; // 책 추가 시 호출되는 콜백
+  final Function(List<Map<String, dynamic>>)? onBooksChanged; // 책 순서 변경 시 호출되는 콜백
   final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
 
   const ArchiveTab({
@@ -21,6 +22,7 @@ class ArchiveTab extends StatefulWidget {
     required this.books,
     required this.onRefresh,
     this.onBookAdded,
+    this.onBooksChanged,
     this.navigatorKey,
   }) : super(key: key);
 
@@ -33,6 +35,12 @@ class _ArchiveTabState extends State<ArchiveTab> {
   List<String> originalOrder = [];
   bool isEdited = false;
   bool _isUpdatingBooks = false; // 책 추가/수정 로딩 상태
+  
+  // 로컬에서 관리하는 책 순서 (드래그 앤 드롭 시 즉시 반영)
+  late List<Map<String, dynamic>> _localBooks;
+  
+  // 프론트에서 관리하는 순서 변경 상태
+  bool _hasLocalChanges = false;
 
   // 스크롤 제어를 위한 ScrollController
   late ScrollController _scrollController;
@@ -46,20 +54,49 @@ class _ArchiveTabState extends State<ArchiveTab> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _updateOriginalOrder();
+    _localBooks = List<Map<String, dynamic>>.from(widget.books);
+    _initializeBooks();
+  }
+
+  @override
+  void didUpdateWidget(ArchiveTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    debugPrint('🔄 didUpdateWidget 호출됨');
+    debugPrint('🔄 _hasLocalChanges: $_hasLocalChanges');
+    debugPrint('🔄 isEdited: $isEdited');
+    
+    // 프론트에서 순서 변경이 있으면 _localBooks 유지
+    if (_hasLocalChanges) {
+      debugPrint('🔒 프론트에서 순서 변경 상태 유지 - _localBooks 보존');
+      return;
+    }
+    
+    // widget.books가 변경되었을 때만 _localBooks 업데이트
+    if (!isEdited && !_areListsEqual(
+      widget.books.map((b) => b['id'] as String).toList(),
+      _localBooks.map((b) => b['id'] as String).toList(),
+    )) {
+      debugPrint('🔄 widget.books 변경 감지 - _localBooks 업데이트');
+      _localBooks = List<Map<String, dynamic>>.from(widget.books);
+      originalOrder = _localBooks.map((book) => book['id'] as String).toList();
+    }
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     _autoScrollTimer?.cancel();
+    // 위젯이 완전히 제거될 때만 _hasLocalChanges 해제
+    _hasLocalChanges = false;
     super.dispose();
   }
 
-  void _updateOriginalOrder() {
+  void _initializeBooks() {
     setState(() {
-      originalOrder = widget.books.map((book) => book['id'] as String).toList();
+      _localBooks = List<Map<String, dynamic>>.from(widget.books);
+      originalOrder = _localBooks.map((book) => book['id'] as String).toList();
       isEdited = false;
+      _hasLocalChanges = false;
     });
   }
 
@@ -80,16 +117,84 @@ class _ArchiveTabState extends State<ArchiveTab> {
     });
   }
 
+  Future<void> _updateBookOrderWithList(List<Map<String, dynamic>> booksList) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) return;
+    
+    try {
+      for (int i = 0; i < booksList.length; i++) {
+        // mounted 체크 - 위젯이 dispose되었는지 확인
+        if (!mounted) {
+          debugPrint('⚠️ ArchiveTab이 dispose됨 - DB 업데이트 중단');
+          return;
+        }
+        
+        final bookId = booksList[i]['id'];
+        await client
+            .from('user_books')
+            .update({'archived_order_index': i})
+            .eq('id', bookId);
+      }
+
+      // mounted 체크 후 setState 호출
+      if (mounted) {
+        setState(() {
+          // _localBooks와 동기화
+          _localBooks = List<Map<String, dynamic>>.from(booksList);
+          originalOrder = _localBooks.map((b) => b['id'] as String).toList();
+          isEdited = false;
+          // _hasLocalChanges는 탭 전환 시에만 해제 (여기서는 유지)
+          debugPrint('✅ DB 업데이트 성공 - _hasLocalChanges 유지 (탭 전환 시 해제)');
+        });
+      }
+      
+      // 새로고침 요청하지 않음 - UI는 이미 변경된 순서로 표시되고 있음
+    } catch (e) {
+      debugPrint('❌ 보관함 책 순서 업데이트 실패: $e');
+      // 에러 발생 시에도 mounted 체크
+      if (mounted) {
+        setState(() {
+          // 에러가 발생해도 순서 변경 상태는 유지
+          // isEdited = false; // 이 줄 제거
+        });
+      }
+    }
+  }
+
   void _onReorder(int oldIndex, int newIndex) {
-    setState(() {
-      final item = widget.books.removeAt(oldIndex);
-      widget.books.insert(newIndex, item);
+    // mounted 체크
+    if (!mounted) return;
+    
+    debugPrint('🔄 _onReorder 호출: $oldIndex -> $newIndex');
+    debugPrint('🔄 변경 전 _localBooks 길이: ${_localBooks.length}');
+    
+    // 로컬 상태에서 순서 변경
+    final item = _localBooks.removeAt(oldIndex);
+    _localBooks.insert(newIndex, item);
 
-      final currentOrder = widget.books.map((b) => b['id'] as String).toList();
-      isEdited = !_areListsEqual(currentOrder, originalOrder);
-    });
-
-    _updateBookOrder();
+    final currentOrder = _localBooks.map((b) => b['id'] as String).toList();
+    isEdited = !_areListsEqual(currentOrder, originalOrder);
+    
+    // 프론트에서 순서 변경 상태 관리 - 탭 전환 시에만 해제
+    _hasLocalChanges = true;
+    
+    debugPrint('🔄 변경 후 _localBooks 길이: ${_localBooks.length}');
+    debugPrint('🔄 _hasLocalChanges: $_hasLocalChanges (탭 전환 시 해제)');
+    debugPrint('🔄 isEdited: $isEdited');
+    
+    // 디버깅: _localBooks의 실제 내용 확인
+    debugPrint('🔄 변경 후 _localBooks 첫 번째 책 ID: ${_localBooks.first['id']}');
+    debugPrint('🔄 변경 후 _localBooks 마지막 책 ID: ${_localBooks.last['id']}');
+    debugPrint('🔄 변경 후 _localBooks 전체 ID 순서: ${_localBooks.map((b) => b['id']).toList()}');
+    
+    // UI 상태 업데이트 - 변경된 순서로 즉시 표시
+    setState(() {});
+    
+    // 부모 위젯에게 변경된 순서 알림
+    widget.onBooksChanged?.call(_localBooks);
+    
+    // 백그라운드에서 DB 업데이트
+    _updateBookOrderWithList(_localBooks);
   }
 
 
@@ -241,7 +346,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                       child: OutlinedButton(
                         onPressed: () async {
                           // 1000권 제한 확인
-                          if (widget.books.length >= 1000) {
+                          if (_localBooks.length >= 1000) {
                             showDialog(
                               context: context,
                               barrierDismissible: true,
@@ -322,10 +427,10 @@ class _ArchiveTabState extends State<ArchiveTab> {
                           '',
                           style: const TextStyle(fontSize: 12, color: AppColors.black500),
                         ),
-                        Text(
-                          '${widget.books.length}권',
-                          style: const TextStyle(fontSize: 13, color: AppColors.black500),
-                        ),
+                                                  Text(
+                            '${_localBooks.length}권',
+                            style: const TextStyle(fontSize: 13, color: AppColors.black500),
+                          ),
                       ],
                     ),
                   ],
@@ -380,7 +485,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                                   child: child,
                                 );
                               },
-                              children: widget.books.map((book) {
+                              children: _localBooks.map((book) {
                                 return GestureDetector(
                                   onTap: () async {
                                     // AddBookView의 Navigator를 통해 이동하여 하단 네비게이션바 유지
@@ -432,7 +537,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                           ),
                         ),
                       ),
-                      ..._buildShelves(widget.books.length, itemHeight),
+                      ..._buildShelves(_localBooks.length, itemHeight),
                     ],
                   );
                 },

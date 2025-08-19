@@ -210,6 +210,19 @@ class _AddBookScreenState extends State<AddBookScreen> {
                               });
                             }
                           },
+                          onBooksChanged: (updatedBooks) {
+                            // ArchiveTab에서 책 순서가 변경되었을 때 allBooks 업데이트
+                            setState(() {
+                              // allBooks에서 archived_order_index 업데이트
+                              for (int i = 0; i < updatedBooks.length; i++) {
+                                final bookId = updatedBooks[i]['id'];
+                                final bookIndex = allBooks.indexWhere((book) => book['id'] == bookId);
+                                if (bookIndex != -1) {
+                                  allBooks[bookIndex]['archived_order_index'] = i;
+                                }
+                              }
+                            });
+                          },
                           navigatorKey: widget.navigatorKey,
                         ),
                         ProfileTab(
