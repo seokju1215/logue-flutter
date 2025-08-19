@@ -94,93 +94,80 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
       debugPrint('❌ 에러 스택: ${StackTrace.current}');
     }
   }
-
+  Future<void> _ensureMinLoading(DateTime startedAt, {Duration min = const Duration(seconds: 1)}) async {
+    final elapsed = DateTime.now().difference(startedAt);
+    final remain = min - elapsed;
+    if (remain > Duration.zero) {
+      await Future.delayed(remain);
+    }
+  }
   Future<void> _searchFriendsFromContacts() async {
+    final startedAt = DateTime.now();                 // ✅ 추가
     try {
-      setState(() {
-        isSearchingFriends = true;
-      });
+      setState(() { isSearchingFriends = true; });
 
-      // 전화번호 목록 준비 - 주소록에서 가져온 전화번호들만 사용
+      // 전화번호 목록 준비
       List<String> phoneNumbers;
-      
       if (widget.contactPhoneNumbers != null && widget.contactPhoneNumbers!.isNotEmpty) {
-        // 주소록에서 가져온 전화번호 목록 사용
         phoneNumbers = widget.contactPhoneNumbers!;
       } else {
-        // 주소록에서 전화번호 가져오기
         phoneNumbers = await _getPhoneNumbersFromContacts();
       }
-      
+
       if (phoneNumbers.isEmpty) {
-        setState(() {
-          isSearchingFriends = false;
-        });
+        await _ensureMinLoading(startedAt);           // ✅ 최소 1초 보장
+        if (mounted) {
+          setState(() { isSearchingFriends = false; });
+        }
         return;
       }
 
-      // 전화번호 샘플 출력 (처음 5개)
-      final sampleNumbers = phoneNumbers.take(5).toList();
-
-      // RPC 함수 match_contacts를 사용하여 친구 찾기
       final supabase = Supabase.instance.client;
       final currentUserId = supabase.auth.currentUser?.id;
-      
       if (currentUserId == null) {
-        setState(() {
-          isSearchingFriends = false;
-        });
+        await _ensureMinLoading(startedAt);           // ✅
+        if (mounted) {
+          setState(() { isSearchingFriends = false; });
+        }
         return;
       }
 
       try {
-        
-        // match_contacts RPC 함수 호출
         final response = await supabase.rpc(
           'match_contacts',
           params: {'contact_list': phoneNumbers},
         );
 
+        if (!mounted) return;
 
         if (response != null) {
-          final List<Map<String, dynamic>> friends = List<Map<String, dynamic>>.from(response);
-          
-          // 자기 자신 제외
-          final filteredFriends = friends.where((friend) => friend['user_id'] != currentUserId).toList();
-          
-          if (mounted) {
-            setState(() {
-              foundFriends = filteredFriends;
-              isSearchingFriends = false;
-            });
-          }
+          final friends = List<Map<String, dynamic>>.from(response)
+              .where((f) => f['user_id'] != currentUserId)
+              .toList();
 
-        } else {
-          if (mounted) {
-            setState(() {
-              foundFriends = [];
-              isSearchingFriends = false;
-            });
-          }
-          print('✅ 친구 검색 완료: 친구를 찾지 못했습니다.');
-        }
-      } catch (e) {
-        debugPrint('❌ RPC 함수 호출 중 오류: $e');
-        debugPrint('❌ 에러 스택: ${StackTrace.current}');
-        if (mounted) {
+          await _ensureMinLoading(startedAt);         // ✅
           setState(() {
+            foundFriends = friends;
+            isSearchingFriends = false;
+          });
+        } else {
+          await _ensureMinLoading(startedAt);         // ✅
+          setState(() {
+            foundFriends = [];
             isSearchingFriends = false;
           });
         }
+      } catch (e) {
+        debugPrint('❌ RPC 함수 호출 중 오류: $e');
+        if (!mounted) return;
+        await _ensureMinLoading(startedAt);           // ✅
+        setState(() { isSearchingFriends = false; });
       }
     } catch (e) {
       debugPrint('❌ 친구 검색 중 오류 발생: $e');
-      debugPrint('❌ 에러 스택: ${StackTrace.current}');
-      if (mounted) {
-        setState(() {
-          isSearchingFriends = false;
-        });
-      }
+      if (!mounted) return;
+      await _ensureMinLoading(startedAt);             // ✅
+      setState(() { isSearchingFriends = false; });
     }
   }
 
@@ -403,6 +390,17 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
               ],
             ),
           ),
+          if (isSearchingFriends)
+            Column(
+              children: [
+                SizedBox(height: 180,),
+                const Center(child: CircularProgressIndicator(
+                    strokeWidth: 4,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900), // 색 지정
+                  )),
+              ],
+            ),
+
           if (hasContactPermission && foundFriends.isNotEmpty) ...[
             Column(
               children: [
