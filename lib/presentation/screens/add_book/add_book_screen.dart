@@ -14,11 +14,12 @@ import 'archive_tab.dart';
 
 class AddBookScreen extends StatefulWidget {
   final bool isLimitReached;
-  final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
+  final GlobalKey<NavigatorState>?
+      navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
   final Function(bool)? onLoadingStateChanged; // 로딩 상태 변경 콜백
-  
+
   const AddBookScreen({
-    Key? key, 
+    Key? key,
     required this.isLimitReached,
     this.navigatorKey,
     this.onLoadingStateChanged,
@@ -29,11 +30,12 @@ class AddBookScreen extends StatefulWidget {
 }
 
 class _AddBookScreenState extends State<AddBookScreen> {
+  bool get _tabsDisabled => isLoading || _isProfileTabLoading;
   late PageController _pageController;
   int _currentIndex = 0; // 0: 보관함 탭, 1: 프로필 탭 (프로필 탭을 기본으로 선택)
   String _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
   String _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
-  
+
   // 공통 데이터 관리
   List<Map<String, dynamic>> allBooks = [];
   bool isLoading = true;
@@ -43,10 +45,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
-    
+
     // 책 추가 화면 방문 트래킹
     MixpanelUtil.trackScreenView('Add Book');
-    
+
     // 데이터 로드
     _fetchAllBooks();
   }
@@ -65,18 +67,20 @@ class _AddBookScreenState extends State<AddBookScreen> {
       // 모든 책을 가져오기
       final data = await Supabase.instance.client
           .from('user_books')
-          .select('id, user_id, order_index, archived_order_index, is_archived, book_id, books(id, image)')
+          .select(
+              'id, user_id, order_index, archived_order_index, is_archived, book_id, books(id, image)')
           .eq('user_id', userId);
 
       final fetched = List<Map<String, dynamic>>.from(data);
-      
+
       // 디버깅: 로드된 데이터 구조 확인
       debugPrint('🔍 _fetchAllBooks - 로드된 데이터 구조:');
       for (int i = 0; i < fetched.length; i++) {
         final book = fetched[i];
-        debugPrint('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
+        debugPrint(
+            '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
       }
-      
+
       // mounted 체크 추가
       if (mounted) {
         setState(() {
@@ -94,20 +98,12 @@ class _AddBookScreenState extends State<AddBookScreen> {
     }
   }
 
-  void _refreshTabs() {
-    // 탭 키 재생성은 필요할 때만 하도록 수정
-    // setState(() {
-    //   _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
-    //   _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
-    // });
-  }
-
   ButtonStyle _outlinedStyle(BuildContext context) {
     return ButtonStyle(
       foregroundColor: MaterialStateProperty.all(AppColors.black900),
       backgroundColor: MaterialStateProperty.all(Colors.white),
       overlayColor: MaterialStateProperty.resolveWith<Color?>(
-            (states) {
+        (states) {
           if (states.contains(MaterialState.pressed)) {
             return AppColors.black100;
           }
@@ -146,18 +142,26 @@ class _AddBookScreenState extends State<AddBookScreen> {
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: const Text('책장', style: TextStyle(color: AppColors.black900, fontSize: 16, fontWeight: FontWeight.w500)),
+          title: const Text('책장',
+              style: TextStyle(
+                  color: AppColors.black900,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500)),
         ),
         body: Column(
           children: [
             // 탭바
+            // 탭바
             Container(
               color: Colors.white,
-              child: Row(
-                children: [
-                  _buildTab('보관함', 0),
-                  _buildTab('프로필', 1),
-                ],
+              child: AbsorbPointer(
+                absorbing: _tabsDisabled, // ← 로딩 중 터치 차단
+                child: Row(
+                    children: [
+                      _buildTab('보관함', 0),
+                      _buildTab('프로필', 1),
+                    ],
+                  ),
               ),
             ),
             // 탭뷰
@@ -170,6 +174,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     )
                   : PageView(
                       controller: _pageController,
+                      physics: _tabsDisabled
+                          ? const NeverScrollableScrollPhysics()
+                          : const BouncingScrollPhysics(),
                       onPageChanged: (index) {
                         setState(() {
                           _currentIndex = index;
@@ -180,11 +187,12 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       children: [
                         ArchiveTab(
                           key: ValueKey(_archiveTabKey),
-                          books: List.from(allBooks)..sort((a, b) {
-                            final aIndex = a['archived_order_index'] ?? 0;
-                            final bIndex = b['archived_order_index'] ?? 0;
-                            return aIndex.compareTo(bIndex);
-                          }),
+                          books: List.from(allBooks)
+                            ..sort((a, b) {
+                              final aIndex = a['archived_order_index'] ?? 0;
+                              final bIndex = b['archived_order_index'] ?? 0;
+                              return aIndex.compareTo(bIndex);
+                            }),
                           onRefresh: _fetchAllBooks,
                           onBookAdded: () {
                             // 책 추가 시 로딩 상태 활성화
@@ -207,12 +215,15 @@ class _AddBookScreenState extends State<AddBookScreen> {
                         ProfileTab(
                           key: ValueKey(_profileTabKey),
                           isLimitReached: widget.isLimitReached,
-                          books: List.from(allBooks.where((book) => book['is_archived'] == false))..sort((a, b) {
-                            final aIndex = a['order_index'] ?? 0;
-                            final bIndex = b['order_index'] ?? 0;
-                            return aIndex.compareTo(bIndex);
-                          }),
-                          allBooks: allBooks, // 모든 책 목록 전달
+                          books: List.from(allBooks
+                              .where((book) => book['is_archived'] == false))
+                            ..sort((a, b) {
+                              final aIndex = a['order_index'] ?? 0;
+                              final bIndex = b['order_index'] ?? 0;
+                              return aIndex.compareTo(bIndex);
+                            }),
+                          allBooks: allBooks,
+                          // 모든 책 목록 전달
                           onRefresh: _fetchAllBooks,
                           onBookAdded: (result) {
                             if (result == true) {
@@ -225,14 +236,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
                             setState(() {
                               _isProfileTabLoading = isLoading;
                             });
-                            
+
                             // 상위 위젯에 로딩 상태 변경 알림
                             widget.onLoadingStateChanged?.call(isLoading);
                           },
                         ),
                       ],
                     ),
-                  ),
+            ),
           ],
         ),
       ),
@@ -245,7 +256,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          if (_tabsDisabled) return;
+          _pageController.animateToPage(index,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut);
           setState(() {
             _currentIndex = index;
           });

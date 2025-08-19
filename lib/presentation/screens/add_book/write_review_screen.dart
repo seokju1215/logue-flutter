@@ -39,6 +39,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   }
 
   Future<void> _saveReview() async {
+    if (_isSaving) return;
     final user = client.auth.currentUser;
     if (user == null) return;
 
