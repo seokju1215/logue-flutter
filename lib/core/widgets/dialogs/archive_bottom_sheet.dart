@@ -299,7 +299,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                 Text(
                   '$selectedBookCount/9',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     color: AppColors.black500,
                     height: 1.25,
                   ),
