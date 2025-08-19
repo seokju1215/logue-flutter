@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io' show Platform;
 import '../../data/utils/update_check_util.dart';
 import '../../data/utils/mixpanel_util.dart';
+import '../../data/services/analytics_session_service.dart';
 
 class SplashScreen extends StatefulWidget {
   final String? refreshToken;
@@ -74,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // 프로필 존재 확인
     final profile = await client
         .from('profiles')
-        .select('id')
+        .select('id, username, job, created_at')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -123,12 +124,27 @@ class _SplashScreenState extends State<SplashScreen> {
       if (profile != null) {
         MixpanelUtil.setUserProperties({
           'username': profile['username'],
-          'full_name': profile['full_name'],
           'job': profile['job'],
           'joined_at': profile['created_at'],
           'platform': Platform.isIOS ? 'iOS' : 'Android',
           'app_version': await UpdateCheckUtil.getCurrentAppVersion(), // 예: 1.0.2
         });
+        
+        // AnalyticsSessionService 시작 (DAU, WAU, MAU 수집)
+        try {
+          final analyticsService = AnalyticsSessionService();
+          await analyticsService.startSession(userId: user.id);
+          
+          // 사용자 정보 설정 (직업만 설정, 나이/성별은 제외)
+          await analyticsService.setUserProperties(
+            job: profile['job']?.toString(),
+            userId: user.id,
+          );
+          
+          debugPrint('✅ SplashScreen에서 AnalyticsSessionService 시작 및 사용자 정보 설정 완료');
+        } catch (e) {
+          debugPrint('❌ SplashScreen에서 AnalyticsSessionService 시작 실패: $e');
+        }
       }
 
       Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);

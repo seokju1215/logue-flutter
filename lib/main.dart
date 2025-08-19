@@ -14,9 +14,13 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:my_logue/data/utils/mixpanel_util.dart';
+import 'package:my_logue/data/services/analytics_session_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: false);
+
+// AnalyticsSessionService 전역 인스턴스
+final AnalyticsSessionService analyticsSessionService = AnalyticsSessionService();
 
 void main() async {
   runZonedGuarded(() async {
@@ -91,6 +95,33 @@ void main() async {
               print('❌ Firebase Analytics 로그인 이벤트 전송 실패: $e');
             }
             
+            // AnalyticsSessionService 시작 (DAU, WAU, MAU 수집)
+            try {
+              await analyticsSessionService.startSession(userId: user.id);
+              
+              // 사용자 정보 가져오기 및 설정 (직업만)
+              try {
+                final profileResponse = await Supabase.instance.client
+                    .from('profiles')
+                    .select('job')
+                    .eq('id', user.id)
+                    .single();
+                
+                await analyticsSessionService.setUserProperties(
+                  job: profileResponse['job']?.toString(),
+                  userId: user.id,
+                );
+                
+                print('✅ 사용자 정보 설정 완료');
+              } catch (e) {
+                print('⚠️ 사용자 정보 설정 실패: $e');
+              }
+              
+              print('✅ AnalyticsSessionService 시작 완료');
+            } catch (e) {
+              print('❌ AnalyticsSessionService 시작 실패: $e');
+            }
+            
 
             
             if (email != null) {
@@ -115,6 +146,14 @@ void main() async {
               print('✅ Firebase Analytics 로그아웃 이벤트 전송 완료');
             } catch (e) {
               print('❌ Firebase Analytics 로그아웃 이벤트 전송 실패: $e');
+            }
+            
+            // AnalyticsSessionService 종료
+            try {
+              await analyticsSessionService.endSession();
+              print('✅ AnalyticsSessionService 종료 완료');
+            } catch (e) {
+              print('❌ AnalyticsSessionService 종료 실패: $e');
             }
           }
         } catch (e, s) {}
@@ -204,10 +243,29 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.dispose();
   }
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       _updateLastSeenAt();
+      
+      // 앱 포그라운드 진입 시 AnalyticsSessionService 시작
+      try {
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+        if (userId != null) {
+          await analyticsSessionService.startSession(userId: userId);
+          print('✅ 앱 포그라운드 진입 시 AnalyticsSessionService 시작');
+        }
+      } catch (e) {
+        print('❌ 앱 포그라운드 진입 시 AnalyticsSessionService 시작 실패: $e');
+      }
+    } else if (state == AppLifecycleState.paused) {
+      // 앱 백그라운드 진입 시 AnalyticsSessionService 종료
+      try {
+        await analyticsSessionService.endSession();
+        print('✅ 앱 백그라운드 진입 시 AnalyticsSessionService 종료');
+      } catch (e) {
+        print('❌ 앱 백그라운드 진입 시 AnalyticsSessionService 종료 실패: $e');
+      }
     }
   }
 

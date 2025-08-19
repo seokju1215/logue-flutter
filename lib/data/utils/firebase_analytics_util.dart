@@ -86,7 +86,7 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       await _analytics.logEvent(
-        name: 'session_start',
+        name: 'app_session_start',
         parameters: {
           'user_id': userId ?? '',
           'session_id': sessionId ?? '',
@@ -106,7 +106,7 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       await _analytics.logEvent(
-        name: 'session_end',
+        name: 'app_session_end',
         parameters: {
           'user_id': userId ?? '',
           'session_id': sessionId ?? '',

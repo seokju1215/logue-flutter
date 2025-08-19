@@ -8,7 +8,8 @@ import '../utils/firebase_analytics_util.dart';
 class AnalyticsSessionService {
   static final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   static final SupabaseClient _supabase = Supabase.instance.client;
-  
+  bool _active = false;
+
   DateTime? _sessionStartTime;
   String? _currentUserId;
   String? _sessionId;
@@ -17,26 +18,25 @@ class AnalyticsSessionService {
   
   /// 세션 시작
   Future<void> startSession({String? userId}) async {
+    if (_active) return; // ✅ 이미 시작되어 있으면 무시
+    _active = true;
+
     _sessionStartTime = DateTime.now();
     _currentUserId = userId;
     _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-    
-    // Firebase Analytics 세션 시작 이벤트
+
     await FirebaseAnalyticsUtil.logSessionStart(
       userId: userId,
       sessionId: _sessionId,
     );
-    
-    // 시간대별 접속 이벤트
+
+    // 시간대 이벤트 + DAU/WAU/MAU
     final now = DateTime.now();
-    final dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     await FirebaseAnalyticsUtil.logTimeBasedAccess(
-      dayOfWeek: dayNames[now.weekday - 1],
+      dayOfWeek: ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'][now.weekday-1],
       hour: now.hour,
       userId: userId,
     );
-    
-    // DAU, WAU, MAU 이벤트
     if (userId != null) {
       await _logUserActivityMetrics(userId);
     }
@@ -44,24 +44,21 @@ class AnalyticsSessionService {
 
   /// 세션 종료
   Future<void> endSession() async {
+    if (!_active) return; // ✅ 시작 안 했으면 무시
     if (_sessionStartTime != null && _currentUserId != null) {
       final duration = DateTime.now().difference(_sessionStartTime!).inMinutes;
-      
-      // Firebase Analytics 세션 종료 이벤트
       await FirebaseAnalyticsUtil.logSessionEnd(
         userId: _currentUserId,
         sessionId: _sessionId,
         durationMinutes: duration,
       );
-      
-      // 앱 이용 시간 이벤트
       await FirebaseAnalyticsUtil.logAppUsageTime(
         userId: _currentUserId!,
         sessionDurationMinutes: duration,
         sessionType: 'active',
       );
     }
-    
+    _active = false;
     _sessionStartTime = null;
     _currentUserId = null;
     _sessionId = null;
@@ -72,29 +69,22 @@ class AnalyticsSessionService {
   /// 사용자 활동 메트릭 로깅 (DAU, WAU, MAU)
   Future<void> _logUserActivityMetrics(String userId) async {
     try {
-      // 사용자 정보 가져오기
+      // 사용자 정보 가져오기 (created_at만 사용)
       final userResponse = await _supabase
           .from('profiles')
-          .select('created_at, last_sign_in_at')
+          .select('created_at')
           .eq('id', userId)
           .single();
       
       final createdAt = DateTime.parse(userResponse['created_at']);
-      final lastSignIn = userResponse['last_sign_in_at'] != null 
-          ? DateTime.parse(userResponse['last_sign_in_at'])
-          : null;
-      
       final now = DateTime.now();
       final daysSinceCreation = now.difference(createdAt).inDays;
-      final daysSinceLastSignIn = lastSignIn != null 
-          ? now.difference(lastSignIn).inDays
-          : null;
       
-      // DAU 이벤트
+      // DAU 이벤트 - 생성일 기준으로 판단
       String userType = 'returning';
       if (daysSinceCreation <= 1) {
         userType = 'new';
-      } else if (daysSinceLastSignIn != null && daysSinceLastSignIn <= 1) {
+      } else if (daysSinceCreation <= 7) {
         userType = 'active';
       }
       
@@ -103,16 +93,16 @@ class AnalyticsSessionService {
         userType: userType,
       );
       
-      // WAU 이벤트
-      if (daysSinceLastSignIn != null && daysSinceLastSignIn <= 7) {
+      // WAU 이벤트 - 생성일 기준으로 판단
+      if (daysSinceCreation <= 7) {
         await FirebaseAnalyticsUtil.logWeeklyActiveUser(
           userId: userId,
           userType: userType,
         );
       }
       
-      // MAU 이벤트
-      if (daysSinceLastSignIn != null && daysSinceLastSignIn <= 30) {
+      // MAU 이벤트 - 생성일 기준으로 판단
+      if (daysSinceCreation <= 30) {
         await FirebaseAnalyticsUtil.logMonthlyActiveUser(
           userId: userId,
           userType: userType,
