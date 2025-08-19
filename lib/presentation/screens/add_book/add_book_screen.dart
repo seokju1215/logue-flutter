@@ -176,7 +176,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       controller: _pageController,
                       physics: _tabsDisabled
                           ? const NeverScrollableScrollPhysics()
-                          : const BouncingScrollPhysics(),
+                          : const ClampingScrollPhysics(),
                       onPageChanged: (index) {
                         setState(() {
                           _currentIndex = index;
