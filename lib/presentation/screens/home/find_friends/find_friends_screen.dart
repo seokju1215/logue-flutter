@@ -392,6 +392,7 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
           ),
           if (isSearchingFriends)
             Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(height: 180,),
                 const Center(child: CircularProgressIndicator(
@@ -403,18 +404,24 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
 
           if (hasContactPermission && foundFriends.isNotEmpty) ...[
             Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 23,),
-                StrokeTextStyle.createStrokeText(
-                  text: '친구 찾기 결과',
-                  fontSize: 16,
-                  color: AppColors.black900,
-                  fontWeight: FontWeight.w400,
-                  height: 1.187,
+                Padding(
+                  padding: const EdgeInsets.only(left: 22),
+                  child: StrokeTextStyle.createStrokeText(
+                    text: '친구 찾기 결과',
+                    fontSize: 16,
+                    color: AppColors.black900,
+                    fontWeight: FontWeight.w400,
+                    height: 1.187,
+                  ),
                 ),
                 SizedBox(height: 6,),
-                Expanded(
+                Flexible(
                   child: ListView.builder(
+                    shrinkWrap: true,
                     itemCount: foundFriends.length,
                     itemBuilder: (context, index) {
                       final friend = foundFriends[index];
