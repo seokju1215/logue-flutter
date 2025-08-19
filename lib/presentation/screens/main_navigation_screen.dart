@@ -34,6 +34,7 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   bool _hasNavigatedToPostScreen = false;
   bool _hasCheckedUpdate = false;
   bool _hasShownAnnouncement = false;
+  bool _isAddBookLoading = false; // AddBookView의 ProfileTab 로딩 상태
   
   // 뒤로가기 두번 눌러야 앱 종료를 위한 변수들
   DateTime? _lastBackPressTime;
@@ -50,7 +51,16 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   List<Widget> get _screens => [
         HomeScreen(navigatorKey: _navigatorKeys[0]),
         ProfileView(navigatorKey: _navigatorKeys[1]),
-        AddBookView(navigatorKey: _navigatorKeys[2], isLimitReached: false), // 중간 버튼용
+        AddBookView(
+          navigatorKey: _navigatorKeys[2], 
+          isLimitReached: false,
+          onLoadingStateChanged: (isLoading) {
+            // ProfileTab에서 ArchiveBottomSheet 저장 중일 때 바텀 네비게이션 비활성화
+            setState(() {
+              _isAddBookLoading = isLoading;
+            });
+          },
+        ), // 중간 버튼용
       ];
 
   void _navigateToAddBookProfileTab() {
@@ -150,6 +160,11 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _onItemTapped(int index) {
+    // ProfileTab에서 ArchiveBottomSheet 저장 중일 때는 탭 변경 비활성화
+    if (_isAddBookLoading) {
+      return;
+    }
+    
     // 탭 변경 시 뒤로가기 타이머 리셋
     _lastBackPressTime = null;
     

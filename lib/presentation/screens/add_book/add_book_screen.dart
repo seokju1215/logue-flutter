@@ -15,11 +15,13 @@ import 'archive_tab.dart';
 class AddBookScreen extends StatefulWidget {
   final bool isLimitReached;
   final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
+  final Function(bool)? onLoadingStateChanged; // 로딩 상태 변경 콜백
   
   const AddBookScreen({
     Key? key, 
     required this.isLimitReached,
     this.navigatorKey,
+    this.onLoadingStateChanged,
   }) : super(key: key);
 
   @override
@@ -35,6 +37,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
   // 공통 데이터 관리
   List<Map<String, dynamic>> allBooks = [];
   bool isLoading = true;
+  bool _isProfileTabLoading = false; // ProfileTab 로딩 상태
 
   @override
   void initState() {
@@ -218,6 +221,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
                             }
                           },
                           navigatorKey: widget.navigatorKey,
+                          onLoadingStateChanged: (isLoading) {
+                            setState(() {
+                              _isProfileTabLoading = isLoading;
+                            });
+                            
+                            // 상위 위젯에 로딩 상태 변경 알림
+                            widget.onLoadingStateChanged?.call(isLoading);
+                          },
                         ),
                       ],
                     ),

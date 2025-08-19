@@ -18,10 +18,10 @@ class ProfileTab extends StatefulWidget {
   final List<Map<String, dynamic>> books;
   final List<Map<String, dynamic>> allBooks; // 모든 책 목록 (보관함 포함)
   final VoidCallback onRefresh;
-
   final Function(bool)? onBookAdded; // 책 추가 완료 콜백
   final GlobalKey<NavigatorState>?
       navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
+  final Function(bool)? onLoadingStateChanged; // 로딩 상태 변경 콜백
 
   const ProfileTab({
     Key? key,
@@ -29,9 +29,9 @@ class ProfileTab extends StatefulWidget {
     required this.books,
     required this.allBooks,
     required this.onRefresh,
-
     this.onBookAdded,
     this.navigatorKey,
+    this.onLoadingStateChanged,
   }) : super(key: key);
 
   @override
@@ -249,6 +249,9 @@ class _ProfileTabState extends State<ProfileTab> {
                                           _isUpdatingBooks = true;
                                         });
                                         
+                                        // 상위 위젯에 로딩 상태 변경 알림
+                                        widget.onLoadingStateChanged?.call(true);
+                                        
                                         // 저장 버튼을 눌렀을 때만 실행되는 DB 저장 로직
                                         print(
                                             '📚 DB 저장 시작: ${updatedBooks.length}개 책 업데이트');
@@ -409,6 +412,9 @@ class _ProfileTabState extends State<ProfileTab> {
                                             setState(() {
                                               _isUpdatingBooks = false;
                                             });
+                                            
+                                            // 상위 위젯에 로딩 상태 변경 알림
+                                            widget.onLoadingStateChanged?.call(false);
                                           }
                                         }
                                       },
