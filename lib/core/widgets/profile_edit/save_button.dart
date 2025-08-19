@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class SaveButton extends StatelessWidget {
   final bool enabled;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const SaveButton({
     super.key,

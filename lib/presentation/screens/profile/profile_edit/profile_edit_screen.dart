@@ -32,6 +32,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late String job;
   late String bio;
   bool isEdited = false;
+  bool _isSaving = false; // 저장 중 중복 실행 방지
   File? tempAvatarFile; // 임시 아바타 파일
 
   @override
@@ -60,9 +61,24 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   }
 
   void onSave() async {
+    // 이미 저장 중이면 중복 실행 방지
+    if (_isSaving) {
+      debugPrint('⚠️ 저장 중입니다. 중복 실행 방지');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
     final client = Supabase.instance.client;
     final userId = client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      setState(() {
+        _isSaving = false;
+      });
+      return;
+    }
 
     final oldProfile = widget.initialProfile;
 
@@ -146,6 +162,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
         );
       }
+    } finally {
+      // 저장 완료 또는 실패 후 상태 초기화
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -157,7 +180,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         automaticallyImplyLeading: false,
         title: const Text('프로필 편집', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
         centerTitle: true,
-        actions: [SaveButton(enabled: isEdited, onPressed: onSave)],
+        actions: [SaveButton(enabled: isEdited && !_isSaving, onPressed: _isSaving ? null : onSave)],
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context),
