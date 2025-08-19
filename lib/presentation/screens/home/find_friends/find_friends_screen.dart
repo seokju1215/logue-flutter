@@ -404,50 +404,63 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
             ),
           ),
           if (hasContactPermission && foundFriends.isNotEmpty) ...[
-            Expanded(
-              child: ListView.builder(
-                itemCount: foundFriends.length,
-                itemBuilder: (context, index) {
-                  final friend = foundFriends[index];
-                  final isFollowing = ref.watch(followStateProvider(friend['user_id']));
+            Column(
+              children: [
+                SizedBox(height: 23,),
+                StrokeTextStyle.createStrokeText(
+                  text: '친구 찾기 결과',
+                  fontSize: 16,
+                  color: AppColors.black900,
+                  fontWeight: FontWeight.w400,
+                  height: 1.187,
+                ),
+                SizedBox(height: 6,),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: foundFriends.length,
+                    itemBuilder: (context, index) {
+                      final friend = foundFriends[index];
+                      final isFollowing = ref.watch(followStateProvider(friend['user_id']));
 
-                  return FollowUserTile(
-                    currentUserId: currentUserId ?? '',
-                    userId: friend['user_id'],
-                    username: friend['username'] ?? '',
-                    name: friend['username'] ?? '', // name 필드가 없으므로 username 사용
-                    avatarUrl: friend['avatar_url'] ?? 'basic',
-                    isMyProfile: false,
-                    onTapFollow: () async {
-                      final followNotifier = ref.read(followStateProvider(friend['user_id']).notifier);
-                      followNotifier.optimisticFollow();
-                      try {
-                        await followNotifier.follow();
-                      } catch (e) {
-                        followNotifier.optimisticUnfollow();
-                      }
-                    },
-                    onTapUnfollow: () async {
-                      final followNotifier = ref.read(followStateProvider(friend['user_id']).notifier);
-                      followNotifier.optimisticUnfollow();
-                      try {
-                        await followNotifier.unfollow();
-                      } catch (e) {
-                        followNotifier.optimisticFollow();
-                      }
-                    },
-                    onTapProfile: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => OtherProfileScreen(userId: friend['user_id']),
-                        ),
+                      return FollowUserTile(
+                        currentUserId: currentUserId ?? '',
+                        userId: friend['user_id'],
+                        username: friend['username'] ?? '',
+                        name: friend['username'] ?? '', // name 필드가 없으므로 username 사용
+                        avatarUrl: friend['avatar_url'] ?? 'basic',
+                        isMyProfile: false,
+                        onTapFollow: () async {
+                          final followNotifier = ref.read(followStateProvider(friend['user_id']).notifier);
+                          followNotifier.optimisticFollow();
+                          try {
+                            await followNotifier.follow();
+                          } catch (e) {
+                            followNotifier.optimisticUnfollow();
+                          }
+                        },
+                        onTapUnfollow: () async {
+                          final followNotifier = ref.read(followStateProvider(friend['user_id']).notifier);
+                          followNotifier.optimisticUnfollow();
+                          try {
+                            await followNotifier.unfollow();
+                          } catch (e) {
+                            followNotifier.optimisticFollow();
+                          }
+                        },
+                        onTapProfile: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OtherProfileScreen(userId: friend['user_id']),
+                            ),
+                          );
+                        },
+                        isFollowing: isFollowing,
                       );
                     },
-                    isFollowing: isFollowing,
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
           ],
 
