@@ -258,7 +258,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
         onTap: () {
           if (_tabsDisabled) return;
           _pageController.animateToPage(index,
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 150),
               curve: Curves.easeInOut);
           setState(() {
             _currentIndex = index;

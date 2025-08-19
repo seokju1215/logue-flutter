@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
 import '../../../data/utils/mixpanel_util.dart';
 import '../../../data/datasources/user_book_api.dart';
+import 'dart:ui';
 
 class WriteReviewScreen extends StatefulWidget {
   final BookModel book;
@@ -19,6 +20,7 @@ class WriteReviewScreen extends StatefulWidget {
 }
 
 class _WriteReviewScreenState extends State<WriteReviewScreen> {
+  OverlayEntry? _loadingOverlay;
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final client = Supabase.instance.client;
@@ -30,9 +32,43 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     _titleController.addListener(() => setState(() {}));
     _contentController.addListener(() => setState(() {}));
   }
+  void _showLoadingOverlay() {
+    if (_loadingOverlay != null) return; // 중복 방지
+    _loadingOverlay = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          // 전체 화면 블러 + 딤 + 터치 차단
+          Positioned.fill(
+            child: AbsorbPointer(
+              absorbing: true,
+              child: Container(color: Colors.black.withOpacity(0.35)),
+            ),
+          ),
+          // 중앙 로딩
+          const Positioned.fill(
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // rootOverlay: true 로 최상단에 삽입 (앱 전체 덮도록)
+    Overlay.of(context, rootOverlay: true)?.insert(_loadingOverlay!);
+  }
+
+  void _hideLoadingOverlay() {
+    _loadingOverlay?.remove();
+    _loadingOverlay = null;
+  }
 
   @override
   void dispose() {
+    _hideLoadingOverlay();
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
@@ -49,6 +85,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     if (reviewTitle.length > 50 || reviewContent.length > 1000) return;
 
     setState(() => _isSaving = true);
+    _showLoadingOverlay();
 
     try {
       String? bookId;
@@ -161,6 +198,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
+      _hideLoadingOverlay();
     }
   }
 
@@ -272,16 +310,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               ),
             ),
           ),
-          if (_isSaving)
-            Container(
-              color: Colors.black.withOpacity(0.7),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 3,
-                ),
-              ),
-            ),
         ],
       ),
     );

@@ -39,6 +39,7 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+  OverlayEntry? _loadingOverlay;
   final client = Supabase.instance.client;
   List<String> originalOrder = [];
   bool isEdited = false;
@@ -52,12 +53,50 @@ class _ProfileTabState extends State<ProfileTab> {
     super.initState();
     _updateOriginalOrder();
   }
+  @override
+  void dispose() {
+    _hideLoadingOverlay(); // ✅ 누수 방지
+    super.dispose();
+  }
 
   void _updateOriginalOrder() {
     setState(() {
       originalOrder = widget.books.map((book) => book['id'] as String).toList();
       isEdited = false;
     });
+  }
+  void _showLoadingOverlay() {
+    if (_loadingOverlay != null) return; // 중복 방지
+    _loadingOverlay = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          // 전체 화면 블러 + 딤 + 터치 차단
+          Positioned.fill(
+            child: AbsorbPointer(
+              absorbing: true,
+              child: Container(color: Colors.black.withOpacity(0.35)),
+            ),
+          ),
+          // 중앙 로딩
+          const Positioned.fill(
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // rootOverlay: true 로 최상단에 삽입 (앱 전체 덮도록)
+    Overlay.of(context, rootOverlay: true)?.insert(_loadingOverlay!);
+  }
+
+  void _hideLoadingOverlay() {
+    _loadingOverlay?.remove();
+    _loadingOverlay = null;
   }
 
   Future<void> _updateBookOrder() async {
@@ -251,6 +290,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                         
                                         // 상위 위젯에 로딩 상태 변경 알림
                                         widget.onLoadingStateChanged?.call(true);
+                                        _showLoadingOverlay();
                                         
                                         // 저장 버튼을 눌렀을 때만 실행되는 DB 저장 로직
                                         print(
@@ -415,6 +455,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                             
                                             // 상위 위젯에 로딩 상태 변경 알림
                                             widget.onLoadingStateChanged?.call(false);
+                                            _hideLoadingOverlay();
                                           }
                                         }
                                       },
@@ -499,17 +540,7 @@ class _ProfileTabState extends State<ProfileTab> {
             ],
           ),
         ),
-        // 로딩 오버레이
-        if (_isUpdatingBooks)
-          Container(
-            color: Colors.black.withOpacity(0.7),
-            child: const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 3,
-              ),
-            ),
-          ),
+
       ],
     );
   }
