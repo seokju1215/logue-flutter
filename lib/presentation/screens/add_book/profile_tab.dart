@@ -19,8 +19,7 @@ class ProfileTab extends StatefulWidget {
   final List<Map<String, dynamic>> allBooks; // 모든 책 목록 (보관함 포함)
   final VoidCallback onRefresh;
   final Function(bool)? onBookAdded; // 책 추가 완료 콜백
-  final GlobalKey<NavigatorState>?
-      navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
+  final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
   final Function(bool)? onLoadingStateChanged; // 로딩 상태 변경 콜백
 
   const ProfileTab({
@@ -45,14 +44,13 @@ class _ProfileTabState extends State<ProfileTab> {
   bool isEdited = false;
   final GlobalKey _titleKey = GlobalKey(); // 텍스트 위젯의 위치를 측정하기 위한 키
   bool _isUpdatingBooks = false; // 책 변경 로딩 상태
-  
-
 
   @override
   void initState() {
     super.initState();
     _updateOriginalOrder();
   }
+
   @override
   void dispose() {
     _hideLoadingOverlay(); // ✅ 누수 방지
@@ -65,19 +63,18 @@ class _ProfileTabState extends State<ProfileTab> {
       isEdited = false;
     });
   }
+
   void _showLoadingOverlay() {
     if (_loadingOverlay != null) return; // 중복 방지
     _loadingOverlay = OverlayEntry(
       builder: (_) => Stack(
         children: [
-          // 전체 화면 블러 + 딤 + 터치 차단
           Positioned.fill(
             child: AbsorbPointer(
               absorbing: true,
               child: Container(color: Colors.black.withOpacity(0.35)),
             ),
           ),
-          // 중앙 로딩
           const Positioned.fill(
             child: Center(
               child: CircularProgressIndicator(
@@ -89,8 +86,6 @@ class _ProfileTabState extends State<ProfileTab> {
         ],
       ),
     );
-
-    // rootOverlay: true 로 최상단에 삽입 (앱 전체 덮도록)
     Overlay.of(context, rootOverlay: true)?.insert(_loadingOverlay!);
   }
 
@@ -102,36 +97,29 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _updateBookOrder() async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
-    
-    // DB 업데이트
+
+    // NOTE: 프로필 그리드에서 순서만 바꿀 때는 간단히 per-row 업데이트 유지
     for (int i = 0; i < widget.books.length; i++) {
       final bookId = widget.books[i]['id'];
-      await client
-          .from('user_books')
-          .update({'order_index': i}).eq('id', bookId);
+      await client.from('user_books').update({'order_index': i}).eq('id', bookId);
     }
 
     setState(() {
       originalOrder = widget.books.map((b) => b['id'] as String).toList();
       isEdited = false;
     });
-    
-    // 부모 위젯에게 순서 변경 알림 (새로고침 요청)
-    widget.onRefresh();
-    
 
+    widget.onRefresh();
   }
 
   void _onReorder(int oldIndex, int newIndex) {
     setState(() {
       final item = widget.books.removeAt(oldIndex);
       widget.books.insert(newIndex, item);
-
       final currentOrder = widget.books.map((b) => b['id'] as String).toList();
       isEdited = !_areListsEqual(currentOrder, originalOrder);
     });
 
-    // 드래그 앤 드롭 후 즉시 데이터베이스 업데이트
     _updateBookOrder();
   }
 
@@ -146,29 +134,27 @@ class _ProfileTabState extends State<ProfileTab> {
   /// archived_order_index 기준으로 책들을 정렬하는 메서드
   List<Map<String, dynamic>> _getSortedBooks() {
     final sortedBooks = List<Map<String, dynamic>>.from(widget.allBooks);
-
-    // 디버깅: allBooks 데이터 구조 확인
-    print('🔍 _getSortedBooks - allBooks 데이터 구조:');
-    for (int i = 0; i < sortedBooks.length; i++) {
-      final book = sortedBooks[i];
-      print('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
-    }
-
-    // archived_order_index 기준으로 정렬
     sortedBooks.sort((a, b) {
       final aOrder = a['archived_order_index'] as int? ?? 0;
       final bOrder = b['archived_order_index'] as int? ?? 0;
       return aOrder.compareTo(bOrder);
     });
-
-    // 디버깅: 정렬 후 데이터 확인
-    print('🔍 _getSortedBooks - 정렬 후 데이터:');
-    for (int i = 0; i < sortedBooks.length; i++) {
-      final book = sortedBooks[i];
-      print('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, archived_order_index: ${book['archived_order_index']}');
-    }
-
     return sortedBooks;
+  }
+
+  /// 변경된 책만 추려서 RPC에 넘기기 위한 diff
+  List<Map<String, dynamic>> _diffUserBooks({
+    required List<Map<String, dynamic>> updated,   // 바텀시트 결과(보관함+프로필 전체 최신 상태)
+    required List<Map<String, dynamic>> original,  // 기존 전체 상태(widget.allBooks)
+  }) {
+    final byId = { for (final o in original) o['id']: o };
+    return updated.where((u) {
+      final o = byId[u['id']];
+      if (o == null) return true;
+      final changedArchived = (o['is_archived'] as bool?) != (u['is_archived'] as bool?);
+      final changedOrder = (o['order_index'] as int?) != (u['order_index'] as int?);
+      return changedArchived || changedOrder;
+    }).toList();
   }
 
   ButtonStyle _outlinedStyle(BuildContext context) {
@@ -176,32 +162,17 @@ class _ProfileTabState extends State<ProfileTab> {
       foregroundColor: MaterialStateProperty.all(AppColors.black900),
       backgroundColor: MaterialStateProperty.all(Colors.white),
       overlayColor: MaterialStateProperty.resolveWith<Color?>(
-        (states) {
-          if (states.contains(MaterialState.pressed)) {
-            return AppColors.black100;
-          }
-          return null;
-        },
+            (states) => states.contains(MaterialState.pressed) ? AppColors.black100 : null,
       ),
-      side: MaterialStateProperty.all(
-        const BorderSide(color: AppColors.black500, width: 1),
-      ),
-      shape: MaterialStateProperty.all(
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-      ),
-      padding: MaterialStateProperty.all(
-        const EdgeInsets.symmetric(horizontal: 9),
-      ),
-      minimumSize: MaterialStateProperty.all(
-        const Size(0, 34),
-      ),
-      textStyle: MaterialStateProperty.all(
-        const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 1.0,
-        ),
-      ),
+      side: MaterialStateProperty.all(const BorderSide(color: AppColors.black500, width: 1)),
+      shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
+      padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 9)),
+      minimumSize: MaterialStateProperty.all(const Size(0, 34)),
+      textStyle: MaterialStateProperty.all(const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        height: 1.0,
+      )),
     );
   }
 
@@ -215,20 +186,24 @@ class _ProfileTabState extends State<ProfileTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 타이틀
               Padding(
                 padding: const EdgeInsets.only(left: 22),
                 child: Stack(
-                  key: _titleKey, // GlobalKey 추가
+                  key: _titleKey,
                   children: [
                     StrokeTextStyle.createStrokeText(
-                        text: "인생 책을 골라 프로필에 소개해보세요.",
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.black900),
+                      text: "인생 책을 골라 프로필에 소개해보세요.",
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.black900,
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 13),
+
+              // 버튼
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 21),
                 child: Row(
@@ -237,223 +212,81 @@ class _ProfileTabState extends State<ProfileTab> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () async {
-                          // 현재 책 개수로 limit 확인
-
-                          // ArchiveBottomSheet 표시
                           showModalBottomSheet(
                             context: context,
                             useRootNavigator: true,
                             isScrollControlled: true,
-                            isDismissible: false, // 바텀 시트를 완전히 내려야만 닫힘
+                            isDismissible: false,
                             backgroundColor: Colors.transparent,
                             barrierColor: Colors.transparent,
                             builder: (BuildContext context) {
-                              // GlobalKey를 사용하여 텍스트 위젯의 위치 측정
-                              final RenderBox? titleBox = _titleKey.currentContext
-                                  ?.findRenderObject() as RenderBox?;
-                              final titlePosition =
-                                  titleBox?.localToGlobal(Offset.zero);
+                              final RenderBox? titleBox =
+                              _titleKey.currentContext?.findRenderObject() as RenderBox?;
+                              final titlePosition = titleBox?.localToGlobal(Offset.zero);
                               final titleBottom = titlePosition?.dy ?? 0;
 
                               return Stack(
                                 children: [
-                                  // 배경 터치 영역
                                   Positioned.fill(
                                     child: GestureDetector(
                                       onTap: () => Navigator.pop(context),
                                       child: Container(color: Colors.transparent),
                                     ),
                                   ),
-                                  // 바텀시트
                                   Positioned(
-                                    top: titleBottom +
-                                        (titleBox?.size.height ?? 0) +
-                                        8,
-                                    // 텍스트 위젯 바로 밑 + 8px
+                                    top: titleBottom + (titleBox?.size.height ?? 0) + 8,
                                     left: 0,
                                     right: 0,
                                     bottom: 0,
                                     child: ArchiveBottomSheet(
                                       books: _getSortedBooks(),
                                       onClose: () {
-                                        // 바텀 시트가 닫힐 때만 호출됨
-                                        debugPrint('🔒 ArchiveBottomSheet 완전히 닫힘 - 선택 상태 초기화');
+                                        debugPrint('🔒 ArchiveBottomSheet 닫힘 - 선택 상태 초기화');
                                         setState(() {});
                                       },
-                                      // archived_order_index 기준으로 정렬된 책 목록 전달
                                       onBooksUpdated: (updatedBooks) async {
-                                        // 로딩 상태 시작
                                         if (!mounted) return;
-                                        setState(() {
-                                          _isUpdatingBooks = true;
-                                        });
-                                        
-                                        // 상위 위젯에 로딩 상태 변경 알림
+
+                                        setState(() => _isUpdatingBooks = true);
                                         widget.onLoadingStateChanged?.call(true);
                                         _showLoadingOverlay();
-                                        
-                                        // 저장 버튼을 눌렀을 때만 실행되는 DB 저장 로직
-                                        print(
-                                            '📚 DB 저장 시작: ${updatedBooks.length}개 책 업데이트');
-                                        print('🔍 updatedBooks 내용:');
-                                        for (int i = 0;
-                                            i < updatedBooks.length;
-                                            i++) {
-                                          final book = updatedBooks[i];
-                                          print(
-                                              '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
-                                        }
-                                        
-                                        // 디버깅: updatedBooks의 모든 키 확인
-                                        if (updatedBooks.isNotEmpty) {
-                                          print('🔍 updatedBooks[0]의 모든 키: ${updatedBooks[0].keys.toList()}');
-                                          print('🔍 updatedBooks[0]의 전체 데이터: ${updatedBooks[0]}');
-                                        }
-
-                                        print('🔍 widget.books 내용:');
-                                        for (int i = 0;
-                                            i < widget.books.length;
-                                            i++) {
-                                          final book = widget.books[i];
-                                          print(
-                                              '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}, order_index: ${book['order_index']}');
-                                        }
 
                                         try {
-                                          // DB 업데이트 로직 구현
-                                          final userBookApi =
-                                              UserBookApi(Supabase.instance.client);
+                                          final api = UserBookApi(Supabase.instance.client);
 
-                                          // 새로 프로필에 추가된 책이 있는지 확인 (보관함 → 프로필로 이동한 책)
-                                          final newlyAddedBooks =
-                                              <Map<String, dynamic>>[];
+                                          // 1) 변경된 것만 추림
+                                          final changed = _diffUserBooks(
+                                            updated: updatedBooks,
+                                            original: widget.allBooks,
+                                          );
 
-                                          // 원래 프로필에 있던 책들의 ID 목록
-                                          final originalProfileBookIds = widget
-                                              .books
-                                              .map((book) => book['id'] as String)
-                                              .toSet();
-                                          print(
-                                              '🔍 원래 프로필에 있던 책 ID들: $originalProfileBookIds');
-
-                                          // 업데이트된 책들 중 프로필로 이동한 책 찾기
-                                          for (final updatedBook in updatedBooks) {
-                                            final updatedBookId =
-                                                updatedBook['id'] as String;
-                                            final updatedIsArchived =
-                                                updatedBook['is_archived'] as bool;
-
-                                            // 프로필로 이동한 책이고, 원래 프로필에 없던 책인지 확인
-                                            if (updatedIsArchived == false &&
-                                                !originalProfileBookIds
-                                                    .contains(updatedBookId)) {
-                                              newlyAddedBooks.add(updatedBook);
-                                              print(
-                                                  '🔍 새로 프로필에 추가된 책 발견: ID=${updatedBookId}, book_id=${updatedBook['book_id']}');
-                                            }
-                                          }
-
-                                          print(
-                                              '🔍 새로 프로필에 추가된 책 개수: ${newlyAddedBooks.length}');
-                                          
-                                          print('🔄 updateBooksBatch 호출 시작');
-                                          // 일괄 업데이트로 모든 책의 is_archived와 order_index 업데이트
-                                          await userBookApi.updateBooksBatch(updatedBooks);
-                                          print('🔄 updateBooksBatch 호출 완료');
-                                          
-                                          // mounted 체크 - 위젯이 dispose되었는지 확인
-                                          if (!mounted) {
-                                            print('⚠️ 위젯이 dispose됨 - 추가 작업 중단');
+                                          // 변경이 없으면 바로 종료
+                                          if (changed.isEmpty) {
+                                            widget.onLoadingStateChanged?.call(false);
+                                            _hideLoadingOverlay();
+                                            setState(() => _isUpdatingBooks = false);
                                             return;
                                           }
 
-                                          // 홈 화면의 인생책이 겹치는 친구 목록 캐시 새로고침
+                                          // 2) RPC 한 번으로 일괄 업데이트
+                                          await api.updateBooksBatchRPC(changed);
+
+                                          // 3) 캐시 리프레시 (예외 무시)
                                           try {
                                             HomeRecommendTab.refreshUsersWithSameBooks();
-                                            print('🔄 보관함 변경 후 홈 화면 친구 목록 캐시 새로고침 요청');
-                                          } catch (e) {
-                                            print('⚠️ 홈 화면 캐시 새로고침 실패: $e');
-                                          }
-                                          
-                                          if (newlyAddedBooks.isNotEmpty) {
-                                            print('🎯 ===== 팔로워 알림 전송 시작 =====');
-                                            print('🔍 새로 추가된 책들 (${newlyAddedBooks.length}개):');
-                                            for (final book in newlyAddedBooks) {
-                                              print(
-                                                  '  - ID: ${book['id']}, book_id: ${book['book_id']}');
-                                            }
+                                          } catch (_) {}
 
-                                            // 새로 추가된 책들에 대해 팔로워들에게 알림 전송
-                                            final currentUserId =
-                                                client.auth.currentUser?.id;
-                                            if (currentUserId != null) {
-                                              print('👤 현재 사용자 ID: $currentUserId');
-                                              for (int i = 0; i < newlyAddedBooks.length; i++) {
-                                                // 각 알림 전송 전에 mounted 체크
-                                                if (!mounted) {
-                                                  print('⚠️ 위젯이 dispose됨 - 알림 전송 중단');
-                                                  return;
-                                                }
-                                                
-                                                final book = newlyAddedBooks[i];
-                                                final userBookId = book['id'] as String?;
-                                                if (userBookId != null) {
-                                                  print(
-                                                      '📢 [$i] 알림 전송 시도: userId=$currentUserId, userBookId=$userBookId');
-                                                  
-                                                  try {
-                                                    await userBookApi
-                                                        .notifyFollowersAboutNewBook(
-                                                            currentUserId, userBookId);
-                                                    print('✅ [$i] 알림 전송 성공: userBookId=$userBookId');
-                                                  } catch (e) {
-                                                    print('❌ [$i] 알림 전송 실패: userBookId=$userBookId, error=$e');
-                                                    // 알림 전송 실패는 치명적이지 않으므로 계속 진행
-                                                  }
-                                                } else {
-                                                  print('❌ [$i] user_books ID가 null: ID=${book['id']}');
-                                                }
-                                              }
-                                              print('🎯 ===== 팔로워 알림 전송 완료 =====');
-                                            } else {
-                                              print('❌ 현재 사용자 ID를 가져올 수 없음');
-                                            }
-                                          }
-
-                                          print('✅ DB 업데이트 완료');
-
-                                          // mounted 체크 - 위젯이 dispose되었는지 확인
-                                          if (!mounted) {
-                                            print('⚠️ 위젯이 dispose됨 - UI 업데이트 중단');
-                                            return;
-                                          }
-
-                                          // DB 저장 완료 후 프로필 탭 새로고침
-                                          print('🔄 widget.onRefresh() 호출');
+                                          // 4) UI 갱신
                                           widget.onRefresh();
-
                                         } catch (e) {
-                                          print('❌ DB 업데이트 실패: $e');
-                                          print('❌ 에러 스택: ${StackTrace.current}');
-                                          
-                                          // mounted 체크 후 에러 표시
                                           if (mounted) {
-                                            // 에러 발생 시 사용자에게 알림
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                  content:
-                                                      Text('저장 중 오류가 발생했습니다: $e')),
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('저장 중 오류: $e')),
                                             );
                                           }
                                         } finally {
-                                          // 로딩 상태 해제 - mounted 체크 필수
                                           if (mounted) {
-                                            setState(() {
-                                              _isUpdatingBooks = false;
-                                            });
-                                            
-                                            // 상위 위젯에 로딩 상태 변경 알림
+                                            setState(() => _isUpdatingBooks = false);
                                             widget.onLoadingStateChanged?.call(false);
                                             _hideLoadingOverlay();
                                           }
@@ -469,35 +302,35 @@ class _ProfileTabState extends State<ProfileTab> {
                         style: _outlinedStyle(context),
                         child: const Text(
                           '책 선택',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.black900,
-                              height: 1.25),
+                          style: TextStyle(fontSize: 13, color: AppColors.black900, height: 1.25),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 33),
+
+              // 안내 + 카운트
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 22),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      '책을 길게 눌러 위치를 변경할 수 있어요.',
-                      style: TextStyle(fontSize: 12, color: AppColors.black500),
-                    ),
+                    const Text('책을 길게 눌러 위치를 변경할 수 있어요.',
+                        style: TextStyle(fontSize: 12, color: AppColors.black500)),
                     Text(
                       '${widget.books.where((book) => book['is_archived'] == false).length}/9',
-                      style:
-                          const TextStyle(fontSize: 13, color: AppColors.black500),
+                      style: const TextStyle(fontSize: 13, color: AppColors.black500),
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 16),
+
+              // 그리드 (ReorderableWrap)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 26),
                 child: LayoutBuilder(
@@ -526,8 +359,8 @@ class _ProfileTabState extends State<ProfileTab> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(0),
                               child: BookFrame(
-                                imageUrl: book['books']?['image'] ??
-                                    'https://via.placeholder.com/150',
+                                imageUrl:
+                                book['books']?['image'] ?? 'https://via.placeholder.com/150',
                               ),
                             ),
                           ),
@@ -541,6 +374,22 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         ),
 
+        // 로딩 오버레이(필요 시)
+        if (_isUpdatingBooks)
+          Positioned.fill(
+            child: AbsorbPointer(
+              absorbing: true,
+              child: Container(
+                color: Colors.black.withOpacity(0.35),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
