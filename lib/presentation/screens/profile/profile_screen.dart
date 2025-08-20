@@ -85,7 +85,7 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => ProfileScreenState();
 }
 
-class ProfileScreenState extends State<ProfileScreen> {
+class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   final client = Supabase.instance.client;
   final ScrollController _scrollController = ScrollController();
   bool _isScrollable = false;
@@ -107,6 +107,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     loadBooks();
     _subscribeToProfileUpdates();
     _subscribeToBookUpdates();
+    _subscribeToFollowUpdates(); // 팔로우 변경사항 실시간 감지
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkIfScrollable();
@@ -115,6 +116,17 @@ class ProfileScreenState extends State<ProfileScreen> {
     client.auth.onAuthStateChange.listen((_) {
       if (mounted) setState(() {});
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // 앱이 포그라운드로 돌아올 때 팔로워/팔로잉 숫자 새로고침
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('🔄 앱 포그라운드 복귀 - 팔로워/팔로잉 숫자 새로고침');
+      _updateFollowCounts();
+    }
   }
 
   Future<void> _checkUnreadNotifications() async {
@@ -195,32 +207,51 @@ class ProfileScreenState extends State<ProfileScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    final data = await Supabase.instance.client
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .maybeSingle();
+    try {
+      // 프로필 기본 정보와 팔로워/팔로잉 카운트를 동시에 가져오기
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
 
-    // 실시간 팔로워/팔로잉 카운트 가져오기
-    final followerRes = await Supabase.instance.client
-        .from('follows')
-        .select('id')
-        .eq('following_id', user.id);
-    final followerCount = followerRes.length;
+      // 팔로워/팔로잉 카운트를 더 안정적으로 가져오기
+      final followerRes = await Supabase.instance.client
+          .from('follows')
+          .select('id')
+          .eq('following_id', user.id);
+      final followerCount = followerRes.length;
 
-    final followingRes = await Supabase.instance.client
-        .from('follows')
-        .select('id')
-        .eq('follower_id', user.id);
-    final followingCount = followingRes.length;
+      final followingRes = await Supabase.instance.client
+          .from('follows')
+          .select('id')
+          .eq('follower_id', user.id);
+      final followingCount = followingRes.length;
 
-    setState(() {
-      profile = {
-        ...?data,
-        'followers': followerCount,
-        'following': followingCount,
-      };
-    });
+      debugPrint('🔍 팔로워/팔로잉 카운트 로드: 팔로워 $followerCount, 팔로잉 $followingCount');
+
+      if (mounted) {
+        setState(() {
+          profile = {
+            ...?data,
+            'followers': followerCount,
+            'following': followingCount,
+          };
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ 프로필 로드 실패: $e');
+      // 에러 발생 시 기본값으로 설정
+      if (mounted) {
+        setState(() {
+          profile = {
+            ...?profile,
+            'followers': profile?['followers'] ?? 0,
+            'following': profile?['following'] ?? 0,
+          };
+        });
+      }
+    }
   }
 
   // 프로필 전체를 새로고침하는 함수
@@ -236,26 +267,34 @@ class ProfileScreenState extends State<ProfileScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null || profile == null) return;
 
-    // 실시간 팔로워/팔로잉 카운트 업데이트
-    final followerRes = await Supabase.instance.client
-        .from('follows')
-        .select('id')
-        .eq('following_id', user.id);
-    final followerCount = followerRes.length;
+    try {
+      // 실시간 팔로워/팔로잉 카운트 업데이트
+      final followerRes = await Supabase.instance.client
+          .from('follows')
+          .select('id')
+          .eq('following_id', user.id);
+      final followerCount = followerRes.length;
 
-    final followingRes = await Supabase.instance.client
-        .from('follows')
-        .select('id')
-        .eq('follower_id', user.id);
-    final followingCount = followingRes.length;
+      final followingRes = await Supabase.instance.client
+          .from('follows')
+          .select('id')
+          .eq('follower_id', user.id);
+      final followingCount = followingRes.length;
 
-    setState(() {
-      profile = {
-        ...profile!,
-        'followers': followerCount,
-        'following': followingCount,
-      };
-    });
+      debugPrint('🔄 팔로워/팔로잉 카운트 업데이트: 팔로워 $followerCount, 팔로잉 $followingCount');
+
+      if (mounted) {
+        setState(() {
+          profile = {
+            ...profile!,
+            'followers': followerCount,
+            'following': followingCount,
+          };
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ 팔로워/팔로잉 카운트 업데이트 실패: $e');
+    }
   }
 
 
@@ -324,6 +363,27 @@ class ProfileScreenState extends State<ProfileScreen> {
           if (mounted && newProfile != null) {
             setState(() => profile = newProfile as Map<String, dynamic>);
           }
+        },
+      )
+      ..subscribe();
+  }
+
+  void _subscribeToFollowUpdates() {
+    final user = client.auth.currentUser;
+    if (user == null) return;
+
+    // 팔로우 테이블 변경사항을 실시간으로 감지
+    client.channel('public:follows')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'follows',
+        callback: (payload) async {
+          if (!mounted) return;
+          
+          // 팔로우/언팔로우 변경사항이 발생하면 카운트 업데이트
+          debugPrint('🔄 팔로우 테이블 변경 감지: ${payload.eventType}');
+          await _updateFollowCounts();
         },
       )
       ..subscribe();
