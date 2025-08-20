@@ -168,13 +168,13 @@ class _ArchiveTabState extends State<ArchiveTab> {
     final scrollOffset = _scrollController.offset;
     final maxScroll = _scrollController.position.maxScrollExtent;
 
-    if (_dragPosition!.dy < 150 && scrollOffset > 0) {
+    if (_dragPosition!.dy < 120 && scrollOffset > 115) {
       _scrollController.animateTo(
         (scrollOffset - 35).clamp(0.0, maxScroll),
         duration: const Duration(milliseconds: 80),
         curve: Curves.easeOut,
       );
-    } else if (_dragPosition!.dy > screenHeight - 150 && scrollOffset < maxScroll) {
+    } else if (_dragPosition!.dy > screenHeight - 66 && scrollOffset < maxScroll-56) {
       _scrollController.animateTo(
         (scrollOffset + 35).clamp(0.0, maxScroll),
         duration: const Duration(milliseconds: 80),
