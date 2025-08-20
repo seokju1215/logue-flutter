@@ -46,6 +46,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   String _query = '';
   bool _isSearching = false; // ✅ 중복 검색 방지 플래그
   int _currentIndex = 0; // 현재 탭 인덱스를 별도로 관리
+  bool _openingBook = false;
 
   @override
   void initState() {
@@ -169,6 +170,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   }
 
   Future<void> _onTapBook(BookModel book) async {
+    if (_openingBook) return;        // ✅ 연타 가드
+    _openingBook = true;
     final client = Supabase.instance.client;
 
     try {
@@ -202,6 +205,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('책 정보를 불러오지 못했어요.')),
       );
+    }finally {
+      _openingBook = false;          // ✅ 반드시 잠금 해제
     }
   }
 
