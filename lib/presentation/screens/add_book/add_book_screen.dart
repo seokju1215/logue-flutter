@@ -34,6 +34,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
   int _currentIndex = 0; // 0: 프로필 탭, 1: 보관함 탭
   String _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
   String _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
+  void focusArchiveTab() {
+    _pageController.jumpToPage(1);
+    setState(() => _currentIndex = 1);
+  }
 
   // 공통 데이터 관리
   List<Map<String, dynamic>> allBooks = [];
@@ -218,6 +222,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     key: _archiveTabStateKey, // GlobalKey 사용
                     allBooks: allBooks, // 모든 책 목록 전달
                     onRefresh: _fetchAllBooks,
+                    onFocusMe: focusArchiveTab,
                     onBookAdded: () {
                       if (mounted) {
                         setState(() {

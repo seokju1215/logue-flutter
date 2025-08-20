@@ -17,6 +17,8 @@ class ArchiveTab extends StatefulWidget {
   final VoidCallback? onBookAdded;
   final Function(List<Map<String, dynamic>>)? onBooksChanged;
   final GlobalKey<NavigatorState>? navigatorKey;
+  final VoidCallback? onFocusMe;
+
   const ArchiveTab({
     Key? key,
     required this.allBooks,
@@ -24,6 +26,7 @@ class ArchiveTab extends StatefulWidget {
     this.onBookAdded,
     this.onBooksChanged,
     this.navigatorKey,
+    this.onFocusMe,
   }) : super(key: key);
 
   @override
@@ -298,6 +301,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                                 builder: (_) => const SearchBookScreen(fromTab: 'archive'),
                               ),
                             );
+                            widget.onFocusMe?.call();
 
                             if (!mounted) return;
                             setState(() => _isUpdatingBooks = false);
