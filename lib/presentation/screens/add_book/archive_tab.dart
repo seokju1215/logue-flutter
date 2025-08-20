@@ -49,6 +49,37 @@ class _ArchiveTabState extends State<ArchiveTab> {
   final List<Map<String, dynamic>> _localBooks = []; // 페이지를 쌓아서 보관
   List<String> originalOrder = [];
   bool _hasLocalChanges = false;   // 드래그 정렬 후 저장 대기
+  Future<void> _fetchTotalCount() async {
+    try {
+      final uid = client.auth.currentUser?.id;
+      if (uid == null) return;
+
+      final res = await client.rpc('get_archived_books_count', params: {
+        'p_user_id': uid
+      });
+
+      int count;
+      if (res == null) {
+        count = 0;
+      } else if (res is int) {
+        count = res;
+      } else if (res is num) {
+        count = res.toInt();
+      } else if (res is Map && res.values.isNotEmpty) {
+        // 드물게 {"get_archived_books_count": 123} 형태일 수도 있음
+        final v = res.values.first;
+        count = (v is num) ? v.toInt() : 0;
+      } else {
+        count = 0;
+      }
+
+      if (mounted) {
+        setState(() => _totalCount = count);
+      }
+    } catch (e) {
+      debugPrint('❌ 총 권수 가져오기 실패: $e');
+    }
+  }
 
   // UI 상태
   bool _isUpdatingBooks = false;
@@ -87,7 +118,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
       _totalCount = 0;
       _hasLocalChanges = false;
     });
-
+    await _fetchTotalCount();
     await _loadNextPage(); // 첫 페이지
     if (mounted) {
       setState(() => _isInitialLoading = false);
@@ -114,10 +145,6 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
       final rows = rpc.cast<Map<String, dynamic>>();
 
-      // total_count 추출
-      if (rows.isNotEmpty) {
-        _totalCount = (rows.first['total_count'] as int?) ?? 0;
-      }
 
       // 2) 현재 페이지의 book 이미지 한번에 조회
       final bookIds = rows
@@ -345,7 +372,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () async {
-                            if (_localBooks.length >= 1000) {
+                            if (_totalCount >= 1000) {
                               showDialog(
                                 context: context,
                                 barrierDismissible: true,
@@ -419,7 +446,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                               style: TextStyle(
                                   fontSize: 12, color: AppColors.black500)),
                           Text(
-                            '${_localBooks.length}권',
+                            '${_totalCount}권',
                             style: const TextStyle(
                                 fontSize: 13, color: AppColors.black500),
                           ),
