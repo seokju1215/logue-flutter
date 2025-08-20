@@ -22,19 +22,19 @@ class ArchiveBottomSheet extends StatefulWidget {
 
 class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   final client = Supabase.instance.client;
-  
+
   // ===== 페이지네이션 상태 =====
   static const int _pageSize = 200;
   int _offset = 0;
-  bool _isInitialLoading = true;   // 첫 로딩 스피너
-  bool _isPageLoading = false;     // 다음 페이지 로딩 중
-  bool _hasMore = true;            // 더 불러올 페이지 존재 여부
-  int _totalCount = 0;             // 서버 total_count (오프셋 방식에서만 사용)
+  bool _isInitialLoading = true; // 첫 로딩 스피너
+  bool _isPageLoading = false; // 다음 페이지 로딩 중
+  bool _hasMore = true; // 더 불러올 페이지 존재 여부
+  int _totalCount = 0; // 서버 total_count (오프셋 방식에서만 사용)
 
   // ===== 로컬 상태 =====
   final List<Map<String, dynamic>> _localBooks = []; // 페이지를 쌓아서 보관
   List<String> originalOrder = [];
-  bool _hasLocalChanges = false;   // 드래그 정렬 후 저장 대기
+  bool _hasLocalChanges = false; // 드래그 정렬 후 저장 대기
 
   // 기존 상태 변수들
   bool _isSaving = false;
@@ -51,7 +51,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScrollReachBottom);
-    
+
     // 초기 페이지 로드
     _refreshFromServer();
   }
@@ -151,7 +151,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
           _hasMore = _offset < _totalCount;
           // 기준 순서 업데이트
           originalOrder = _localBooks.map((b) => b['id'] as String).toList();
-          
+
           // 초기 로딩 중일 때는 선택 상태 업데이트를 하지 않음 (refreshFromServer에서 처리)
           if (!_isInitialLoading) {
             _updateSelectionFromLocalBooks();
@@ -190,8 +190,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
   // allBooks에서 보관함 책들만 필터링하여 반환 (기존 로직 유지)
   List<Map<String, dynamic>> _getArchivedBooks() {
-    return _localBooks
-        .toList()
+    return _localBooks.toList()
       ..sort((a, b) {
         final aIndex = a['archived_order_index'] ?? 0;
         final bIndex = b['archived_order_index'] ?? 0;
@@ -202,7 +201,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   @override
   void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // allBooks가 변경되었을 때 보관함 책들을 다시 필터링
     if (oldWidget.allBooks != widget.allBooks) {
       debugPrint('🔄 ArchiveBottomSheet - allBooks 변경 감지, 보관함 책들 재필터링');
@@ -214,14 +213,15 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     // _localBooks가 비어있으면 source를 사용, 아니면 _localBooks를 사용
     final booksToUse = _localBooks.isEmpty ? source : _localBooks;
     updatedBooks = booksToUse.map((m) => Map<String, dynamic>.from(m)).toList();
-    
+
     // 디버깅: _resetFrom에서 받은 데이터 구조 확인
     debugPrint('🔍 _resetFrom - 받은 데이터 구조:');
     for (int i = 0; i < updatedBooks.length; i++) {
       final book = updatedBooks[i];
-      debugPrint('🔍  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
+      debugPrint(
+          '🔍  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
     }
-    
+
     // is_archived가 false인 책들을 자동으로 선택
     _updateSelectionFromLocalBooks();
     setState(() {});
@@ -230,8 +230,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   void _toggleSelect(int index) {
     // 디버깅: 선택 전 데이터 구조 확인
     debugPrint('🔍 _toggleSelect 시작 - index: $index');
-    debugPrint('🔍 선택 전 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
-    
+    debugPrint(
+        '🔍 선택 전 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
+
     setState(() {
       final currentSelected = _selected.length;
 
@@ -268,10 +269,54 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       }
 
       selectedBookCount = _selected.length;
-      
+
       // 디버깅: 선택 후 데이터 구조 확인
-      debugPrint('🔍 선택 후 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
+      debugPrint(
+          '🔍 선택 후 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
     });
+  }
+
+  /// 보관함(true) → 프로필(false)로 바뀐 책들의 user_books.id를 반환하고,
+  /// 해당 레코드의 unarchived_at을 now()로 업데이트한다.
+  Future<List<String>> _markUnarchivedAndCollectIds() async {
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    try {
+      final newlyUnarchivedBookIds = <String>[];
+
+      for (int i = 0; i < _localBooks.length; i++) {
+        final current = _localBooks[i];
+        final original = widget.allBooks.firstWhere(
+          (b) => b['id'] == current['id'],
+          orElse: () => {},
+        );
+
+        // 원본은 archived(true)였는데 지금은 false(프로필)로 바뀐 경우만 수집
+        if (original.isNotEmpty &&
+            original['is_archived'] == true &&
+            current['is_archived'] == false) {
+          newlyUnarchivedBookIds.add(current['id'] as String);
+        }
+      }
+
+      if (newlyUnarchivedBookIds.isNotEmpty) {
+        final nowUtc = DateTime.now().toUtc().toIso8601String();
+        await client.from('user_books').update(
+            {'unarchived_at': nowUtc}).inFilter('id', newlyUnarchivedBookIds);
+
+        debugPrint(
+            '✅ unarchived_at 업데이트 완료: ${newlyUnarchivedBookIds.length}개');
+      } else {
+        debugPrint('ℹ️ 새로 unarchived된 책 없음');
+      }
+
+      return newlyUnarchivedBookIds;
+    } catch (e) {
+      debugPrint('❌ unarchived_at 업데이트 실패: $e');
+      return [];
+    }
   }
 
   /// is_archived가 false로 변경된 책들에 대해 unarchived_at 컬럼을 업데이트
@@ -283,33 +328,35 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
       // 원본 데이터와 비교해서 새로 is_archived가 false로 바뀐 책들의 ID 목록
       final newlyUnarchivedBookIds = <String>[];
-      
+
       for (int i = 0; i < _localBooks.length; i++) {
         final currentBook = _localBooks[i];
         final originalBook = widget.allBooks.firstWhere(
           (book) => book['id'] == currentBook['id'],
           orElse: () => {},
         );
-        
+
         // 원본에서는 is_archived가 true였는데, 현재는 false로 바뀐 경우
-        if (originalBook.isNotEmpty && 
-            originalBook['is_archived'] == true && 
+        if (originalBook.isNotEmpty &&
+            originalBook['is_archived'] == true &&
             currentBook['is_archived'] == false) {
           newlyUnarchivedBookIds.add(currentBook['id']);
-          debugPrint('🔄 새로 unarchived된 책 발견: ID=${currentBook['id']}, book_id=${currentBook['book_id']}');
+          debugPrint(
+              '🔄 새로 unarchived된 책 발견: ID=${currentBook['id']}, book_id=${currentBook['book_id']}');
         }
       }
 
       if (newlyUnarchivedBookIds.isNotEmpty) {
         // unarchived_at을 현재 timestamp로 업데이트
         final currentTimestamp = DateTime.now().toUtc().toIso8601String();
-        
+
         await client
             .from('user_books')
-            .update({'unarchived_at': currentTimestamp})
-            .inFilter('id', newlyUnarchivedBookIds);
-        
-        debugPrint('✅ unarchived_at 업데이트 완료: ${newlyUnarchivedBookIds.length}개 책');
+            .update({'unarchived_at': currentTimestamp}).inFilter(
+                'id', newlyUnarchivedBookIds);
+
+        debugPrint(
+            '✅ unarchived_at 업데이트 완료: ${newlyUnarchivedBookIds.length}개 책');
         debugPrint('📅 업데이트된 timestamp: $currentTimestamp');
         debugPrint('📚 업데이트된 책 ID들: $newlyUnarchivedBookIds');
       } else {
@@ -410,24 +457,56 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                     children: [
                       GestureDetector(
                         onTap: () async {
-                          if (_isSaving) return; // ✅ 연타 방지
+                          if (_isSaving) return;
                           setState(() => _isSaving = true);
 
                           try {
-                            await _updateUnarchivedAt();
+                            final userId = client.auth.currentUser?.id;
+                            if (userId == null) {
+                              throw Exception('로그인이 필요합니다.');
+                            }
+
+                            // 1) 보관함 → 프로필로 바뀐 책들 ID 수집 + unarchived_at 업데이트
+                            final newlyUnarchivedIds =
+                                await _markUnarchivedAndCollectIds();
+
+                            // 2) 알림 전송 (서버에서 팔로워 조회 + 대량 insert)
+                            if (newlyUnarchivedIds.isNotEmpty) {
+                              final resp = await client.functions.invoke(
+                                'send-notification-v2',
+                                body: {
+                                  'sender_id': userId,
+                                  'type': 'post',
+                                  // 필요에 따라 'post' 등으로 변경 가능
+                                  'user_book_ids': newlyUnarchivedIds,
+                                },
+                              );
+                              if (resp.status != 200) {
+                                debugPrint('❌ 알림 전송 실패: ${resp.data}');
+                                // 실패해도 UX 계속 진행할지 여부는 선택. 여기선 진행.
+                              } else {
+                                debugPrint('✅ 알림 전송 성공: ${resp.data}');
+                              }
+                            }
+
+                            // 3) 상위로 최신 상태 전달 & 시트 닫기
                             widget.onBooksUpdated?.call(
-                              _localBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
+                              _localBooks
+                                  .map((e) => Map<String, dynamic>.from(e))
+                                  .toList(),
                             );
                             widget.onClose?.call();
                             if (mounted) Navigator.pop(context, true);
                           } catch (e) {
+                            debugPrint('❌ 저장 처리 실패: $e');
                             if (mounted) Navigator.pop(context, false);
                           } finally {
                             if (mounted) setState(() => _isSaving = false);
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0), // 👈 클릭 영역 확장
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 0), // 👈 클릭 영역 확장
                           color: Colors.transparent, // 👈 배경은 투명
                           child: Text(
                             '저장',
@@ -483,7 +562,8 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                     child: CircularProgressIndicator(color: AppColors.black900),
                   )
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0).copyWith(top: 21, bottom: 21),
+                    padding: const EdgeInsets.symmetric(horizontal: 0)
+                        .copyWith(top: 21, bottom: 21),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         const crossAxisCount = 5;
@@ -492,12 +572,17 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                         const itemAspectRatio = 98 / 145;
                         const topOffsetForShelf = 90.0;
 
-                        final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
-                        final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                        final totalSpacing =
+                            crossAxisSpacing * (crossAxisCount - 1);
+                        final itemWidth =
+                            (constraints.maxWidth - totalSpacing) /
+                                crossAxisCount;
                         final itemHeight = itemWidth / itemAspectRatio;
 
-                        final rows = (_localBooks.length / crossAxisCount).ceil();
-                        final gridHeight = rows * itemHeight + (rows - 1) * runSpacing;
+                        final rows =
+                            (_localBooks.length / crossAxisCount).ceil();
+                        final gridHeight =
+                            rows * itemHeight + (rows - 1) * runSpacing;
 
                         return Scrollbar(
                           child: SingleChildScrollView(
@@ -515,12 +600,15 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                     topOffset: topOffsetForShelf,
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 22),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 22),
                                     child: GridView.builder(
-                                      physics: const NeverScrollableScrollPhysics(),
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
                                       shrinkWrap: true,
                                       itemCount: _localBooks.length,
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount: crossAxisCount,
                                         crossAxisSpacing: crossAxisSpacing,
                                         mainAxisSpacing: runSpacing,
@@ -528,8 +616,11 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                       ),
                                       itemBuilder: (context, index) {
                                         final book = _localBooks[index];
-                                        final imageUrl = book['books']?['image'] ?? 'https://via.placeholder.com/150';
-                                        final isSelected = _selected.contains(index);
+                                        final imageUrl = book['books']
+                                                ?['image'] ??
+                                            'https://via.placeholder.com/150';
+                                        final isSelected =
+                                            _selected.contains(index);
 
                                         return GestureDetector(
                                           onTap: () => _toggleSelect(index),
@@ -537,39 +628,50 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                             clipBehavior: Clip.none,
                                             children: [
                                               ClipRRect(
-                                                borderRadius: BorderRadius.circular(0),
+                                                borderRadius:
+                                                    BorderRadius.circular(0),
                                                 child: ColorFiltered(
                                                   colorFilter: isSelected
                                                       ? ColorFilter.mode(
-                                                    Colors.black.withOpacity(0.6),
-                                                    BlendMode.darken,
-                                                  )
+                                                          Colors.black
+                                                              .withOpacity(0.6),
+                                                          BlendMode.darken,
+                                                        )
                                                       : const ColorFilter.mode(
-                                                    Colors.transparent,
-                                                    BlendMode.srcOver,
-                                                  ),
-                                                  child: BookFrame(imageUrl: imageUrl),
+                                                          Colors.transparent,
+                                                          BlendMode.srcOver,
+                                                        ),
+                                                  child: BookFrame(
+                                                      imageUrl: imageUrl),
                                                 ),
                                               ),
                                               Align(
                                                 alignment: Alignment.topRight,
                                                 child: Container(
-                                                  margin: const EdgeInsets.only(right: 3.24, top: 3),
+                                                  margin: const EdgeInsets.only(
+                                                      right: 3.24, top: 3),
                                                   width: 18,
                                                   height: 18,
                                                   decoration: BoxDecoration(
                                                     shape: BoxShape.circle,
                                                     border: Border.all(
-                                                      color: isSelected ? AppColors.blue500 : AppColors.black300,
-                                                      width: isSelected ? 2 : 1.5,
+                                                      color: isSelected
+                                                          ? AppColors.blue500
+                                                          : AppColors.black300,
+                                                      width:
+                                                          isSelected ? 2 : 1.5,
                                                     ),
                                                   ),
                                                   child: AnimatedContainer(
-                                                    duration: const Duration(milliseconds: 50),
-                                                    margin: const EdgeInsets.all(2),
+                                                    duration: const Duration(
+                                                        milliseconds: 50),
+                                                    margin:
+                                                        const EdgeInsets.all(2),
                                                     decoration: BoxDecoration(
                                                       shape: BoxShape.circle,
-                                                      color: isSelected ? AppColors.blue500 : Colors.transparent,
+                                                      color: isSelected
+                                                          ? AppColors.blue500
+                                                          : Colors.transparent,
                                                     ),
                                                   ),
                                                 ),
@@ -595,12 +697,10 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: CircularProgressIndicator(
-                    color: AppColors.black900),
+                child: CircularProgressIndicator(color: AppColors.black900),
               ),
             ),
-          if (!_hasMore && !_isPageLoading)
-            const SizedBox(height: 16),
+          if (!_hasMore && !_isPageLoading) const SizedBox(height: 16),
         ],
       ),
     );
