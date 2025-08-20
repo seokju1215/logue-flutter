@@ -38,7 +38,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
   final client = Supabase.instance.client;
 
   // ===== 페이지네이션 상태 =====
-  static const int _pageSize = 50;
+  static const int _pageSize = 200;
   int _offset = 0;
   bool _isInitialLoading = true;   // 첫 로딩 스피너
   bool _isPageLoading = false;     // 다음 페이지 로딩 중

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
@@ -20,21 +21,176 @@ class ArchiveBottomSheet extends StatefulWidget {
 }
 
 class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
+  final client = Supabase.instance.client;
+  
+  // ===== 페이지네이션 상태 =====
+  static const int _pageSize = 200;
+  int _offset = 0;
+  bool _isInitialLoading = true;   // 첫 로딩 스피너
+  bool _isPageLoading = false;     // 다음 페이지 로딩 중
+  bool _hasMore = true;            // 더 불러올 페이지 존재 여부
+  int _totalCount = 0;             // 서버 total_count (오프셋 방식에서만 사용)
+
+  // ===== 로컬 상태 =====
+  final List<Map<String, dynamic>> _localBooks = []; // 페이지를 쌓아서 보관
+  List<String> originalOrder = [];
+  bool _hasLocalChanges = false;   // 드래그 정렬 후 저장 대기
+
+  // 기존 상태 변수들
   bool _isSaving = false;
   late List<Map<String, dynamic>> updatedBooks; // 화면 내부 작업용(원본 불변)
   final Set<int> _selected = {};
   static const int kMaxSelection = 9;
   int selectedBookCount = 0;
 
+  // 스크롤 컨트롤러
+  late final ScrollController _scrollController;
+
   @override
   void initState() {
     super.initState();
-    _resetFrom(_getArchivedBooks()); // 최신 allBooks에서 보관함 책들 필터링
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScrollReachBottom);
+    
+    // 초기 페이지 로드
+    _refreshFromServer();
   }
 
-  // allBooks에서 보관함 책들만 필터링하여 반환
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScrollReachBottom);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // ========== 서버 호출 ==========
+
+  Future<void> _refreshFromServer() async {
+    setState(() {
+      _isInitialLoading = true;
+      _offset = 0;
+      _localBooks.clear();
+      _hasMore = true;
+      _totalCount = 0;
+      _hasLocalChanges = false;
+    });
+
+    await _loadNextPage(); // 첫 페이지
+    if (mounted) {
+      setState(() {
+        _isInitialLoading = false;
+        // 초기 로딩 완료 후 선택 상태 업데이트
+        _updateSelectionFromLocalBooks();
+      });
+    }
+  }
+
+  Future<void> _loadNextPage() async {
+    if (_isPageLoading || !_hasMore) return;
+
+    // 초기 로딩 중일 때는 _isPageLoading을 설정하지 않음
+    if (!_isInitialLoading) {
+      setState(() {
+        _isPageLoading = true;
+      });
+    }
+
+    try {
+      // 1) RPC로 user_books 페이지 가져오기 (정렬/카운트 포함)
+      final rpc = await client.rpc(
+        'get_archived_books_page',
+        params: {
+          'p_limit': _pageSize,
+          'p_offset': _offset,
+        },
+      ) as List<dynamic>;
+
+      final rows = rpc.cast<Map<String, dynamic>>();
+
+      // total_count 추출
+      if (rows.isNotEmpty) {
+        _totalCount = (rows.first['total_count'] as int?) ?? 0;
+      }
+
+      // 2) 현재 페이지의 book 이미지 한번에 조회
+      final bookIds = rows
+          .map((e) => e['book_id'])
+          .where((id) => id != null)
+          .toSet()
+          .toList();
+
+      Map<String, dynamic> imagesByBookId = {};
+      if (bookIds.isNotEmpty) {
+        final booksRes = await client
+            .from('books')
+            .select('id, image')
+            .inFilter('id', bookIds);
+
+        for (final b in (booksRes as List)) {
+          imagesByBookId[b['id'] as String] = {
+            'id': b['id'],
+            'image': b['image'],
+          };
+        }
+      }
+
+      // 3) rows + image merge
+      final pageItems = rows.map((e) {
+        final bookId = e['book_id'];
+        return {
+          ...e,
+          'books': imagesByBookId[bookId] ?? {'id': bookId, 'image': null},
+        };
+      }).toList();
+
+      // 4) 로컬 리스트에 추가
+      if (mounted) {
+        setState(() {
+          _localBooks.addAll(pageItems);
+          _offset += rows.length;
+          _hasMore = _offset < _totalCount;
+          // 기준 순서 업데이트
+          originalOrder = _localBooks.map((b) => b['id'] as String).toList();
+          
+          // 초기 로딩 중일 때는 선택 상태 업데이트를 하지 않음 (refreshFromServer에서 처리)
+          if (!_isInitialLoading) {
+            _updateSelectionFromLocalBooks();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ 페이지 로드 실패: $e');
+    } finally {
+      if (mounted && !_isInitialLoading) {
+        setState(() => _isPageLoading = false);
+      }
+    }
+  }
+
+  void _onScrollReachBottom() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    // 바닥 근처에서 다음 페이지 로드
+    if (pos.pixels > pos.maxScrollExtent - 300) {
+      _loadNextPage();
+    }
+  }
+
+  /// _localBooks에서 is_archived가 false인 책들을 자동으로 선택
+  void _updateSelectionFromLocalBooks() {
+    _selected.clear();
+    for (int i = 0; i < _localBooks.length; i++) {
+      if (_localBooks[i]['is_archived'] == false) {
+        _selected.add(i);
+      }
+    }
+    selectedBookCount = _selected.length;
+    debugPrint('🔄 자동 선택 업데이트: ${selectedBookCount}개 책이 선택됨');
+  }
+
+  // allBooks에서 보관함 책들만 필터링하여 반환 (기존 로직 유지)
   List<Map<String, dynamic>> _getArchivedBooks() {
-    return widget.allBooks
+    return _localBooks
         .toList()
       ..sort((a, b) {
         final aIndex = a['archived_order_index'] ?? 0;
@@ -55,46 +211,43 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   }
 
   void _resetFrom(List<Map<String, dynamic>> source) {
-    updatedBooks = source.map((m) => Map<String, dynamic>.from(m)).toList();
+    // _localBooks가 비어있으면 source를 사용, 아니면 _localBooks를 사용
+    final booksToUse = _localBooks.isEmpty ? source : _localBooks;
+    updatedBooks = booksToUse.map((m) => Map<String, dynamic>.from(m)).toList();
     
     // 디버깅: _resetFrom에서 받은 데이터 구조 확인
     debugPrint('🔍 _resetFrom - 받은 데이터 구조:');
     for (int i = 0; i < updatedBooks.length; i++) {
       final book = updatedBooks[i];
-      debugPrint('  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
+      debugPrint('🔍  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
     }
     
-    _selected.clear();
-    for (int i = 0; i < updatedBooks.length; i++) {
-      if (updatedBooks[i]['is_archived'] == false) _selected.add(i);
-    }
-    selectedBookCount =
-        updatedBooks.where((b) => b['is_archived'] == false).length;
+    // is_archived가 false인 책들을 자동으로 선택
+    _updateSelectionFromLocalBooks();
     setState(() {});
   }
 
   void _toggleSelect(int index) {
     // 디버깅: 선택 전 데이터 구조 확인
     debugPrint('🔍 _toggleSelect 시작 - index: $index');
-    debugPrint('🔍 선택 전 updatedBooks[$index]: ID=${updatedBooks[index]['id']}, book_id=${updatedBooks[index]['book_id']}, is_archived=${updatedBooks[index]['is_archived']}');
+    debugPrint('🔍 선택 전 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
     
     setState(() {
-      final currentSelected =
-          updatedBooks.where((b) => b['is_archived'] == false).length;
+      final currentSelected = _selected.length;
 
       if (_selected.contains(index)) {
         _selected.remove(index);
-        updatedBooks[index]['is_archived'] = true;
+        _localBooks[index]['is_archived'] = true;
 
-        final removedOrderIndex = updatedBooks[index]['order_index'];
-        updatedBooks[index]['order_index'] = null;
+        final removedOrderIndex = _localBooks[index]['order_index'];
+        _localBooks[index]['order_index'] = null;
 
         if (removedOrderIndex != null) {
-          for (int i = 0; i < updatedBooks.length; i++) {
+          for (int i = 0; i < _localBooks.length; i++) {
             if (i == index) continue;
-            final oi = updatedBooks[i]['order_index'];
+            final oi = _localBooks[i]['order_index'];
             if (oi != null && oi is int && oi > removedOrderIndex) {
-              updatedBooks[i]['order_index'] = oi - 1;
+              _localBooks[i]['order_index'] = oi - 1;
             }
           }
         }
@@ -102,23 +255,22 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
         if (currentSelected >= kMaxSelection) return;
 
         _selected.add(index);
-        updatedBooks[index]['is_archived'] = false;
+        _localBooks[index]['is_archived'] = false;
 
-        for (int i = 0; i < updatedBooks.length; i++) {
+        for (int i = 0; i < _localBooks.length; i++) {
           if (i == index) continue;
-          final oi = updatedBooks[i]['order_index'];
+          final oi = _localBooks[i]['order_index'];
           if (oi != null && oi is int) {
-            updatedBooks[i]['order_index'] = oi + 1;
+            _localBooks[i]['order_index'] = oi + 1;
           }
         }
-        updatedBooks[index]['order_index'] = 0;
+        _localBooks[index]['order_index'] = 0;
       }
 
-      selectedBookCount =
-          updatedBooks.where((b) => b['is_archived'] == false).length;
+      selectedBookCount = _selected.length;
       
       // 디버깅: 선택 후 데이터 구조 확인
-      debugPrint('🔍 선택 후 updatedBooks[$index]: ID=${updatedBooks[index]['id']}, book_id=${updatedBooks[index]['book_id']}, is_archived=${updatedBooks[index]['is_archived']}');
+      debugPrint('🔍 선택 후 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
     });
   }
 
@@ -132,8 +284,8 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       // 원본 데이터와 비교해서 새로 is_archived가 false로 바뀐 책들의 ID 목록
       final newlyUnarchivedBookIds = <String>[];
       
-      for (int i = 0; i < updatedBooks.length; i++) {
-        final currentBook = updatedBooks[i];
+      for (int i = 0; i < _localBooks.length; i++) {
+        final currentBook = _localBooks[i];
         final originalBook = widget.allBooks.firstWhere(
           (book) => book['id'] == currentBook['id'],
           orElse: () => {},
@@ -264,7 +416,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                           try {
                             await _updateUnarchivedAt();
                             widget.onBooksUpdated?.call(
-                              updatedBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
+                              _localBooks.map((e) => Map<String, dynamic>.from(e)).toList(),
                             );
                             widget.onClose?.call();
                             if (mounted) Navigator.pop(context, true);
@@ -326,112 +478,129 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
           // 그리드
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 0).copyWith(top: 21, bottom: 21),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const crossAxisCount = 5;
-                  const crossAxisSpacing = 11.7;
-                  const runSpacing = 35.0;
-                  const itemAspectRatio = 98 / 145;
-                  const topOffsetForShelf = 90.0;
+            child: _isInitialLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.black900),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0).copyWith(top: 21, bottom: 21),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        const crossAxisCount = 5;
+                        const crossAxisSpacing = 11.7;
+                        const runSpacing = 35.0;
+                        const itemAspectRatio = 98 / 145;
+                        const topOffsetForShelf = 90.0;
 
-                  final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
-                  final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
-                  final itemHeight = itemWidth / itemAspectRatio;
+                        final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
+                        final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+                        final itemHeight = itemWidth / itemAspectRatio;
 
-                  final rows = (updatedBooks.length / crossAxisCount).ceil();
-                  final gridHeight = rows * itemHeight + (rows - 1) * runSpacing;
+                        final rows = (_localBooks.length / crossAxisCount).ceil();
+                        final gridHeight = rows * itemHeight + (rows - 1) * runSpacing;
 
-                  return Scrollbar(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.zero,
-                      child: SizedBox(
-                        height: gridHeight + topOffsetForShelf,
-                        width: double.infinity,
-                        child: Stack(
-                          children: [
-                            ..._buildShelves(
-                              itemCount: updatedBooks.length,
-                              itemHeight: itemHeight,
-                              runSpacing: runSpacing,
-                              topOffset: topOffsetForShelf,
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 22),
-                              child: GridView.builder(
-                                physics: const NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                itemCount: updatedBooks.length,
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: crossAxisSpacing,
-                                  mainAxisSpacing: runSpacing,
-                                  childAspectRatio: itemAspectRatio,
-                                ),
-                                itemBuilder: (context, index) {
-                                  final book = updatedBooks[index];
-                                  final imageUrl = book['books']?['image'] ?? 'https://via.placeholder.com/150';
-                                  final isSelected = _selected.contains(index);
+                        return Scrollbar(
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            padding: EdgeInsets.zero,
+                            child: SizedBox(
+                              height: gridHeight + topOffsetForShelf,
+                              width: double.infinity,
+                              child: Stack(
+                                children: [
+                                  ..._buildShelves(
+                                    itemCount: _localBooks.length,
+                                    itemHeight: itemHeight,
+                                    runSpacing: runSpacing,
+                                    topOffset: topOffsetForShelf,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 22),
+                                    child: GridView.builder(
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      shrinkWrap: true,
+                                      itemCount: _localBooks.length,
+                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: crossAxisCount,
+                                        crossAxisSpacing: crossAxisSpacing,
+                                        mainAxisSpacing: runSpacing,
+                                        childAspectRatio: itemAspectRatio,
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        final book = _localBooks[index];
+                                        final imageUrl = book['books']?['image'] ?? 'https://via.placeholder.com/150';
+                                        final isSelected = _selected.contains(index);
 
-                                  return GestureDetector(
-                                    onTap: () => _toggleSelect(index),
-                                    child: Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(0),
-                                          child: ColorFiltered(
-                                            colorFilter: isSelected
-                                                ? ColorFilter.mode(
-                                              Colors.black.withOpacity(0.6),
-                                              BlendMode.darken,
-                                            )
-                                                : const ColorFilter.mode(
-                                              Colors.transparent,
-                                              BlendMode.srcOver,
-                                            ),
-                                            child: BookFrame(imageUrl: imageUrl),
-                                          ),
-                                        ),
-                                        Align(
-                                          alignment: Alignment.topRight,
-                                          child: Container(
-                                            margin: const EdgeInsets.only(right: 3.24, top: 3),
-                                            width: 18,
-                                            height: 18,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: isSelected ? AppColors.blue500 : AppColors.black300,
-                                                width: isSelected ? 2 : 1.5,
+                                        return GestureDetector(
+                                          onTap: () => _toggleSelect(index),
+                                          child: Stack(
+                                            clipBehavior: Clip.none,
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius: BorderRadius.circular(0),
+                                                child: ColorFiltered(
+                                                  colorFilter: isSelected
+                                                      ? ColorFilter.mode(
+                                                    Colors.black.withOpacity(0.6),
+                                                    BlendMode.darken,
+                                                  )
+                                                      : const ColorFilter.mode(
+                                                    Colors.transparent,
+                                                    BlendMode.srcOver,
+                                                  ),
+                                                  child: BookFrame(imageUrl: imageUrl),
+                                                ),
                                               ),
-                                            ),
-                                            child: AnimatedContainer(
-                                              duration: const Duration(milliseconds: 50),
-                                              margin: const EdgeInsets.all(2),
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: isSelected ? AppColors.blue500 : Colors.transparent,
+                                              Align(
+                                                alignment: Alignment.topRight,
+                                                child: Container(
+                                                  margin: const EdgeInsets.only(right: 3.24, top: 3),
+                                                  width: 18,
+                                                  height: 18,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: isSelected ? AppColors.blue500 : AppColors.black300,
+                                                      width: isSelected ? 2 : 1.5,
+                                                    ),
+                                                  ),
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(milliseconds: 50),
+                                                    margin: const EdgeInsets.all(2),
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: isSelected ? AppColors.blue500 : Colors.transparent,
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                            ),
+                                            ],
                                           ),
-                                        ),
-                                      ],
+                                        );
+                                      },
                                     ),
-                                  );
-                                },
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  ),
+          ),
+
+          // 페이지 하단 로딩 인디케이터
+          if (_isPageLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: CircularProgressIndicator(
+                    color: AppColors.black900),
               ),
             ),
-          ),
+          if (!_hasMore && !_isPageLoading)
+            const SizedBox(height: 16),
         ],
       ),
     );
