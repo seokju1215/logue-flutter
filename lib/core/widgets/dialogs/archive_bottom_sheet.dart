@@ -4,13 +4,13 @@ import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ArchiveBottomSheet extends StatefulWidget {
-  final List<Map<String, dynamic>> books; // 바텀시트 오픈 시점의 스냅샷
+  final List<Map<String, dynamic>> allBooks; // 모든 책 목록 (최신 상태)
   final Function(List<Map<String, dynamic>>)? onBooksUpdated; // 저장 시에만 호출
   final VoidCallback? onClose; // 완전히 닫을 때만 호출
 
   const ArchiveBottomSheet({
     super.key,
-    required this.books,
+    required this.allBooks,
     this.onBooksUpdated,
     this.onClose,
   });
@@ -29,15 +29,30 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _resetFrom(widget.books); // 오픈 시점 스냅샷으로만 초기화
+    _resetFrom(_getArchivedBooks()); // 최신 allBooks에서 보관함 책들 필터링
   }
 
-  // ✅ 바텀시트 열려있는 동안에는 외부 리빌드로 초기화하지 않음
-  // @override
-  // void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
-  //   super.didUpdateWidget(oldWidget);
-  //   // 초기화 금지: 완전히 닫힐 때만 초기화
-  // }
+  // allBooks에서 보관함 책들만 필터링하여 반환
+  List<Map<String, dynamic>> _getArchivedBooks() {
+    return widget.allBooks
+        .toList()
+      ..sort((a, b) {
+        final aIndex = a['archived_order_index'] ?? 0;
+        final bIndex = b['archived_order_index'] ?? 0;
+        return aIndex.compareTo(bIndex);
+      });
+  }
+
+  @override
+  void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // allBooks가 변경되었을 때 보관함 책들을 다시 필터링
+    if (oldWidget.allBooks != widget.allBooks) {
+      debugPrint('🔄 ArchiveBottomSheet - allBooks 변경 감지, 보관함 책들 재필터링');
+      _resetFrom(_getArchivedBooks());
+    }
+  }
 
   void _resetFrom(List<Map<String, dynamic>> source) {
     updatedBooks = source.map((m) => Map<String, dynamic>.from(m)).toList();
@@ -119,7 +134,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       
       for (int i = 0; i < updatedBooks.length; i++) {
         final currentBook = updatedBooks[i];
-        final originalBook = widget.books.firstWhere(
+        final originalBook = widget.allBooks.firstWhere(
           (book) => book['id'] == currentBook['id'],
           orElse: () => {},
         );

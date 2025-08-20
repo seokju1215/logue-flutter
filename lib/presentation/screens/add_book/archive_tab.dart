@@ -12,15 +12,14 @@ import '../../../core/widgets/dialogs/AnnouncementDialog.dart';
 // import '../../../data/datasources/user_book_api.dart'; // ← 탭에서 나갈 때 배치 저장용(필요 시 사용)
 
 class ArchiveTab extends StatefulWidget {
-  final List<Map<String, dynamic>> books;
+  final List<Map<String, dynamic>> allBooks; // 모든 책 목록
   final VoidCallback onRefresh;
   final VoidCallback? onBookAdded;
   final Function(List<Map<String, dynamic>>)? onBooksChanged;
   final GlobalKey<NavigatorState>? navigatorKey;
-
   const ArchiveTab({
     Key? key,
-    required this.books,
+    required this.allBooks,
     required this.onRefresh,
     this.onBookAdded,
     this.onBooksChanged,
@@ -52,7 +51,8 @@ class _ArchiveTabState extends State<ArchiveTab> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _localBooks = List<Map<String, dynamic>>.from(widget.books);
+    // allBooks에서 archived 책만 필터링하여 _localBooks 초기화
+    _localBooks = _getArchivedBooks();
     originalOrder = _localBooks.map((b) => b['id'] as String).toList();
   }
 
@@ -62,11 +62,13 @@ class _ArchiveTabState extends State<ArchiveTab> {
     // ✅ 변경 보유 중이면 외부 리스트 무시 (되돌림 방지)
     if (_hasLocalChanges) return;
 
-    // 외부 데이터가 실제로 바뀐 경우만 반영
-    final incoming = widget.books.map((b) => b['id'] as String).toList();
-    final current  = _localBooks.map((b) => b['id'] as String).toList();
-    if (!_areListsEqual(incoming, current)) {
-      _localBooks = List<Map<String, dynamic>>.from(widget.books);
+    // allBooks가 변경되었을 때만 _localBooks 업데이트
+    final newArchivedBooks = _getArchivedBooks();
+    final currentIds = _localBooks.map((b) => b['id'] as String).toList();
+    final newIds = newArchivedBooks.map((b) => b['id'] as String).toList();
+    
+    if (!_areListsEqual(currentIds, newIds)) {
+      _localBooks = List<Map<String, dynamic>>.from(newArchivedBooks);
       originalOrder = _localBooks.map((b) => b['id'] as String).toList();
       setState(() {});
     }
@@ -98,6 +100,17 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
     // ❌ 여기서 DB 업데이트 금지!
     // _updateBookOrderWithList(newList); // 제거
+  }
+
+  // allBooks에서 archived 책만 필터링하여 반환
+  List<Map<String, dynamic>> _getArchivedBooks() {
+    return widget.allBooks
+        .toList()
+      ..sort((a, b) {
+        final aIndex = a['archived_order_index'] ?? 0;
+        final bIndex = b['archived_order_index'] ?? 0;
+        return aIndex.compareTo(bIndex);
+      });
   }
 
   // ===== 외부에서 호출해 저장: 탭을 떠날 때 한 번만(권장) =====

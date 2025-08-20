@@ -239,7 +239,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                     right: 0,
                                     bottom: 0,
                                     child: ArchiveBottomSheet(
-                                      books: _getSortedBooks(),
+                                      allBooks: widget.allBooks, // 최신 allBooks 전달
                                       onClose: () {
                                         debugPrint('🔒 ArchiveBottomSheet 닫힘 - 선택 상태 초기화');
                                         setState(() {});

@@ -14,8 +14,7 @@ import 'archive_tab.dart';
 
 class AddBookScreen extends StatefulWidget {
   final bool isLimitReached;
-  final GlobalKey<NavigatorState>?
-      navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
+  final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
   final Function(bool)? onLoadingStateChanged; // 로딩 상태 변경 콜백
 
   const AddBookScreen({
@@ -32,7 +31,7 @@ class AddBookScreen extends StatefulWidget {
 class _AddBookScreenState extends State<AddBookScreen> {
   bool get _tabsDisabled => isLoading || _isProfileTabLoading;
   late PageController _pageController;
-  int _currentIndex = 0; // 0: 보관함 탭, 1: 프로필 탭 (프로필 탭을 기본으로 선택)
+  int _currentIndex = 0; // 0: 보관함 탭, 1: 프로필 탭
   String _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
   String _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -40,17 +39,32 @@ class _AddBookScreenState extends State<AddBookScreen> {
   List<Map<String, dynamic>> allBooks = [];
   bool isLoading = true;
   bool _isProfileTabLoading = false; // ProfileTab 로딩 상태
+  
+  // ArchiveTab의 State에 접근하기 위한 GlobalKey
+  final GlobalKey<State<ArchiveTab>> _archiveTabStateKey = GlobalKey<State<ArchiveTab>>();
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
 
-    // 책 추가 화면 방문 트래킹
+    // 화면 방문 트래킹
     MixpanelUtil.trackScreenView('Add Book');
 
     // 데이터 로드
     _fetchAllBooks();
+  }
+
+  @override
+  void deactivate() {
+    // 화면이 비활성화될 때 보관함 변경사항 자동 저장
+    final archiveTabState = _archiveTabStateKey.currentState;
+    if (archiveTabState != null) {
+      debugPrint('🔄 AddBookScreen deactivate - ArchiveTab 변경사항 자동 저장');
+      // 타입 캐스팅을 통해 flushPendingChanges 호출
+      (archiveTabState as dynamic).flushPendingChanges();
+    }
+    super.deactivate();
   }
 
   @override
@@ -64,24 +78,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
     if (userId == null) return;
 
     try {
-      // 모든 책을 가져오기
       final data = await Supabase.instance.client
           .from('user_books')
           .select(
-              'id, user_id, order_index, archived_order_index, is_archived, book_id, books(id, image)')
+          'id, user_id, order_index, archived_order_index, is_archived, book_id, books(id, image)')
           .eq('user_id', userId);
 
       final fetched = List<Map<String, dynamic>>.from(data);
 
-      // 디버깅: 로드된 데이터 구조 확인
-      debugPrint('🔍 _fetchAllBooks - 로드된 데이터 구조:');
-      for (int i = 0; i < fetched.length; i++) {
-        final book = fetched[i];
-        debugPrint(
-            '  [$i] ID: ${book['id']}, book_id: ${book['book_id']}, is_archived: ${book['is_archived']}');
-      }
-
-      // mounted 체크 추가
       if (mounted) {
         setState(() {
           allBooks = fetched;
@@ -103,12 +107,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
       foregroundColor: MaterialStateProperty.all(AppColors.black900),
       backgroundColor: MaterialStateProperty.all(Colors.white),
       overlayColor: MaterialStateProperty.resolveWith<Color?>(
-        (states) {
-          if (states.contains(MaterialState.pressed)) {
-            return AppColors.black100;
-          }
-          return null;
-        },
+            (states) => states.contains(MaterialState.pressed) ? AppColors.black100 : null,
       ),
       side: MaterialStateProperty.all(
         const BorderSide(color: AppColors.black500, width: 1),
@@ -116,146 +115,140 @@ class _AddBookScreenState extends State<AddBookScreen> {
       shape: MaterialStateProperty.all(
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       ),
-      padding: MaterialStateProperty.all(
-        const EdgeInsets.symmetric(horizontal: 9),
-      ),
-      minimumSize: MaterialStateProperty.all(
-        const Size(0, 34),
-      ),
+      padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 9)),
+      minimumSize: MaterialStateProperty.all(const Size(0, 34)),
       textStyle: MaterialStateProperty.all(
-        const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          height: 1.0,
-        ),
+        const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, height: 1.0),
       ),
     );
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async {
-        Navigator.of(context).pop(false);
-        return true;
-      },
+      // ✅ 떠날 때 보관함 순서 저장
+              onWillPop: () async {
+          // 뒤로가기 시 보관함 변경사항 저장
+          final archiveTabState = _archiveTabStateKey.currentState;
+          if (archiveTabState != null) {
+            await (archiveTabState as dynamic).flushPendingChanges();
+          }
+          Navigator.of(context).pop(false);
+          return true;
+        },
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: const Text('책장',
-              style: TextStyle(
-                  color: AppColors.black900,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500)),
+          title: const Text(
+            '책장',
+            style: TextStyle(
+              color: AppColors.black900,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
         body: Column(
           children: [
             // 탭바
-            // 탭바
             Container(
               color: Colors.white,
               child: AbsorbPointer(
-                absorbing: _tabsDisabled, // ← 로딩 중 터치 차단
+                absorbing: _tabsDisabled, // 로딩 중 탭 터치 차단
                 child: Row(
-                    children: [
-                      _buildTab('보관함', 0),
-                      _buildTab('프로필', 1),
-                    ],
-                  ),
+                  children: [
+                    _buildTab('보관함', 0),
+                    _buildTab('프로필', 1),
+                  ],
+                ),
               ),
             ),
             // 탭뷰
             Expanded(
               child: isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.black900,
-                      ),
-                    )
+                child: CircularProgressIndicator(color: AppColors.black900),
+              )
                   : PageView(
-                      controller: _pageController,
-                      physics: _tabsDisabled
-                          ? const NeverScrollableScrollPhysics()
-                          : const ClampingScrollPhysics(),
-                      onPageChanged: (index) {
+                controller: _pageController,
+                physics: _tabsDisabled
+                    ? const NeverScrollableScrollPhysics()
+                    : const ClampingScrollPhysics(),
+                onPageChanged: (index) async {
+                  // ✅ 보관함(0) → 다른 탭으로 넘어갈 때 저장
+                  if (_currentIndex == 0 && index != 0) {
+                    final archiveTabState = _archiveTabStateKey.currentState;
+                    if (archiveTabState != null) {
+                      await (archiveTabState as dynamic).flushPendingChanges();
+                    }
+                  }
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                children: [
+                                          ArchiveTab(
+                          key: _archiveTabStateKey, // GlobalKey 사용
+                          allBooks: allBooks, // 모든 책 목록 전달
+                          onRefresh: _fetchAllBooks,
+                    onBookAdded: () {
+                      if (mounted) {
                         setState(() {
-                          _currentIndex = index;
+                          isLoading = true;
                         });
-                        // 탭 전환 시마다 데이터 새로고침 제거 - 무한 루프 방지
-                        // _fetchAllBooks();
-                      },
-                      children: [
-                        ArchiveTab(
-                          key: ValueKey(_archiveTabKey),
-                          books: List.from(allBooks)
-                            ..sort((a, b) {
-                              final aIndex = a['archived_order_index'] ?? 0;
-                              final bIndex = b['archived_order_index'] ?? 0;
-                              return aIndex.compareTo(bIndex);
-                            }),
-                          onRefresh: _fetchAllBooks,
-                          onBookAdded: () {
-                            // 책 추가 시 로딩 상태 활성화
-                            if (mounted) {
-                              setState(() {
-                                isLoading = true;
-                              });
-                              // 데이터 새로고침 후 로딩 상태 해제
-                              _fetchAllBooks().then((_) {
-                                if (mounted) {
-                                  setState(() {
-                                    isLoading = false;
-                                  });
-                                }
-                              });
-                            }
-                          },
-                          onBooksChanged: (updatedBooks) {
-                            // ArchiveTab에서 책 순서가 변경되었을 때 allBooks 업데이트
+                        _fetchAllBooks().then((_) {
+                          if (mounted) {
                             setState(() {
-                              // allBooks에서 archived_order_index 업데이트
-                              for (int i = 0; i < updatedBooks.length; i++) {
-                                final bookId = updatedBooks[i]['id'];
-                                final bookIndex = allBooks.indexWhere((book) => book['id'] == bookId);
-                                if (bookIndex != -1) {
-                                  allBooks[bookIndex]['archived_order_index'] = i;
-                                }
-                              }
+                              isLoading = false;
                             });
-                          },
-                          navigatorKey: widget.navigatorKey,
-                        ),
-                        ProfileTab(
-                          key: ValueKey(_profileTabKey),
-                          isLimitReached: widget.isLimitReached,
-                          books: List.from(allBooks
-                              .where((book) => book['is_archived'] == false))
-                            ..sort((a, b) {
-                              final aIndex = a['order_index'] ?? 0;
-                              final bIndex = b['order_index'] ?? 0;
-                              return aIndex.compareTo(bIndex);
-                            }),
-                          allBooks: allBooks,
-                          // 모든 책 목록 전달
-                          onRefresh: _fetchAllBooks,
-                          onBookAdded: (result) {
-                            if (result == true) {
-                              // 책 추가가 완료되었을 때 상위로 결과 전달
-                              Navigator.of(context).pop(true);
-                            }
-                          },
-                          navigatorKey: widget.navigatorKey,
-                          onLoadingStateChanged: (isLoading) {
-                            setState(() {
-                              _isProfileTabLoading = isLoading;
-                            });
+                          }
+                        });
+                      }
+                    },
+                    onBooksChanged: (updatedBooks) {
+                      // 보관함 책 순서 로컬 반영
+                      setState(() {
+                        for (int i = 0; i < updatedBooks.length; i++) {
+                          final bookId = updatedBooks[i]['id'];
+                          final idx = allBooks.indexWhere((b) => b['id'] == bookId);
+                          if (idx != -1) {
+                            allBooks[idx]['archived_order_index'] = i;
+                          }
+                        }
+                      });
+                    },
+                    navigatorKey: widget.navigatorKey,
 
-                            // 상위 위젯에 로딩 상태 변경 알림
-                            widget.onLoadingStateChanged?.call(isLoading);
-                          },
-                        ),
-                      ],
-                    ),
+                  ),
+                  ProfileTab(
+                    key: ValueKey(_profileTabKey),
+                    isLimitReached: widget.isLimitReached,
+                    books: List.from(
+                      allBooks.where((book) => book['is_archived'] == false),
+                    )..sort((a, b) {
+                      final aIndex = a['order_index'] ?? 0;
+                      final bIndex = b['order_index'] ?? 0;
+                      return aIndex.compareTo(bIndex);
+                    }),
+                    allBooks: allBooks, // 모든 책 목록
+                    onRefresh: _fetchAllBooks,
+                    onBookAdded: (result) {
+                      if (result == true) {
+                        Navigator.of(context).pop(true);
+                      }
+                    },
+                    navigatorKey: widget.navigatorKey,
+                    onLoadingStateChanged: (isLoading) {
+                      setState(() {
+                        _isProfileTabLoading = isLoading;
+                      });
+                      widget.onLoadingStateChanged?.call(isLoading);
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -268,11 +261,22 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
     return Expanded(
       child: GestureDetector(
-        onTap: () {
+        onTap: () async {
           if (_tabsDisabled) return;
-          _pageController.animateToPage(index,
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeInOut);
+
+          // ✅ 보관함(0)에서 다른 탭으로 탭 클릭 이동 시에도 저장
+          if (_currentIndex == 0 && index != 0) {
+            final archiveTabState = _archiveTabStateKey.currentState;
+            if (archiveTabState != null) {
+              await (archiveTabState as dynamic).flushPendingChanges();
+            }
+          }
+
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+          );
           setState(() {
             _currentIndex = index;
           });
