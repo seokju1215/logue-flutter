@@ -31,7 +31,7 @@ class AddBookScreen extends StatefulWidget {
 class _AddBookScreenState extends State<AddBookScreen> {
   bool get _tabsDisabled => isLoading || _isProfileTabLoading;
   late PageController _pageController;
-  int _currentIndex = 0; // 0: 보관함 탭, 1: 프로필 탭
+  int _currentIndex = 0; // 0: 프로필 탭, 1: 보관함 탭
   String _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
   String _archiveTabKey = 'archive_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -46,7 +46,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: _currentIndex);
+    _pageController = PageController(initialPage: 0); // 프로필 탭을 기본으로 설정
 
     // 화면 방문 트래킹
     MixpanelUtil.trackScreenView('Add Book');
@@ -159,8 +159,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 absorbing: _tabsDisabled, // 로딩 중 탭 터치 차단
                 child: Row(
                   children: [
-                    _buildTab('보관함', 0),
-                    _buildTab('프로필', 1),
+                    _buildTab('프로필', 0),
+                    _buildTab('보관함', 1),
                   ],
                 ),
               ),
@@ -177,8 +177,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     ? const NeverScrollableScrollPhysics()
                     : const ClampingScrollPhysics(),
                 onPageChanged: (index) async {
-                  // ✅ 보관함(0) → 다른 탭으로 넘어갈 때 저장
-                  if (_currentIndex == 0 && index != 0) {
+                  // ✅ 보관함(1) → 다른 탭으로 넘어갈 때 저장
+                  if (_currentIndex == 1 && index != 1) {
                     final archiveTabState = _archiveTabStateKey.currentState;
                     if (archiveTabState != null) {
                       await (archiveTabState as dynamic).flushPendingChanges();
@@ -189,10 +189,35 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   });
                 },
                 children: [
-                                          ArchiveTab(
-                          key: _archiveTabStateKey, // GlobalKey 사용
-                          allBooks: allBooks, // 모든 책 목록 전달
-                          onRefresh: _fetchAllBooks,
+                  ProfileTab(
+                    key: ValueKey(_profileTabKey),
+                    isLimitReached: widget.isLimitReached,
+                    books: List.from(
+                      allBooks.where((book) => book['is_archived'] == false),
+                    )..sort((a, b) {
+                      final aIndex = a['order_index'] ?? 0;
+                      final bIndex = b['order_index'] ?? 0;
+                      return aIndex.compareTo(bIndex);
+                    }),
+                    allBooks: allBooks, // 모든 책 목록
+                    onRefresh: _fetchAllBooks,
+                    onBookAdded: (result) {
+                      if (result == true) {
+                        Navigator.of(context).pop(true);
+                      }
+                    },
+                    navigatorKey: widget.navigatorKey,
+                    onLoadingStateChanged: (isLoading) {
+                      setState(() {
+                        _isProfileTabLoading = isLoading;
+                      });
+                      widget.onLoadingStateChanged?.call(isLoading);
+                    },
+                  ),
+                  ArchiveTab(
+                    key: _archiveTabStateKey, // GlobalKey 사용
+                    allBooks: allBooks, // 모든 책 목록 전달
+                    onRefresh: _fetchAllBooks,
                     onBookAdded: () {
                       if (mounted) {
                         setState(() {
@@ -220,32 +245,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       });
                     },
                     navigatorKey: widget.navigatorKey,
-
-                  ),
-                  ProfileTab(
-                    key: ValueKey(_profileTabKey),
-                    isLimitReached: widget.isLimitReached,
-                    books: List.from(
-                      allBooks.where((book) => book['is_archived'] == false),
-                    )..sort((a, b) {
-                      final aIndex = a['order_index'] ?? 0;
-                      final bIndex = b['order_index'] ?? 0;
-                      return aIndex.compareTo(bIndex);
-                    }),
-                    allBooks: allBooks, // 모든 책 목록
-                    onRefresh: _fetchAllBooks,
-                    onBookAdded: (result) {
-                      if (result == true) {
-                        Navigator.of(context).pop(true);
-                      }
-                    },
-                    navigatorKey: widget.navigatorKey,
-                    onLoadingStateChanged: (isLoading) {
-                      setState(() {
-                        _isProfileTabLoading = isLoading;
-                      });
-                      widget.onLoadingStateChanged?.call(isLoading);
-                    },
                   ),
                 ],
               ),
@@ -264,8 +263,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
         onTap: () async {
           if (_tabsDisabled) return;
 
-          // ✅ 보관함(0)에서 다른 탭으로 탭 클릭 이동 시에도 저장
-          if (_currentIndex == 0 && index != 0) {
+          // ✅ 보관함(1)에서 다른 탭으로 탭 클릭 이동 시에도 저장
+          if (_currentIndex == 1 && index != 1) {
             final archiveTabState = _archiveTabStateKey.currentState;
             if (archiveTabState != null) {
               await (archiveTabState as dynamic).flushPendingChanges();
