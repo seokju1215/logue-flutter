@@ -6,8 +6,12 @@ import 'package:my_logue/presentation/screens/post/post_detail_screen.dart';
 class PostContent extends StatefulWidget {
   final BookPostModel post;
   final VoidCallback? onTapMore; // ✅ 상세 화면에서 삭제 후 반영할 콜백
-
-  const PostContent({super.key, required this.post, this.onTapMore});
+  final String? fromScreen;
+  final VoidCallback? onDeleteSuccess;
+  final VoidCallback? onEditSuccess;
+  final VoidCallback? onArchiveSuccess;
+  final bool isMyPost;
+  const PostContent({super.key, required this.post, this.onTapMore, this.fromScreen, this.onDeleteSuccess, this.onEditSuccess, this.onArchiveSuccess,required this.isMyPost});
 
   @override
   State<PostContent> createState() => _PostContentState();
@@ -132,7 +136,7 @@ class _PostContentState extends State<PostContent> {
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => PostDetailScreen(post: widget.post),
+                          builder: (_) => PostDetailScreen(post: widget.post, fromScreen: widget.fromScreen, onDeleteSuccess: widget.onDeleteSuccess, onEditSuccess: widget.onEditSuccess, onArchiveSuccess: widget.onArchiveSuccess,isMyPost: widget.isMyPost,),
                         ),
                       );
 

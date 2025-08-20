@@ -234,7 +234,7 @@ class PostItem extends StatelessWidget {
           child: AnimatedSize(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
-            child: PostContent(post: post),
+            child: PostContent(post: post, fromScreen: fromScreen, onDeleteSuccess:onDeleteSuccess, onEditSuccess: onEditSuccess, onArchiveSuccess: onArchiveSuccess, isMyPost: isMyPost,),
           ),
         ),
       ],
