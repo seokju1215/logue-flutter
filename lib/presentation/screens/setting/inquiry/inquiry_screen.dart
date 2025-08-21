@@ -40,6 +40,25 @@ class _InquiryScreenState extends State<InquiryScreen> {
     _pageController = PageController(initialPage: currentIndex);
     _initializeRepository();
     _loadInquiries();
+    // 새 화면이 뜬 뒤 스낵바 한 번만 보여주기
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.fromCreateInquiry) {
+        _showSubmittedSnackBar();
+      }
+    });
+  }
+  void _showSubmittedSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Center(child: const Text('문의가 접수되었어요', style: TextStyle(fontSize: 18),)),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 80, vertical: 90),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        // 색상/스타일은 취향대로
+        backgroundColor: AppColors.black500,
+      ),
+    );
   }
 
   @override
