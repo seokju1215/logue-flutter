@@ -410,6 +410,30 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     }
   }
 
+  /// 백그라운드에서 알림 전송 (사용자 대기 없음)
+  Future<void> _sendNotificationInBackground(String userId, List<String> userBookIds) async {
+    try {
+      debugPrint('🔄 백그라운드에서 알림 전송 시작: ${userBookIds.length}개 책');
+      
+      final resp = await client.functions.invoke(
+        'send-notification-v2',
+        body: {
+          'sender_id': userId,
+          'type': 'post',
+          'user_book_ids': userBookIds,
+        },
+      );
+      
+      if (resp.status != 200) {
+        debugPrint('❌ 백그라운드 알림 전송 실패: ${resp.data}');
+      } else {
+        debugPrint('✅ 백그라운드 알림 전송 성공: ${resp.data}');
+      }
+    } catch (e) {
+      debugPrint('❌ 백그라운드 알림 전송 중 오류: $e');
+    }
+  }
+
   /// is_archived가 false로 변경된 책들에 대해 unarchived_at 컬럼을 업데이트
   Future<void> _updateUnarchivedAt() async {
     try {
@@ -563,24 +587,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                             final newlyUnarchivedIds =
                             await _markUnarchivedAndCollectIds();
 
-                            // 2) 알림 전송 (서버에서 팔로워 조회 + 대량 insert)
-                            if (newlyUnarchivedIds.isNotEmpty) {
-                              final resp = await client.functions.invoke(
-                                'send-notification-v2',
-                                body: {
-                                  'sender_id': userId,
-                                  'type': 'post',
-                                  'user_book_ids': newlyUnarchivedIds,
-                                },
-                              );
-                              if (resp.status != 200) {
-                                debugPrint('❌ 알림 전송 실패: ${resp.data}');
-                              } else {
-                                debugPrint('✅ 알림 전송 성공: ${resp.data}');
-                              }
-                            }
-
-                            // 3) 상위로 최신 상태 전달 & 시트 닫기
+                            // 2) 상위로 최신 상태 전달 & 시트 닫기 (즉시 실행)
                             widget.onBooksUpdated?.call(
                               _localBooks
                                   .map((e) => Map<String, dynamic>.from(e))
@@ -588,6 +595,11 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                             );
                             widget.onClose?.call();
                             if (mounted) Navigator.pop(context, true);
+
+                            // 3) 백그라운드에서 알림 전송 (사용자 대기 없음)
+                            if (newlyUnarchivedIds.isNotEmpty) {
+                              _sendNotificationInBackground(userId, newlyUnarchivedIds);
+                            }
                           } catch (e) {
                             debugPrint('❌ 저장 처리 실패: $e');
                             if (mounted) Navigator.pop(context, false);

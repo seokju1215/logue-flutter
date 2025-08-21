@@ -248,8 +248,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                         if (!mounted) return;
 
                                         setState(() => _isUpdatingBooks = true);
-                                        widget.onLoadingStateChanged?.call(true);
-                                        _showLoadingOverlay();
+                                        widget.onLoadingStateChanged?.call(false);
 
                                         try {
                                           final api = UserBookApi(Supabase.instance.client);
@@ -263,7 +262,6 @@ class _ProfileTabState extends State<ProfileTab> {
                                           // 변경이 없으면 바로 종료
                                           if (changed.isEmpty) {
                                             widget.onLoadingStateChanged?.call(false);
-                                            _hideLoadingOverlay();
                                             setState(() => _isUpdatingBooks = false);
                                             return;
                                           }
