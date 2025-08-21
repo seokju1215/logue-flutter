@@ -46,6 +46,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
   
   // ArchiveTab의 State에 접근하기 위한 GlobalKey
   final GlobalKey<State<ArchiveTab>> _archiveTabStateKey = GlobalKey<State<ArchiveTab>>();
+  
+  // archive_tab의 변경사항 상태 추적
+  bool _hasArchiveChanges = false;
 
   @override
   void initState() {
@@ -181,16 +184,32 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     ? const NeverScrollableScrollPhysics()
                     : const ClampingScrollPhysics(),
                 onPageChanged: (index) async {
-                  // ✅ 보관함(1) → 다른 탭으로 넘어갈 때 저장
-                  if (_currentIndex == 1 && index != 1) {
+                  debugPrint('🔄 PageView 변경: 현재=$_currentIndex, 목표=$index, 변경사항=$_hasArchiveChanges');
+                  
+                  // ✅ 보관함(1) → 다른 탭으로 넘어갈 때 저장 (백그라운드에서)
+                  if (_currentIndex == 1 && index != 1 && _hasArchiveChanges) {
+                    debugPrint('🔄 PageView에서 보관함 변경사항 저장 시작 (백그라운드)');
                     final archiveTabState = _archiveTabStateKey.currentState;
                     if (archiveTabState != null) {
-                      await (archiveTabState as dynamic).flushPendingChanges();
+                      // 백그라운드에서 저장 실행 (await 제거)
+                      (archiveTabState as dynamic).flushPendingChanges().then((_) {
+                        if (mounted) {
+                          setState(() {
+                            _hasArchiveChanges = false;
+                          });
+                          debugPrint('✅ PageView에서 보관함 변경사항 저장 완료 (백그라운드)');
+                        }
+                      });
                     }
                   }
-                  setState(() {
-                    _currentIndex = index;
-                  });
+                  
+                  // 즉시 _currentIndex 업데이트 (저장 완료 기다리지 않음)
+                  if (mounted) {
+                    debugPrint('🔄 PageView _currentIndex 업데이트: $_currentIndex → $index');
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  }
                 },
                 children: [
                   ProfileTab(
@@ -238,6 +257,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       }
                     },
                     onBooksChanged: (updatedBooks) {
+                      debugPrint('🔄 onBooksChanged 호출됨: ${updatedBooks.length}개 책');
                       // 보관함 책 순서 로컬 반영
                       setState(() {
                         for (int i = 0; i < updatedBooks.length; i++) {
@@ -247,6 +267,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
                             allBooks[idx]['archived_order_index'] = i;
                           }
                         }
+                        // 변경사항 상태 업데이트
+                        _hasArchiveChanges = true;
+                        debugPrint('✅ _hasArchiveChanges = true로 설정');
                       });
                     },
                     navigatorKey: widget.navigatorKey,
@@ -262,27 +285,44 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
   Widget _buildTab(String label, int index) {
     final isSelected = _currentIndex == index;
+    debugPrint('🔍 _buildTab: $label, index=$index, _currentIndex=$_currentIndex, isSelected=$isSelected');
 
     return Expanded(
       child: GestureDetector(
         onTap: () async {
           if (_tabsDisabled) return;
 
-          // ✅ 보관함(1)에서 다른 탭으로 탭 클릭 이동 시에도 저장
-          if (_currentIndex == 1 && index != 1) {
+          debugPrint('🔍 탭 클릭: 현재=$_currentIndex, 목표=$index, 변경사항=$_hasArchiveChanges');
+
+          // ✅ 보관함(1)에서 다른 탭으로 탭 클릭 이동 시에도 저장 (백그라운드에서)
+          if (_currentIndex == 1 && index != 1 && _hasArchiveChanges) {
+            debugPrint('🔄 보관함 변경사항 저장 시작 (백그라운드)');
             final archiveTabState = _archiveTabStateKey.currentState;
             if (archiveTabState != null) {
-              await (archiveTabState as dynamic).flushPendingChanges();
+              // 백그라운드에서 저장 실행 (await 제거)
+              (archiveTabState as dynamic).flushPendingChanges().then((_) {
+                if (mounted) {
+                  setState(() {
+                    _hasArchiveChanges = false;
+                  });
+                  debugPrint('✅ 보관함 변경사항 저장 완료 (백그라운드)');
+                }
+              });
             }
           }
 
+          // 즉시 탭 이동 (저장 완료 기다리지 않음)
           _pageController.animateToPage(
             index,
             duration: const Duration(milliseconds: 150),
             curve: Curves.easeInOut,
-          );
-          setState(() {
-            _currentIndex = index;
+          ).then((_) {
+            if (mounted) {
+              debugPrint('🔄 animateToPage 완료, _currentIndex 업데이트: $_currentIndex → $index');
+              setState(() {
+                _currentIndex = index;
+              });
+            }
           });
         },
         child: Stack(
