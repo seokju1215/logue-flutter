@@ -176,8 +176,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
       // SearchBookScreen과 WriteReviewScreen 닫기
       Navigator.pop(context);
-      Navigator.pop(context);
-      Navigator.pop(context);
 
       // fromTab에 따라 해당 탭으로 돌아가기
       WidgetsBinding.instance.addPostFrameCallback((_) {

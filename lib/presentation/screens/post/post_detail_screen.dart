@@ -143,7 +143,7 @@ class PostDetailScreen extends StatelessWidget {
                                 MaterialPageRoute(
                                   builder: (_) =>
                                       EditReviewScreen(
-                                        post: post, fromScreen: fromScreen,),
+                                        post: post, fromScreen: 'post_detail',),
                                 ));
                             if (result == true) {
                               onEditSuccess?.call();

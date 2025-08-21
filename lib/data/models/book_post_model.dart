@@ -61,4 +61,37 @@ class BookPostModel {
       is_archived: map['is_archived'] as bool?,
     );
   }
+
+  /// 수정된 데이터로 새로운 인스턴스를 생성
+  BookPostModel copyWith({
+    String? id,
+    String? userId,
+    String? title,
+    String? author,
+    String? image,
+    String? isbn,
+    String? bookId,
+    String? reviewTitle,
+    String? reviewContent,
+    String? userName,
+    String? avatarUrl,
+    int? orderIndex,
+    bool? is_archived,
+  }) {
+    return BookPostModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      author: author ?? this.author,
+      image: image ?? this.image,
+      isbn: isbn ?? this.isbn,
+      bookId: bookId ?? this.bookId,
+      reviewTitle: reviewTitle ?? this.reviewTitle,
+      reviewContent: reviewContent ?? this.reviewContent,
+      userName: userName ?? this.userName,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      orderIndex: orderIndex ?? this.orderIndex,
+      is_archived: is_archived ?? this.is_archived,
+    );
+  }
 }

@@ -40,11 +40,18 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   bool _isSaving = false;
   late List<Map<String, dynamic>> updatedBooks; // 화면 내부 작업용(원본 불변)
   final Set<int> _selected = {};
+
   static const int kMaxSelection = 9;
-  int selectedBookCount = 0;
+
+  // [NEW] 서버 기준 선택 개수 + 바텀시트 내 임시 변화량
+  int _serverSelectedCount = 0; // RPC에서 받는 값 (is_archived=false 전체 개수)
+  int _deltaSelectedCount = 0;  // 이 시트에서 변경한 결과의 증감량
 
   // 스크롤 컨트롤러
   late final ScrollController _scrollController;
+
+  // [NEW] 현재 화면에서 보여줄 최종 카운트 = 서버 + 델타
+  int get _effectiveSelectedCount => _serverSelectedCount + _deltaSelectedCount;
 
   @override
   void initState() {
@@ -53,7 +60,10 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     _scrollController.addListener(_onScrollReachBottom);
 
     // 초기 페이지 로드
-    _refreshFromServer();
+    _refreshFromServer().then((_) {
+      // [NEW] 서버 선택 개수 가져오기 (페이지 로드와 독립적으로 가져와도 OK)
+      _fetchServerSelectedCount();
+    });
   }
 
   @override
@@ -65,6 +75,22 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
   // ========== 서버 호출 ==========
 
+  // [NEW] 서버에서 현재 선택 개수 가져오기 (is_archived=false 전체 개수)
+  Future<void> _fetchServerSelectedCount() async {
+    try {
+      final res = await client.rpc('get_selected_book_count');
+      final count = (res is int) ? res : int.tryParse('$res') ?? 0;
+      if (!mounted) return;
+      setState(() {
+        _serverSelectedCount = count;
+        // delta는 시트 내 조작값이라 여기서 따로 건드리지 않음
+      });
+      debugPrint('📥 서버 선택 개수 불러옴: $_serverSelectedCount');
+    } catch (e) {
+      debugPrint('❌ 서버 선택 개수 불러오기 실패: $e');
+    }
+  }
+
   Future<void> _refreshFromServer() async {
     setState(() {
       _isInitialLoading = true;
@@ -73,6 +99,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       _hasMore = true;
       _totalCount = 0;
       _hasLocalChanges = false;
+
+      // [NEW] 새 시트 열 때마다 delta는 0으로 초기화 (서버 카운트와 별개)
+      _deltaSelectedCount = 0;
     });
 
     await _loadNextPage(); // 첫 페이지
@@ -184,8 +213,8 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
         _selected.add(i);
       }
     }
-    selectedBookCount = _selected.length;
-    debugPrint('🔄 자동 선택 업데이트: ${selectedBookCount}개 책이 선택됨');
+    debugPrint('🔄 자동 선택 업데이트(페이지 범위 내): ${_selected.length}개 선택');
+    // 화면에 표시하는 카운트는 _effectiveSelectedCount 사용
   }
 
   // allBooks에서 보관함 책들만 필터링하여 반환 (기존 로직 유지)
@@ -227,6 +256,43 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     setState(() {});
   }
 
+  // [NEW] 원본(allBooks)에서 해당 id의 초기 is_archived 값을 얻는 헬퍼
+  bool _originalIsArchived(String id) {
+    final m = widget.allBooks.firstWhere(
+          (b) => b['id'] == id,
+      orElse: () => const {},
+    );
+    if (m.isEmpty) return true; // 기본값: 보관함(true)로 취급
+    final v = m['is_archived'];
+    return v is bool ? v : true;
+  }
+
+  // [NEW] 선택 가능 여부 체크(서버 개수 + delta 기준으로 최대 9 유지)
+  bool _canSelectIndex(int index) {
+    final current = _localBooks[index];
+    final id = current['id'] as String;
+    final wasArchivedOriginal = _originalIsArchived(id);
+    final isArchivedNow = current['is_archived'] == true;
+
+    // 현재는 보관함이고(=아카이브 true), 탭해서 프로필로 보낼 때(=false)만 카운트 증가 고려
+    if (isArchivedNow) {
+      // 토글 후 delta 변화 예상치 계산
+      int newDelta = _deltaSelectedCount;
+      if (wasArchivedOriginal) {
+        // 원래도 보관함(true) → 지금 false로 바꾸면 +1
+        newDelta += 1;
+      } else {
+        // 원래 프로필(false)이었는데 현재는 true(이미 -1 적용된 상태) → false로 돌리면 -1을 되돌려 0
+        // 즉 delta가 +1 증가
+        newDelta += 1;
+      }
+      final prospective = _serverSelectedCount + newDelta;
+      return prospective <= kMaxSelection;
+    }
+    // 이미 선택 상태(프로필 false)에서 다시 탭하는 건 해제이므로 제한 없음
+    return true;
+  }
+
   void _toggleSelect(int index) {
     // 디버깅: 선택 전 데이터 구조 확인
     debugPrint('🔍 _toggleSelect 시작 - index: $index');
@@ -234,15 +300,28 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
         '🔍 선택 전 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
 
     setState(() {
-      final currentSelected = _selected.length;
+      final currentIsSelected = _selected.contains(index);
+      final current = _localBooks[index];
+      final id = current['id'] as String;
+      final wasArchivedOriginal = _originalIsArchived(id);
 
-      if (_selected.contains(index)) {
+      if (currentIsSelected) {
+        // 선택 → 해제 (프로필 → 보관함)
         _selected.remove(index);
-        _localBooks[index]['is_archived'] = true;
+        // is_archived true로
+        current['is_archived'] = true;
 
-        final removedOrderIndex = _localBooks[index]['order_index'];
-        _localBooks[index]['order_index'] = null;
+        // delta 조정
+        // 원래 보관함(true) 였다면: 원래 true -> 지금 false였던 상태가 해제로 돌아가니 delta -1
+        // 원래 프로필(false) 였다면: 원래 false -> 지금 true로 바꿨으니 delta -1 (즉 -1 유지 or 더 내려감)
+        // 하지만 여기 상황은 "현재 선택 상태였음(=false)"에서 해제로 가는 케이스:
+        //  - 원래 true였다면 이전에 +1 되어 있었는데, 다시 true로 돌아가니 -1
+        //  - 원래 false였다면 이번 탭으로 false->true가 되니 -1
+        _deltaSelectedCount -= 1;
 
+        // order_index 정리(기존 로직 유지)
+        final removedOrderIndex = current['order_index'];
+        current['order_index'] = null;
         if (removedOrderIndex != null) {
           for (int i = 0; i < _localBooks.length; i++) {
             if (i == index) continue;
@@ -253,11 +332,24 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
           }
         }
       } else {
-        if (currentSelected >= kMaxSelection) return;
+        // 해제 → 선택 (보관함 → 프로필)
+        // [NEW] 서버 기준 + delta로 최대 9 체크
+        if (!_canSelectIndex(index)) {
+          debugPrint('⚠️ 최대 $kMaxSelection 개 제한(서버+delta 기준)에 걸려 선택 불가');
+          return;
+        }
 
         _selected.add(index);
-        _localBooks[index]['is_archived'] = false;
+        // is_archived false로
+        current['is_archived'] = false;
 
+        // delta 조정
+        // 원래 보관함(true) → 지금 false: +1
+        // 원래 프로필(false)였는데 현재는 true 상태였다면(이전 탭으로 -1이 되어 있던 상태),
+        // 다시 false로 돌아가니 delta +1 (즉 0으로 복원)
+        _deltaSelectedCount += 1;
+
+        // order_index 정리(기존 로직 유지)
         for (int i = 0; i < _localBooks.length; i++) {
           if (i == index) continue;
           final oi = _localBooks[i]['order_index'];
@@ -265,14 +357,13 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
             _localBooks[i]['order_index'] = oi + 1;
           }
         }
-        _localBooks[index]['order_index'] = 0;
+        current['order_index'] = 0;
       }
-
-      selectedBookCount = _selected.length;
 
       // 디버깅: 선택 후 데이터 구조 확인
       debugPrint(
-          '🔍 선택 후 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
+          '🔍 선택 후 _localBooks[$index]: ID=${current['id']}, book_id=${current['book_id']}, is_archived=${current['is_archived']}');
+      debugPrint('🧮 서버=${_serverSelectedCount}, delta=${_deltaSelectedCount}, 표기=${_effectiveSelectedCount}');
     });
   }
 
@@ -289,7 +380,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       for (int i = 0; i < _localBooks.length; i++) {
         final current = _localBooks[i];
         final original = widget.allBooks.firstWhere(
-          (b) => b['id'] == current['id'],
+              (b) => b['id'] == current['id'],
           orElse: () => {},
         );
 
@@ -332,7 +423,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       for (int i = 0; i < _localBooks.length; i++) {
         final currentBook = _localBooks[i];
         final originalBook = widget.allBooks.firstWhere(
-          (book) => book['id'] == currentBook['id'],
+              (book) => book['id'] == currentBook['id'],
           orElse: () => {},
         );
 
@@ -353,7 +444,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
         await client
             .from('user_books')
             .update({'unarchived_at': currentTimestamp}).inFilter(
-                'id', newlyUnarchivedBookIds);
+            'id', newlyUnarchivedBookIds);
 
         debugPrint(
             '✅ unarchived_at 업데이트 완료: ${newlyUnarchivedBookIds.length}개 책');
@@ -401,6 +492,8 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final topCountText = '$_effectiveSelectedCount/$kMaxSelection';
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -468,7 +561,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
                             // 1) 보관함 → 프로필로 바뀐 책들 ID 수집 + unarchived_at 업데이트
                             final newlyUnarchivedIds =
-                                await _markUnarchivedAndCollectIds();
+                            await _markUnarchivedAndCollectIds();
 
                             // 2) 알림 전송 (서버에서 팔로워 조회 + 대량 insert)
                             if (newlyUnarchivedIds.isNotEmpty) {
@@ -477,13 +570,11 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                 body: {
                                   'sender_id': userId,
                                   'type': 'post',
-                                  // 필요에 따라 'post' 등으로 변경 가능
                                   'user_book_ids': newlyUnarchivedIds,
                                 },
                               );
                               if (resp.status != 200) {
                                 debugPrint('❌ 알림 전송 실패: ${resp.data}');
-                                // 실패해도 UX 계속 진행할지 여부는 선택. 여기선 진행.
                               } else {
                                 debugPrint('✅ 알림 전송 성공: ${resp.data}');
                               }
@@ -506,8 +597,8 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 0), // 👈 클릭 영역 확장
-                          color: Colors.transparent, // 👈 배경은 투명
+                              horizontal: 8, vertical: 0),
+                          color: Colors.transparent,
                           child: Text(
                             '저장',
                             style: TextStyle(
@@ -520,8 +611,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                         ),
                       ),
                       const SizedBox(height: 4),
+                      // [CHANGED] 서버+델타 기준 카운트
                       Text(
-                        '$selectedBookCount/9',
+                        topCountText,
                         style: TextStyle(
                           color: AppColors.black900,
                           fontSize: 14,
@@ -542,8 +634,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const SizedBox(width: 10),
+                // [CHANGED]
                 Text(
-                  '$selectedBookCount/9',
+                  topCountText,
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.black500,
@@ -559,137 +652,137 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
           Expanded(
             child: _isInitialLoading
                 ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.black900),
-                  )
+              child: CircularProgressIndicator(color: AppColors.black900),
+            )
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0)
-                        .copyWith(top: 21, bottom: 21),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        const crossAxisCount = 5;
-                        const crossAxisSpacing = 11.7;
-                        const runSpacing = 35.0;
-                        const itemAspectRatio = 98 / 145;
-                        const topOffsetForShelf = 90.0;
+              padding: const EdgeInsets.symmetric(horizontal: 0)
+                  .copyWith(top: 21, bottom: 21),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const crossAxisCount = 5;
+                  const crossAxisSpacing = 11.7;
+                  const runSpacing = 35.0;
+                  const itemAspectRatio = 98 / 145;
+                  const topOffsetForShelf = 90.0;
 
-                        final totalSpacing =
-                            crossAxisSpacing * (crossAxisCount - 1);
-                        final itemWidth =
-                            (constraints.maxWidth - totalSpacing) /
-                                crossAxisCount;
-                        final itemHeight = itemWidth / itemAspectRatio;
+                  final totalSpacing =
+                      crossAxisSpacing * (crossAxisCount - 1);
+                  final itemWidth =
+                      (constraints.maxWidth - totalSpacing) /
+                          crossAxisCount;
+                  final itemHeight = itemWidth / itemAspectRatio;
 
-                        final rows =
-                            (_localBooks.length / crossAxisCount).ceil();
-                        final gridHeight =
-                            rows * itemHeight + (rows - 1) * runSpacing;
+                  final rows =
+                  (_localBooks.length / crossAxisCount).ceil();
+                  final gridHeight =
+                      rows * itemHeight + (rows - 1) * runSpacing;
 
-                        return Scrollbar(
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            padding: EdgeInsets.zero,
-                            child: SizedBox(
-                              height: gridHeight + topOffsetForShelf,
-                              width: double.infinity,
-                              child: Stack(
-                                children: [
-                                  ..._buildShelves(
-                                    itemCount: _localBooks.length,
-                                    itemHeight: itemHeight,
-                                    runSpacing: runSpacing,
-                                    topOffset: topOffsetForShelf,
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 22),
-                                    child: GridView.builder(
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      shrinkWrap: true,
-                                      itemCount: _localBooks.length,
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: crossAxisCount,
-                                        crossAxisSpacing: crossAxisSpacing,
-                                        mainAxisSpacing: runSpacing,
-                                        childAspectRatio: itemAspectRatio,
-                                      ),
-                                      itemBuilder: (context, index) {
-                                        final book = _localBooks[index];
-                                        final imageUrl = book['books']
-                                                ?['image'] ??
-                                            'https://via.placeholder.com/150';
-                                        final isSelected =
-                                            _selected.contains(index);
+                  return Scrollbar(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: EdgeInsets.zero,
+                      child: SizedBox(
+                        height: gridHeight + topOffsetForShelf,
+                        width: double.infinity,
+                        child: Stack(
+                          children: [
+                            ..._buildShelves(
+                              itemCount: _localBooks.length,
+                              itemHeight: itemHeight,
+                              runSpacing: runSpacing,
+                              topOffset: topOffsetForShelf,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 22),
+                              child: GridView.builder(
+                                physics:
+                                const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                itemCount: _localBooks.length,
+                                gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: crossAxisSpacing,
+                                  mainAxisSpacing: runSpacing,
+                                  childAspectRatio: itemAspectRatio,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final book = _localBooks[index];
+                                  final imageUrl = book['books']
+                                  ?['image'] ??
+                                      'https://via.placeholder.com/150';
+                                  final isSelected =
+                                  _selected.contains(index);
 
-                                        return GestureDetector(
-                                          onTap: () => _toggleSelect(index),
-                                          child: Stack(
-                                            clipBehavior: Clip.none,
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(0),
-                                                child: ColorFiltered(
-                                                  colorFilter: isSelected
-                                                      ? ColorFilter.mode(
-                                                          Colors.black
-                                                              .withOpacity(0.6),
-                                                          BlendMode.darken,
-                                                        )
-                                                      : const ColorFilter.mode(
-                                                          Colors.transparent,
-                                                          BlendMode.srcOver,
-                                                        ),
-                                                  child: BookFrame(
-                                                      imageUrl: imageUrl),
-                                                ),
-                                              ),
-                                              Align(
-                                                alignment: Alignment.topRight,
-                                                child: Container(
-                                                  margin: const EdgeInsets.only(
-                                                      right: 3.24, top: 3),
-                                                  width: 18,
-                                                  height: 18,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: isSelected
-                                                          ? AppColors.blue500
-                                                          : AppColors.black300,
-                                                      width:
-                                                          isSelected ? 2 : 1.5,
-                                                    ),
-                                                  ),
-                                                  child: AnimatedContainer(
-                                                    duration: const Duration(
-                                                        milliseconds: 50),
-                                                    margin:
-                                                        const EdgeInsets.all(2),
-                                                    decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      color: isSelected
-                                                          ? AppColors.blue500
-                                                          : Colors.transparent,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                  return GestureDetector(
+                                    onTap: () => _toggleSelect(index),
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                          BorderRadius.circular(0),
+                                          child: ColorFiltered(
+                                            colorFilter: isSelected
+                                                ? ColorFilter.mode(
+                                              Colors.black
+                                                  .withOpacity(0.6),
+                                              BlendMode.darken,
+                                            )
+                                                : const ColorFilter.mode(
+                                              Colors.transparent,
+                                              BlendMode.srcOver,
+                                            ),
+                                            child: BookFrame(
+                                                imageUrl: imageUrl),
                                           ),
-                                        );
-                                      },
+                                        ),
+                                        Align(
+                                          alignment: Alignment.topRight,
+                                          child: Container(
+                                            margin: const EdgeInsets.only(
+                                                right: 3.24, top: 3),
+                                            width: 18,
+                                            height: 18,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? AppColors.blue500
+                                                    : AppColors.black300,
+                                                width:
+                                                isSelected ? 2 : 1.5,
+                                              ),
+                                            ),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                  milliseconds: 50),
+                                              margin:
+                                              const EdgeInsets.all(2),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: isSelected
+                                                    ? AppColors.blue500
+                                                    : Colors.transparent,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  );
+                },
+              ),
+            ),
           ),
 
           // 페이지 하단 로딩 인디케이터

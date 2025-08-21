@@ -139,7 +139,7 @@ class PostItem extends StatelessWidget {
                         );
                       } else if (action == 'edit') {
                         final result = await Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => EditReviewScreen(post: post, fromScreen: fromScreen,),
+                          builder: (_) => EditReviewScreen(post: post, fromScreen: 'post_item',),
                         ));
                         if (result == true) {
                           onEditSuccess?.call();

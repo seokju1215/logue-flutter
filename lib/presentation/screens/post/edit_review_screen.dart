@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
+import 'package:my_logue/presentation/screens/post/post_detail_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/data/models/book_post_model.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
@@ -71,13 +72,35 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
               ),
             ),
           );
-        } else {
+        } else if (widget.fromScreen == 'post_detail') {
+          // post_detail에서 왔다면 수정된 데이터를 포함한 PostDetailScreen으로 직접 돌아가기
+          Navigator.pop(context);
+          Navigator.pop(context);
+          
+          // 수정된 데이터로 새로운 post 객체 생성
+          final updatedPost = widget.post.copyWith(
+            reviewTitle: _titleController.text.trim(),
+            reviewContent: _contentController.text.trim(),
+          );
+          
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PostDetailScreen(
+                post: updatedPost, 
+                fromScreen: widget.fromScreen, 
+                isMyPost: true,
+              ),
+            ),
+          );
+
+        }else{
           debugPrint("my_post에서 옴");
           // my_post_screen에서 왔다면 기존 로직 유지장
           Navigator.pop(context);
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => MyBookPostScreen(userBookId: widget.post.id),
+              builder: (_) => SinglePostScreen(bookId: widget.post.bookId ?? '', userBookId: widget.post.id,userId: client.auth.currentUser?.id,),
             ),
           );
         }
