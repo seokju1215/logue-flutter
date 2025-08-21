@@ -16,11 +16,13 @@ class MainNavigationScreen extends StatefulWidget {
   final Widget? child;
   final int initialTabIndex;
   final bool goToMyBookPostScreen;
+  final int homeInitialTab; // HomeScreen의 초기 탭 (0=추천, 1=팔로잉, 2=인기)
   const MainNavigationScreen({
     Key? key,
     this.child,
     this.initialTabIndex = 0,
     this.goToMyBookPostScreen = false,
+    this.homeInitialTab = 0,
   }) : super(key: key);
 
   @override
@@ -35,6 +37,7 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   bool _hasCheckedUpdate = false;
   bool _hasShownAnnouncement = false;
   bool _isAddBookLoading = false; // AddBookView의 ProfileTab 로딩 상태
+  bool _hasUsedHomeInitialTab = false; // homeInitialTab 사용 여부
   
   // 뒤로가기 두번 눌러야 앱 종료를 위한 변수들
   DateTime? _lastBackPressTime;
@@ -49,7 +52,11 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
 
 
   List<Widget> get _screens => [
-        HomeScreen(navigatorKey: _navigatorKeys[0]),
+        HomeScreen(
+          key: ValueKey('home_${_hasUsedHomeInitialTab ? '0' : widget.homeInitialTab}'), // 강제 재생성
+          navigatorKey: _navigatorKeys[0],
+          initialTab: _hasUsedHomeInitialTab ? 0 : widget.homeInitialTab,
+        ),
         ProfileView(navigatorKey: _navigatorKeys[1]),
         AddBookView(
           navigatorKey: _navigatorKeys[2], 
@@ -90,6 +97,9 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     // ✅ child 적용
     _child = widget.child;
     _overrideWithChild = _child != null;
+    
+    // homeInitialTab이 0이 아니면 처음에만 사용
+    _hasUsedHomeInitialTab = widget.homeInitialTab == 0;
   }
   @override
   void didUpdateWidget(covariant MainNavigationScreen oldWidget) {
@@ -196,6 +206,7 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
         _selectedIndex = 0;
         MainNavigationScreen.lastSelectedIndex = 0;
         _overrideWithChild = false;
+        _hasUsedHomeInitialTab = true; // 홈 탭 이동 시 플래그 설정
       });
     }
   }

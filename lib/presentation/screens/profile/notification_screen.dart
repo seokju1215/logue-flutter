@@ -20,7 +20,8 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> with WidgetsBindingObserver {
+class _NotificationScreenState extends State<NotificationScreen>
+    with WidgetsBindingObserver {
   final client = Supabase.instance.client;
   late final GetNotifications _getNotifications;
   List<Map<String, dynamic>> _notifications = [];
@@ -218,13 +219,10 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
         MaterialPageRoute(
           builder: (_) => MainNavigationScreen(
             initialTabIndex: 0, // 홈 탭
-            child: HomeScreen(
-              navigatorKey: GlobalKey<NavigatorState>(),
-              initialTab: 1, // 👉 팔로잉 탭으로 시작 (HomeScreen에서 initialTab 받아야 함)
-            ),
+            homeInitialTab: 1, // 팔로잉 탭으로 시작
           ),
         ),
-            (route) => false,
+        (route) => false,
       );
 
       debugPrint('✅ FollowTabScreen 네비게이션 완료');
@@ -273,12 +271,18 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
           debugPrint('✅ 통합된 포스트 알림 삭제 완료 - 삭제된 행: $result');
         } else {
           debugPrint('📝 개별 포스트 알림 삭제');
-          final result = await client.from('notifications').delete().eq('id', notification['id']);
+          final result = await client
+              .from('notifications')
+              .delete()
+              .eq('id', notification['id']);
           debugPrint('✅ 개별 포스트 알림 삭제 완료 - 삭제된 행: $result');
         }
       } else {
         debugPrint('🔔 개별 알림 삭제');
-        final result = await client.from('notifications').delete().eq('id', notification['id']);
+        final result = await client
+            .from('notifications')
+            .delete()
+            .eq('id', notification['id']);
         debugPrint('✅ 개별 알림 삭제 완료 - 삭제된 행: $result');
       }
 
@@ -319,7 +323,6 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
       });
 
       debugPrint('🔄 UI 업데이트 완료 - 알림 목록 비움');
-
     } catch (e) {
       debugPrint('❌ 모든 알림 삭제 실패: $e');
       debugPrint('❌ 에러 타입: ${e.runtimeType}');
@@ -351,7 +354,8 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     return null;
   }
 
-  List<Map<String, dynamic>> _processAndSortNotifications(List<Map<String, dynamic>> src) {
+  List<Map<String, dynamic>> _processAndSortNotifications(
+      List<Map<String, dynamic>> src) {
     final processed = <Map<String, dynamic>>[];
     final postNotifications = <Map<String, dynamic>>[];
     final postSenders = <String>{};
@@ -410,8 +414,10 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
 
     // 3) created_at 기준 내림차순 정렬
     processed.sort((a, b) {
-      final ta = _parseTs(a['created_at']) ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final tb = _parseTs(b['created_at']) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final ta =
+          _parseTs(a['created_at']) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final tb =
+          _parseTs(b['created_at']) ?? DateTime.fromMillisecondsSinceEpoch(0);
       return tb.compareTo(ta);
     });
 
@@ -419,6 +425,7 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
     debugPrint('📊 처리된 알림 개수(정렬 적용): ${processed.length}');
     return processed;
   }
+
   // =====================================
 
   @override
@@ -486,7 +493,8 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
                 } else if (type == 'post') {
                   if (item['integrated'] == true) {
                     final totalSenders = (item['total_senders'] as int?) ?? 1;
-                    content = '$username님 외 ${totalSenders - 1}명이 새로운 인생 책을 추가했어요.';
+                    content =
+                        '$username님 외 ${totalSenders - 1}명이 새로운 인생 책을 추가했어요.';
                   } else {
                     content = '$username님이 새로운 인생 책을 추가했어요.';
                   }
@@ -498,7 +506,8 @@ class _NotificationScreenState extends State<NotificationScreen> with WidgetsBin
                   contentPadding: const EdgeInsets.only(left: 22, right: 10),
                   title: Text(
                     content,
-                    style: const TextStyle(fontSize: 14, color: AppColors.black500),
+                    style: const TextStyle(
+                        fontSize: 14, color: AppColors.black500),
                   ),
                   onTap: () {
                     if (type == 'follow') {
