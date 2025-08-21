@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
+import 'package:my_logue/data/utils/fetch_profile.dart';
 import 'package:my_logue/domain/entities/follow_list_type.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'follow_list_tab.dart';
@@ -52,27 +53,14 @@ class _FollowTabScreenState extends ConsumerState<FollowTabScreen> {
 
   // Provider 기반으로 팔로잉/팔로워 수 자동 갱신
   void _updateCounts() {
-    final client = Supabase.instance.client;
-    
-    // 실시간으로 카운트 갱신
-    client
-        .from('follows')
-        .select('id')
-        .eq('following_id', widget.userId)
-        .then((followerRes) {
-          client
-              .from('follows')
-              .select('id')
-              .eq('follower_id', widget.userId)
-              .then((followingRes) {
-                if (mounted) {
-                  setState(() {
-                    _followerCount = followerRes.length;
-                    _followingCount = followingRes.length;
-                  });
-                }
-              });
+    fetchFollowCounts(widget.userId).then((counts) {
+      if (mounted) {
+        setState(() {
+          _followerCount = counts['followers'] ?? 0;
+          _followingCount = counts['following'] ?? 0;
         });
+      }
+    });
   }
 
   @override

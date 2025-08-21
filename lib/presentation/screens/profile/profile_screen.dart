@@ -122,10 +122,10 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     
-    // 앱이 포그라운드로 돌아올 때 팔로워/팔로잉 숫자 새로고침
+    // 앱이 포그라운드로 돌아올 때 UI 새로고침
     if (state == AppLifecycleState.resumed) {
-      debugPrint('🔄 앱 포그라운드 복귀 - 팔로워/팔로잉 숫자 새로고침');
-      _updateFollowCounts();
+      debugPrint('🔄 앱 포그라운드 복귀 - UI 새로고침');
+      setState(() {}); // UI 새로고침으로 _getFollowCounts() 재호출
     }
   }
 
@@ -208,49 +208,20 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     if (user == null) return;
 
     try {
-      // 프로필 기본 정보와 팔로워/팔로잉 카운트를 동시에 가져오기
+      // 프로필 기본 정보 가져오기
       final data = await Supabase.instance.client
           .from('profiles')
           .select()
           .eq('id', user.id)
           .maybeSingle();
 
-      // 팔로워/팔로잉 카운트를 더 안정적으로 가져오기
-      final followerRes = await Supabase.instance.client
-          .from('follows')
-          .select('id')
-          .eq('following_id', user.id);
-      final followerCount = followerRes.length;
-
-      final followingRes = await Supabase.instance.client
-          .from('follows')
-          .select('id')
-          .eq('follower_id', user.id);
-      final followingCount = followingRes.length;
-
-      debugPrint('🔍 팔로워/팔로잉 카운트 로드: 팔로워 $followerCount, 팔로잉 $followingCount');
-
       if (mounted) {
         setState(() {
-          profile = {
-            ...?data,
-            'followers': followerCount,
-            'following': followingCount,
-          };
+          profile = data;
         });
       }
     } catch (e) {
       debugPrint('❌ 프로필 로드 실패: $e');
-      // 에러 발생 시 기본값으로 설정
-      if (mounted) {
-        setState(() {
-          profile = {
-            ...?profile,
-            'followers': profile?['followers'] ?? 0,
-            'following': profile?['following'] ?? 0,
-          };
-        });
-      }
     }
   }
 
@@ -263,37 +234,28 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     debugPrint('🔍 프로필 전체 새로고침 완료');
   }
 
-  Future<void> _updateFollowCounts() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null || profile == null) return;
+  // 팔로워/팔로잉 카운트를 실시간으로 가져오는 함수
+  Future<Map<String, int>> _getFollowCounts([String? userId]) async {
+    final targetUserId = userId ?? Supabase.instance.client.auth.currentUser?.id;
+    if (targetUserId == null) return {'followers': 0, 'following': 0};
 
     try {
-      // 실시간 팔로워/팔로잉 카운트 업데이트
       final followerRes = await Supabase.instance.client
           .from('follows')
           .select('id')
-          .eq('following_id', user.id);
+          .eq('following_id', targetUserId);
       final followerCount = followerRes.length;
 
       final followingRes = await Supabase.instance.client
           .from('follows')
           .select('id')
-          .eq('follower_id', user.id);
+          .eq('follower_id', targetUserId);
       final followingCount = followingRes.length;
 
-      debugPrint('🔄 팔로워/팔로잉 카운트 업데이트: 팔로워 $followerCount, 팔로잉 $followingCount');
-
-      if (mounted) {
-        setState(() {
-          profile = {
-            ...profile!,
-            'followers': followerCount,
-            'following': followingCount,
-          };
-        });
-      }
+      return {'followers': followerCount, 'following': followingCount};
     } catch (e) {
-      debugPrint('❌ 팔로워/팔로잉 카운트 업데이트 실패: $e');
+      debugPrint('❌ 팔로워/팔로잉 카운트 조회 실패: $e');
+      return {'followers': 0, 'following': 0};
     }
   }
 
@@ -381,9 +343,9 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         callback: (payload) async {
           if (!mounted) return;
           
-          // 팔로우/언팔로우 변경사항이 발생하면 카운트 업데이트
+          // 팔로우/언팔로우 변경사항이 발생하면 UI 새로고침
           debugPrint('🔄 팔로우 테이블 변경 감지: ${payload.eventType}');
-          await _updateFollowCounts();
+          setState(() {}); // UI 새로고침으로 _getFollowCounts() 재호출
         },
       )
       ..subscribe();
@@ -581,71 +543,74 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
             ),
           ],
         ),
-        Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                final userId = profile?['id'];
-                final username = profile?['username'];
-                final followerCount = profile?['followers'] ?? 0;
-                final followingCount = profile?['following'] ?? 0;
-                final currentUserId =
-                    Supabase.instance.client.auth.currentUser?.id;
-                final isMyProfile = currentUserId == userId;
-                if (userId != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FollowTabScreen(
-                        userId: userId,
-                        initialTabIndex: 0,
-                        username: username,
-                        followerCount: followerCount,
-                        followingCount: followingCount,
-                        isMyProfile: isMyProfile,
-                      ), // 팔로워 탭
-                    ),
-                  ).then((_) {
-                    // 팔로우 탭에서 돌아올 때 카운트 업데이트
-                    _updateFollowCounts();
-                  });
-                }
-              },
-              child: _buildCount("팔로워", profile?['followers'] ?? 0),
-            ),
-            const SizedBox(width: 27),
-            GestureDetector(
-              onTap: () {
-                final userId = profile?['id'];
-                final username = profile?['username'];
-                final followerCount = profile?['followers'] ?? 0;
-                final followingCount = profile?['following'] ?? 0;
-                final currentUserId =
-                    Supabase.instance.client.auth.currentUser?.id;
-                final isMyProfile = currentUserId == userId;
-                if (userId != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FollowTabScreen(
-                        userId: userId,
-                        initialTabIndex: 1,
-                        // or 1
-                        username: username,
-                        followerCount: followerCount,
-                        followingCount: followingCount,
-                        isMyProfile: isMyProfile,
-                      ), // 팔로잉 탭
-                    ),
-                  ).then((_) {
-                    // 팔로우 탭에서 돌아올 때 카운트 업데이트
-                    _updateFollowCounts();
-                  });
-                }
-              },
-              child: _buildCount("팔로잉", profile?['following'] ?? 0),
-            ),
-          ],
+        FutureBuilder<Map<String, int>>(
+          future: _getFollowCounts(),
+          builder: (context, snapshot) {
+            final followerCount = snapshot.data?['followers'] ?? 0;
+            final followingCount = snapshot.data?['following'] ?? 0;
+            
+            return Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    final userId = profile?['id'];
+                    final username = profile?['username'];
+                    final currentUserId =
+                        Supabase.instance.client.auth.currentUser?.id;
+                    final isMyProfile = currentUserId == userId;
+                    if (userId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FollowTabScreen(
+                            userId: userId,
+                            initialTabIndex: 0,
+                            username: username,
+                            followerCount: followerCount,
+                            followingCount: followingCount,
+                            isMyProfile: isMyProfile,
+                          ), // 팔로워 탭
+                        ),
+                      ).then((_) {
+                        // 팔로우 탭에서 돌아올 때 UI 새로고침
+                        setState(() {});
+                      });
+                    }
+                  },
+                  child: _buildCount("팔로워", followerCount),
+                ),
+                const SizedBox(width: 27),
+                GestureDetector(
+                  onTap: () {
+                    final userId = profile?['id'];
+                    final username = profile?['username'];
+                    final currentUserId =
+                        Supabase.instance.client.auth.currentUser?.id;
+                    final isMyProfile = currentUserId == userId;
+                    if (userId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FollowTabScreen(
+                            userId: userId,
+                            initialTabIndex: 1,
+                            username: username,
+                            followerCount: followerCount,
+                            followingCount: followingCount,
+                            isMyProfile: isMyProfile,
+                          ), // 팔로잉 탭
+                        ),
+                      ).then((_) {
+                        // 팔로우 탭에서 돌아올 때 UI 새로고침
+                        setState(() {});
+                      });
+                    }
+                  },
+                  child: _buildCount("팔로잉", followingCount),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );

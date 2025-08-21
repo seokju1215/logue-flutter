@@ -88,26 +88,32 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         .eq('id', userId)
         .maybeSingle();
 
-    final followerRes = await client
-        .from('follows')
-        .select('*')
-        .eq('following_id', userId);
-    final followerCount = followerRes.length;
-
-    final followingRes = await client
-        .from('follows')
-        .select('*')
-        .eq('follower_id', userId);
-    final followingCount = followingRes.length;
-
     if (mounted) {
       setState(() {
-        profile = {
-          ...?data,
-          'followers': followerCount,
-          'following': followingCount,
-        };
+        profile = data;
       });
+    }
+  }
+
+  // 팔로워/팔로잉 카운트를 실시간으로 가져오는 함수
+  Future<Map<String, int>> _getFollowCounts() async {
+    try {
+      final followerRes = await client
+          .from('follows')
+          .select('id')
+          .eq('following_id', widget.userId);
+      final followerCount = followerRes.length;
+
+      final followingRes = await client
+          .from('follows')
+          .select('id')
+          .eq('follower_id', widget.userId);
+      final followingCount = followingRes.length;
+
+      return {'followers': followerCount, 'following': followingCount};
+    } catch (e) {
+      debugPrint('❌ 팔로워/팔로잉 카운트 조회 실패: $e');
+      return {'followers': 0, 'following': 0};
     }
   }
 
@@ -344,65 +350,73 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
             ),
           ],
         ),
+        FutureBuilder<Map<String, int>>(
+          future: _getFollowCounts(),
+          builder: (context, snapshot) {
+            final followerCount = snapshot.data?['followers'] ?? 0;
+            final followingCount = snapshot.data?['following'] ?? 0;
+            
+            return Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    final userId = profile?['id'];
+                    final username = profile?['username'];
+
+                    if (userId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FollowTabScreen(
+                            userId: userId,
+                            initialTabIndex: 0,
+                            username: username,
+                            followerCount: followerCount,
+                            followingCount: followingCount,
+                            isMyProfile: isMyProfile,
+                          ),
+                        ),
+                      ).then((_) {
+                        // 팔로우 탭에서 돌아올 때 UI 새로고침
+                        setState(() {});
+                      });
+                    }
+                  },
+                  child: _buildCount("팔로워", followerCount),
+                ),
+                const SizedBox(width: 27),
+                GestureDetector(
+                  onTap: () {
+                    final userId = profile?['id'];
+                    final username = profile?['username'];
+
+                    if (userId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FollowTabScreen(
+                            userId: userId,
+                            initialTabIndex: 1,
+                            username: username,
+                            followerCount: followerCount,
+                            followingCount: followingCount,
+                            isMyProfile: isMyProfile,
+                          ),
+                        ),
+                      ).then((_) {
+                        // 팔로우 탭에서 돌아올 때 UI 새로고침
+                        setState(() {});
+                      });
+                    }
+                  },
+                  child: _buildCount("팔로잉", followingCount),
+                ),
+              ],
+            );
+          },
+        ),
         Row(
           children: [
-            GestureDetector(
-              onTap: () {
-                final userId = profile?['id'];
-                final username = profile?['username'];
-                final followerCount = profile?['followers'] ?? 0;
-                final followingCount = profile?['following'] ?? 0;
-
-                if (userId != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FollowTabScreen(
-                        userId: userId,
-                        initialTabIndex: 0,
-                        username: username,
-                        followerCount: followerCount,
-                        followingCount: followingCount,
-                        isMyProfile: isMyProfile,
-                      ),
-                    ),
-                  ).then((_) {
-                    // 팔로우 탭에서 돌아올 때 카운트 업데이트
-                    _fetchProfile();
-                  });
-                }
-              },
-              child: _buildCount("팔로워", profile?['followers'] ?? 0),
-            ),
-            const SizedBox(width: 27),
-            GestureDetector(
-              onTap: () {
-                final userId = profile?['id'];
-                final username = profile?['username'];
-                final followerCount = profile?['followers'] ?? 0;
-                final followingCount = profile?['following'] ?? 0;
-
-                if (userId != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FollowTabScreen(
-                        userId: userId,
-                        initialTabIndex: 1,
-                        username: username,
-                        followerCount: followerCount,
-                        followingCount: followingCount,
-                        isMyProfile: isMyProfile,
-                      ),
-                    ),
-                  ).then((_) {
-                    // 팔로우 탭에서 돌아올 때 카운트 업데이트
-                    _fetchProfile();
-                  });
-                }
-              },
-              child: _buildCount("팔로잉", profile?['following'] ?? 0),
-            ),
             const SizedBox(width: 24),
             const Spacer(),
             if (!isMyProfile)
@@ -416,7 +430,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                   _isFollowActionInProgress = true;
                   debugPrint('🔍 팔로우 액션 시작: ${widget.userId}');
                   final followNotifier = ref.read(followStateProvider(widget.userId).notifier);
-                  final currentFollowers = profile?['followers'] ?? 0;
+                  // 팔로워 카운트는 실시간 조회로 처리
                   
                   try {
                     if (isFollowing) {
@@ -428,12 +442,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                       
                       // 즉시 UI 업데이트 (Optimistic Update)
                       followNotifier.optimisticUnfollow();
-                      setState(() {
-                        profile = {
-                          ...?profile,
-                          'followers': (currentFollowers - 1).clamp(0, currentFollowers),
-                        };
-                      });
                       
                       // 서버 요청 (백그라운드)
                       await followNotifier.unfollow();
@@ -447,17 +455,14 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                       
                       // 즉시 UI 업데이트 (Optimistic Update)
                       followNotifier.optimisticFollow();
-                      setState(() {
-                        profile = {
-                          ...?profile,
-                          'followers': currentFollowers + 1,
-                        };
-                      });
 
                       // 서버 요청 (백그라운드)
                       await followNotifier.follow();
                       debugPrint('🔍 팔로우 서버 요청 완료');
                     }
+                    
+                    // 성공 시 UI 새로고침으로 최신 카운트 반영
+                    if (mounted) setState(() {});
                   } catch (e) {
                     // 실패 시 롤백
                     if (isFollowing) {
@@ -467,12 +472,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                     }
                     _hasFollowStateChanged = false; // 실패 시 플래그 리셋
                     if (mounted) {
-                      setState(() {
-                        profile = {
-                          ...?profile,
-                          'followers': currentFollowers,
-                        };
-                      });
                       debugPrint('❌ ${isFollowing ? '언팔로우' : '팔로우'} 실패: $e');
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('${isFollowing ? '언팔로우' : '팔로우'}에 실패했습니다: $e')),
