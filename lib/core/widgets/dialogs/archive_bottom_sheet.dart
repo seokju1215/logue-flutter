@@ -552,17 +552,20 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
           // 제목/저장/선택 카운트
           Container(
-            padding: const EdgeInsets.fromLTRB(12, 28, 12, 15),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 15),
             child: Stack(
               children: [
-                Center(
-                  child: Text(
-                    '보관함',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.black900,
-                      fontWeight: FontWeight.w400,
-                      height: 1.1875,
+                Padding(
+                  padding: const EdgeInsets.only(top:20),
+                  child: Center(
+                    child: Text(
+                      '보관함',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.black900,
+                        fontWeight: FontWeight.w400,
+                        height: 1.1875,
+                      ),
                     ),
                   ),
                 ),
@@ -608,8 +611,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 0),
+                          padding: const EdgeInsets.fromLTRB(13, 20, 13, 10),
                           color: Colors.transparent,
                           child: Text(
                             '저장',
