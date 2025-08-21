@@ -76,6 +76,11 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
           // post_detail에서 왔다면 수정된 데이터를 포함한 PostDetailScreen으로 직접 돌아가기
           Navigator.pop(context);
           Navigator.pop(context);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => SinglePostScreen(bookId: widget.post.bookId ?? '', userBookId: widget.post.id,userId: client.auth.currentUser?.id,),
+            ),
+          );
           
           // 수정된 데이터로 새로운 post 객체 생성
           final updatedPost = widget.post.copyWith(
