@@ -283,6 +283,15 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       ),
     );
   }
+  String formatCount(int count) {
+    if (count >= 1000) {
+      double divided = count / 1000;
+      double floored = (divided * 10).floorToDouble() / 10;
+      return '${floored.toStringAsFixed(1)}k';
+    } else {
+      return count.toString();
+    }
+  }
   Widget _buildProfileHeader() {
     final avatarUrl = profile?['avatar_url'] ?? 'basic';
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
@@ -411,98 +420,93 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                   },
                   child: _buildCount("팔로잉", followingCount),
                 ),
+                Spacer(),
+                if (!isMyProfile)
+                  OutlinedButton(
+                    onPressed: () async {
+                      if (_isFollowActionInProgress) {
+                        debugPrint('🔴 팔로우 액션 중복 방지');
+                        return;
+                      }
+
+                      _isFollowActionInProgress = true;
+                      debugPrint('🔍 팔로우 액션 시작: ${widget.userId}');
+                      final followNotifier = ref.read(followStateProvider(widget.userId).notifier);
+                      // 팔로워 카운트는 실시간 조회로 처리
+
+                      try {
+                        if (isFollowing) {
+                          // 언팔로우
+                          debugPrint('🔍 언팔로우 버튼 클릭');
+
+                          // 팔로우 상태 변경 플래그 설정
+                          _hasFollowStateChanged = true;
+
+                          // 즉시 UI 업데이트 (Optimistic Update)
+                          followNotifier.optimisticUnfollow();
+
+                          // 서버 요청 (백그라운드)
+                          await followNotifier.unfollow();
+                          debugPrint('🔍 언팔로우 서버 요청 완료');
+                        } else {
+                          // 팔로우
+                          debugPrint('🔍 팔로우 버튼 클릭');
+
+                          // 팔로우 상태 변경 플래그 설정
+                          _hasFollowStateChanged = true;
+
+                          // 즉시 UI 업데이트 (Optimistic Update)
+                          followNotifier.optimisticFollow();
+
+                          // 서버 요청 (백그라운드)
+                          await followNotifier.follow();
+                          debugPrint('🔍 팔로우 서버 요청 완료');
+                        }
+
+                        // 성공 시 UI 새로고침으로 최신 카운트 반영
+                        if (mounted) setState(() {});
+                      } catch (e) {
+                        // 실패 시 롤백
+                        if (isFollowing) {
+                          followNotifier.optimisticFollow();
+                        } else {
+                          followNotifier.optimisticUnfollow();
+                        }
+                        _hasFollowStateChanged = false; // 실패 시 플래그 리셋
+                        if (mounted) {
+                          debugPrint('❌ ${isFollowing ? '언팔로우' : '팔로우'} 실패: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('${isFollowing ? '언팔로우' : '팔로우'}에 실패했습니다: $e')),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          _isFollowActionInProgress = false;
+                          debugPrint('🔍 팔로우 액션 완료: ${widget.userId}');
+                        }
+                      }
+                    },
+                    style: _outlinedStyle(context, isFollowing: isFollowing),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isFollowing ? '팔로잉' : '팔로우 +',
+                          style: TextStyle(
+                            color: isFollowing ? AppColors.black500 : AppColors.black900,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            height: 1.23,
+                          ),
+                        ),
+                        if (!isFollowing)
+                          const SizedBox(width: 1.8),
+                      ],
+                    ),
+                  )
               ],
             );
           },
-        ),
-        Row(
-          children: [
-            const SizedBox(width: 24),
-            const Spacer(),
-            if (!isMyProfile)
-              OutlinedButton(
-                onPressed: () async {
-                  if (_isFollowActionInProgress) {
-                    debugPrint('🔴 팔로우 액션 중복 방지');
-                    return;
-                  }
-                  
-                  _isFollowActionInProgress = true;
-                  debugPrint('🔍 팔로우 액션 시작: ${widget.userId}');
-                  final followNotifier = ref.read(followStateProvider(widget.userId).notifier);
-                  // 팔로워 카운트는 실시간 조회로 처리
-                  
-                  try {
-                    if (isFollowing) {
-                      // 언팔로우
-                      debugPrint('🔍 언팔로우 버튼 클릭');
-                      
-                      // 팔로우 상태 변경 플래그 설정
-                      _hasFollowStateChanged = true;
-                      
-                      // 즉시 UI 업데이트 (Optimistic Update)
-                      followNotifier.optimisticUnfollow();
-                      
-                      // 서버 요청 (백그라운드)
-                      await followNotifier.unfollow();
-                      debugPrint('🔍 언팔로우 서버 요청 완료');
-                    } else {
-                      // 팔로우
-                      debugPrint('🔍 팔로우 버튼 클릭');
-                      
-                      // 팔로우 상태 변경 플래그 설정
-                      _hasFollowStateChanged = true;
-                      
-                      // 즉시 UI 업데이트 (Optimistic Update)
-                      followNotifier.optimisticFollow();
-
-                      // 서버 요청 (백그라운드)
-                      await followNotifier.follow();
-                      debugPrint('🔍 팔로우 서버 요청 완료');
-                    }
-                    
-                    // 성공 시 UI 새로고침으로 최신 카운트 반영
-                    if (mounted) setState(() {});
-                  } catch (e) {
-                    // 실패 시 롤백
-                    if (isFollowing) {
-                      followNotifier.optimisticFollow();
-                    } else {
-                      followNotifier.optimisticUnfollow();
-                    }
-                    _hasFollowStateChanged = false; // 실패 시 플래그 리셋
-                    if (mounted) {
-                      debugPrint('❌ ${isFollowing ? '언팔로우' : '팔로우'} 실패: $e');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${isFollowing ? '언팔로우' : '팔로우'}에 실패했습니다: $e')),
-                      );
-                    }
-                  } finally {
-                    if (mounted) {
-                      _isFollowActionInProgress = false;
-                      debugPrint('🔍 팔로우 액션 완료: ${widget.userId}');
-                    }
-                  }
-                },
-                style: _outlinedStyle(context, isFollowing: isFollowing),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isFollowing ? '팔로잉' : '팔로우 +',
-                      style: TextStyle(
-                        color: isFollowing ? AppColors.black500 : AppColors.black900,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        height: 1.23,
-                      ),
-                    ),
-                    if (!isFollowing)
-                      const SizedBox(width: 1.8),
-                  ],
-                ),
-              )
-          ],
         ),
       ],
     );
@@ -522,15 +526,25 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     );
   }
 
-  Widget _buildCount(String label, int count) {
-    return Column(
+  Widget _buildCount(String label, int count, {bool isTappable = true}) {
+    final content = Column(
       children: [
         Text(label,
-            style: const TextStyle(fontSize: 13, color: AppColors.black500)),
-        Text('$count',
-            style: const TextStyle(fontSize: 13, color: AppColors.black500)),
+            style: const TextStyle(
+                fontSize: 13, color: AppColors.black500, height: 1)),
+        const SizedBox(height: 6),
+        Text(formatCount(count),
+            style: const TextStyle(
+                fontSize: 13, color: AppColors.black500, height: 1)),
       ],
     );
+
+    return isTappable
+        ? MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: content,
+    )
+        : content;
   }
 
   Widget _buildBio(BuildContext context) {
