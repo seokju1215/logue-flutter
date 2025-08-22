@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
+import 'package:my_logue/data/services/book_activity_analytics_service.dart';
+import 'package:my_logue/data/utils/firebase_analytics_util.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ArchiveBottomSheet extends StatefulWidget {
@@ -230,7 +232,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   @override
   void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-
+    
     // allBooks가 변경되었을 때 보관함 책들을 다시 필터링
     if (oldWidget.allBooks != widget.allBooks) {
       debugPrint('🔄 ArchiveBottomSheet - allBooks 변경 감지, 보관함 책들 재필터링');
@@ -242,7 +244,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     // _localBooks가 비어있으면 source를 사용, 아니면 _localBooks를 사용
     final booksToUse = _localBooks.isEmpty ? source : _localBooks;
     updatedBooks = booksToUse.map((m) => Map<String, dynamic>.from(m)).toList();
-
+    
     // 디버깅: _resetFrom에서 받은 데이터 구조 확인
     debugPrint('🔍 _resetFrom - 받은 데이터 구조:');
     for (int i = 0; i < updatedBooks.length; i++) {
@@ -298,7 +300,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     debugPrint('🔍 _toggleSelect 시작 - index: $index');
     debugPrint(
         '🔍 선택 전 _localBooks[$index]: ID=${_localBooks[index]['id']}, book_id=${_localBooks[index]['book_id']}, is_archived=${_localBooks[index]['is_archived']}');
-
+    
     setState(() {
       final currentIsSelected = _selected.contains(index);
       final current = _localBooks[index];
@@ -359,7 +361,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
         }
         current['order_index'] = 0;
       }
-
+      
       // 디버깅: 선택 후 데이터 구조 확인
       debugPrint(
           '🔍 선택 후 _localBooks[$index]: ID=${current['id']}, book_id=${current['book_id']}, is_archived=${current['is_archived']}');
@@ -376,6 +378,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
     try {
       final newlyUnarchivedBookIds = <String>[];
+      final movedBooks = <Map<String, dynamic>>[];
 
       for (int i = 0; i < _localBooks.length; i++) {
         final current = _localBooks[i];
@@ -389,6 +392,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
             original['is_archived'] == true &&
             current['is_archived'] == false) {
           newlyUnarchivedBookIds.add(current['id'] as String);
+          movedBooks.add(current);
         }
       }
 
@@ -399,6 +403,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
         debugPrint(
             '✅ unarchived_at 업데이트 완료: ${newlyUnarchivedBookIds.length}개');
+
+        // Firebase Analytics: 프로필로 이동한 책들 추적
+        await _trackBooksMovedToProfile(movedBooks);
       } else {
         debugPrint('ℹ️ 새로 unarchived된 책 없음');
       }
@@ -407,6 +414,38 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     } catch (e) {
       debugPrint('❌ unarchived_at 업데이트 실패: $e');
       return [];
+    }
+  }
+
+  /// Firebase Analytics: 프로필로 이동한 책들 추적
+  Future<void> _trackBooksMovedToProfile(List<Map<String, dynamic>> movedBooks) async {
+    try {
+      for (final book in movedBooks) {
+        final reviewTitle = book['review_title'] as String?;
+        final reviewContent = book['review_content'] as String?;
+        
+        // 보관함 → 프로필 이동 전용 이벤트 전송
+        await FirebaseAnalyticsUtil.logBookAddedToProfile(
+          bookTitle: book['title'] ?? '',
+          bookAuthor: book['author'] ?? '',
+          reviewTitle: reviewTitle,
+          reviewContent: reviewContent,
+        );
+
+        // 통계 서비스에 책 추가 카운트
+        await BookActivityAnalyticsService.trackBookAdded();
+
+        // 후기가 있는 경우 후기 작성 카운트도 추가
+        if (reviewTitle != null && reviewTitle.isNotEmpty ||
+            reviewContent != null && reviewContent.isNotEmpty) {
+          // 통계 서비스에 후기 작성 카운트
+          await BookActivityAnalyticsService.trackReviewWritten();
+        }
+      }
+
+      debugPrint('📊 GA 추적 완료: ${movedBooks.length}개 책 프로필로 이동 (add_book_to_profile)');
+    } catch (e) {
+      debugPrint('❌ GA 추적 실패: $e');
     }
   }
 
@@ -443,17 +482,17 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
       // 원본 데이터와 비교해서 새로 is_archived가 false로 바뀐 책들의 ID 목록
       final newlyUnarchivedBookIds = <String>[];
-
+      
       for (int i = 0; i < _localBooks.length; i++) {
         final currentBook = _localBooks[i];
         final originalBook = widget.allBooks.firstWhere(
-              (book) => book['id'] == currentBook['id'],
+          (book) => book['id'] == currentBook['id'],
           orElse: () => {},
         );
-
+        
         // 원본에서는 is_archived가 true였는데, 현재는 false로 바뀐 경우
-        if (originalBook.isNotEmpty &&
-            originalBook['is_archived'] == true &&
+        if (originalBook.isNotEmpty && 
+            originalBook['is_archived'] == true && 
             currentBook['is_archived'] == false) {
           newlyUnarchivedBookIds.add(currentBook['id']);
           debugPrint(
@@ -464,12 +503,12 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       if (newlyUnarchivedBookIds.isNotEmpty) {
         // unarchived_at을 현재 timestamp로 업데이트
         final currentTimestamp = DateTime.now().toUtc().toIso8601String();
-
+        
         await client
             .from('user_books')
             .update({'unarchived_at': currentTimestamp}).inFilter(
             'id', newlyUnarchivedBookIds);
-
+        
         debugPrint(
             '✅ unarchived_at 업데이트 완료: ${newlyUnarchivedBookIds.length}개 책');
         debugPrint('📅 업데이트된 timestamp: $currentTimestamp');
@@ -558,13 +597,13 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                 Padding(
                   padding: const EdgeInsets.only(top:20),
                   child: Center(
-                    child: Text(
-                      '보관함',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.black900,
-                        fontWeight: FontWeight.w400,
-                        height: 1.1875,
+                  child: Text(
+                    '보관함',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.black900,
+                      fontWeight: FontWeight.w400,
+                      height: 1.1875,
                       ),
                     ),
                   ),

@@ -5,7 +5,9 @@ import 'package:my_logue/data/models/book_model.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
+import '../../../data/services/book_activity_analytics_service.dart';
 import '../../../data/utils/mixpanel_util.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
 import '../../../data/datasources/user_book_api.dart';
 import 'dart:ui';
 
@@ -171,6 +173,19 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       // 책 추가 및 리뷰 작성 트래킹
       MixpanelUtil.trackBookAdd(widget.book.title, bookId);
       MixpanelUtil.trackReviewWrite(widget.book.title, bookId);
+      
+      // Firebase Analytics 트래킹 (신규 책을 보관함에 추가)
+      await FirebaseAnalyticsUtil.logBookAddedToArchive(
+        bookTitle: widget.book.title,
+        bookAuthor: widget.book.author ?? '',
+        reviewTitle: _titleController.text.trim(),
+        reviewContent: _contentController.text.trim(),
+        rating: 5, // 기본값 (실제 평점 시스템이 있다면 해당 값 사용)
+      );
+      
+      // 통계 서비스에 카운트 추가
+      await BookActivityAnalyticsService.trackBookAdded();
+      await BookActivityAnalyticsService.trackReviewWritten();
 
       if (!mounted) return;
 

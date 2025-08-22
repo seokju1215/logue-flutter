@@ -15,6 +15,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:my_logue/data/utils/mixpanel_util.dart';
 import 'package:my_logue/data/services/analytics_session_service.dart';
+import 'package:my_logue/data/services/book_activity_analytics_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: false);
@@ -197,6 +198,8 @@ void main() async {
   
   Future.microtask(() async {
     await MixpanelUtil.initialize();
+    // 책 활동 통계 서비스 초기화 및 미처리 통계 전송
+    await BookActivityAnalyticsService.initializeAndSendPendingStatistics();
   });
 }, (error, stack) {});
 
