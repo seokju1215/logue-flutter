@@ -16,12 +16,22 @@ class AddBookScreen extends StatefulWidget {
   final bool isLimitReached;
   final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
   final Function(bool)? onLoadingStateChanged; // 로딩 상태 변경 콜백
+  
+  // 새로운 파라미터들 - 상위에서 관리되는 데이터
+  final List<Map<String, dynamic>> persistentAllBooks; // 지속적인 데이터
+  final bool hasInitializedData; // 데이터 초기화 여부
+  final Future<void> Function()? onRefreshData; // 데이터 새로고침 콜백
+  final Function(List<Map<String, dynamic>>)? onUpdateLocalBooks; // 로컬 데이터 업데이트 콜백
 
   const AddBookScreen({
     Key? key,
     required this.isLimitReached,
     this.navigatorKey,
     this.onLoadingStateChanged,
+    required this.persistentAllBooks,
+    required this.hasInitializedData,
+    this.onRefreshData,
+    this.onUpdateLocalBooks,
   }) : super(key: key);
 
   @override
@@ -39,8 +49,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
     setState(() => _currentIndex = 1);
   }
 
-  // 공통 데이터 관리
-  List<Map<String, dynamic>> allBooks = [];
+  // 로컬 상태 (상위에서 전달받은 데이터 사용)
+  late List<Map<String, dynamic>> allBooks;
   bool isLoading = true;
   bool _isProfileTabLoading = false; // ProfileTab 로딩 상태
   
@@ -61,8 +71,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
     // 화면 방문 트래킹
     MixpanelUtil.trackScreenView('Add Book');
 
-    // 데이터 로드
-    _fetchAllBooks();
+    // 상위에서 전달받은 데이터 사용
+    _initializeWithPersistentData();
   }
 
   @override
@@ -83,32 +93,56 @@ class _AddBookScreenState extends State<AddBookScreen> {
     super.dispose();
   }
 
+  /// 상위에서 전달받은 지속 데이터로 초기화
+  void _initializeWithPersistentData() {
+    debugPrint('📚 AddBookScreen - 지속 데이터로 초기화: ${widget.persistentAllBooks.length}개 책');
+    
+    setState(() {
+      allBooks = List<Map<String, dynamic>>.from(widget.persistentAllBooks);
+      isLoading = !widget.hasInitializedData; // 초기화가 완료되었으면 로딩 해제
+    });
+    
+    // 초기화가 완료되지 않았다면 기다림
+    if (!widget.hasInitializedData) {
+      _waitForInitialization();
+    }
+  }
+
+  /// 초기화 완료까지 대기
+  Future<void> _waitForInitialization() async {
+    debugPrint('⏳ AddBookScreen - 초기화 완료 대기 중...');
+    
+    // 최대 5초까지 기다림
+    for (int i = 0; i < 50; i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      if (widget.hasInitializedData && mounted) {
+        setState(() {
+          allBooks = List<Map<String, dynamic>>.from(widget.persistentAllBooks);
+          isLoading = false;
+        });
+        debugPrint('✅ AddBookScreen - 초기화 완료: ${allBooks.length}개 책');
+        break;
+      }
+    }
+  }
+
+  /// 수동 새로고침 (필요시에만 호출) - 상위 데이터 새로고침 사용
   Future<void> _fetchAllBooks() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
-
-    try {
-      final data = await Supabase.instance.client
-          .from('user_books')
-          .select(
-          'id, user_id, order_index, archived_order_index, is_archived, book_id, books(id, image)')
-          .eq('user_id', userId);
-
-      final fetched = List<Map<String, dynamic>>.from(data);
-
+    debugPrint('🔄 AddBookScreen - 수동 새로고침 요청');
+    
+    if (widget.onRefreshData != null) {
+      // 상위에서 데이터 새로고침
+      await widget.onRefreshData!();
+      
+      // 새로고침된 데이터로 로컬 상태 업데이트
       if (mounted) {
         setState(() {
-          allBooks = fetched;
+          allBooks = List<Map<String, dynamic>>.from(widget.persistentAllBooks);
           isLoading = false;
         });
       }
-    } catch (e) {
-      debugPrint('❌ 책 불러오기 실패: $e');
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
+      debugPrint('✅ AddBookScreen - 새로고침 완료: ${allBooks.length}개 책');
     }
   }
 
@@ -278,6 +312,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
                         _hasArchiveChanges = true;
                         debugPrint('✅ _hasArchiveChanges = true로 설정');
                       });
+                      
+                      // 상위 AddBookView에도 변경사항 전달 (지속성을 위해)
+                      widget.onUpdateLocalBooks?.call(updatedBooks);
                     },
                     onArchiveOrderChanged: () {
                       debugPrint('🔄 ArchiveTab 순서 변경 - archive_bottom_sheet에 즉시 알림');
