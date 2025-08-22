@@ -50,10 +50,10 @@ class _InquiryScreenState extends State<InquiryScreen> {
   void _showSubmittedSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Center(child: const Text('문의가 접수되었어요.', style: TextStyle(fontSize: 18),)),
-        duration: const Duration(seconds: 3),
+        content: Center(child: const Text('문의가 접수되었어요.', style: TextStyle(fontSize: 16, height: 1.1),)),
+        duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 80, vertical: 90),
+        margin: const EdgeInsets.symmetric(horizontal: 90, vertical: 100),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         // 색상/스타일은 취향대로
         backgroundColor: AppColors.black500,
