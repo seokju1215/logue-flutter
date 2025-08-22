@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileLinkTile extends StatefulWidget {
   final String link;
@@ -18,6 +20,30 @@ class _ProfileLinkTileState extends State<ProfileLinkTile> {
   void _copyToClipboard() async {
     await Clipboard.setData(ClipboardData(text: widget.link));
     setState(() => _copied = true);
+
+    // Firebase Analytics 이벤트 전송
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser != null) {
+        // 프로필 데이터 가져오기
+        final response = await Supabase.instance.client
+            .from('profiles')
+            .select('username')
+            .eq('id', currentUser.id)
+            .single();
+        
+        debugPrint('🚀🚀🚀 프로필 편집에서 링크 복사 이벤트 전송 시도');
+        await FirebaseAnalyticsUtil.logCopyProfileLink(
+          sourceScreen: 'profile_edit_screen',
+          userId: currentUser.id,
+          username: response['username'] ?? '',
+          copiedLink: widget.link,
+        );
+        debugPrint('🎯🎯🎯 프로필 편집에서 링크 복사 이벤트 전송 완료');
+      }
+    } catch (analyticsError) {
+      debugPrint('❌ 프로필 링크 복사 이벤트 전송 실패: $analyticsError');
+    }
 
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {

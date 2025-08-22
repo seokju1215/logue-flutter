@@ -9,6 +9,7 @@ import 'package:my_logue/core/widgets/profile_edit/profile_edit_button.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/core/widgets/dialogs/logout_or_delete_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../data/utils/firebase_analytics_util.dart';
 
 import '../../../../core/widgets/dialogs/delete_account_dialog.dart';
 import '../../../../core/widgets/dialogs/logout_dialog.dart';
@@ -129,6 +130,46 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         'bio': bio,
         'avatar_url': finalAvatarUrl,
       }).eq('id', userId);
+
+      // Firebase Analytics: 사용자 이름 변경 추적
+      if (oldUsername != username) {
+        try {
+          debugPrint('🚀🚀🚀 사용자 이름 변경 이벤트 전송 시도');
+          await FirebaseAnalyticsUtil.logUsernameChange(
+            oldUsername: oldUsername,
+            newUsername: username,
+            userId: userId,
+          );
+          debugPrint('🎯🎯🎯 사용자 이름 변경 이벤트 전송 완료');
+        } catch (analyticsError) {
+          debugPrint('❌ 사용자 이름 변경 이벤트 전송 실패: $analyticsError');
+        }
+      }
+
+      // Firebase Analytics: 프로필 사진 변경 추적
+      if (oldAvatarUrl != finalAvatarUrl) {
+        try {
+          String changeType = 'unknown';
+          if (finalAvatarUrl == 'basic') {
+            changeType = 'remove';
+          } else if (tempAvatarFile != null) {
+            changeType = 'upload';
+          } else {
+            changeType = 'select_preset';
+          }
+          
+          debugPrint('🚀🚀🚀 프로필 사진 변경 이벤트 전송 시도');
+          await FirebaseAnalyticsUtil.logProfilePhotoChange(
+            userId: userId,
+            oldAvatarUrl: oldAvatarUrl,
+            newAvatarUrl: finalAvatarUrl,
+            changeType: changeType,
+          );
+          debugPrint('🎯🎯🎯 프로필 사진 변경 이벤트 전송 완료');
+        } catch (analyticsError) {
+          debugPrint('❌ 프로필 사진 변경 이벤트 전송 실패: $analyticsError');
+        }
+      }
 
       // 직업 태그 업데이트 (직업이 변경된 경우에만)
       if (oldJob != job && job.isNotEmpty) {

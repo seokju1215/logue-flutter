@@ -10,6 +10,7 @@ import 'package:my_logue/data/datasources/user_book_api.dart';
 import 'package:my_logue/domain/usecases/get_user_books.dart';
 import 'package:my_logue/core/widgets/book/user_book_grid.dart';
 import 'package:my_logue/data/utils/fetch_profile.dart';
+import 'package:my_logue/data/utils/firebase_analytics_util.dart';
 import 'package:my_logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
 import 'dart:ui'; // 맨 위에 추가
 
@@ -648,6 +649,20 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
               final userId = profile?['id'];
               if (profileLink != null && profileLink.isNotEmpty) {
                 Share.share(profileLink);
+                
+                // Firebase Analytics 이벤트 전송
+                try {
+                  debugPrint('🚀🚀🚀 프로필 화면에서 공유 이벤트 전송 시도');
+                  await FirebaseAnalyticsUtil.logProfileShare(
+                    sourceScreen: 'profile_screen',
+                    sharedUserId: userId,
+                    sharedUsername: profile?['username'] ?? '',
+                    shareMethod: 'share_button',
+                  );
+                  debugPrint('🎯🎯🎯 프로필 화면에서 공유 이벤트 전송 완료');
+                } catch (analyticsError) {
+                  debugPrint('❌ 프로필 공유 이벤트 전송 실패: $analyticsError');
+                }
               }
             },
             child: const Text("프로필 공유",

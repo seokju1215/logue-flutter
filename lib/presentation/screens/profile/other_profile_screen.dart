@@ -14,6 +14,7 @@ import 'package:my_logue/data/repositories/follow_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../core/providers/follow_state_provider.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
 
 import '../../../core/widgets/profile/bio_content.dart';
 
@@ -215,11 +216,25 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
             padding: const EdgeInsets.only(right: 12),
             child: IconButton(
               icon: SvgPicture.asset('assets/share_button.svg'),
-              onPressed: () {
+              onPressed: () async {
                 final profileLink =
                     'https://www.logue.it.kr/u/${profile?['username']}';
                 if (profileLink.isNotEmpty) {
                   Share.share(profileLink);
+                  
+                  // Firebase Analytics 이벤트 전송
+                  try {
+                    debugPrint('🚀🚀🚀 다른 사용자 프로필에서 공유 이벤트 전송 시도');
+                    await FirebaseAnalyticsUtil.logProfileShare(
+                      sourceScreen: 'other_profile_screen',
+                      sharedUserId: widget.userId,
+                      sharedUsername: profile?['username'] ?? '',
+                      shareMethod: 'share_button',
+                    );
+                    debugPrint('🎯🎯🎯 다른 사용자 프로필에서 공유 이벤트 전송 완료');
+                  } catch (analyticsError) {
+                    debugPrint('❌ 다른 사용자 프로필 공유 이벤트 전송 실패: $analyticsError');
+                  }
                 }
               },
             ),
@@ -477,6 +492,13 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                             // 서버 요청 (백그라운드)
                             await followNotifier.unfollow();
                             debugPrint('🔍 언팔로우 서버 요청 완료');
+                            
+                            // Firebase Analytics 이벤트 전송
+                            await FirebaseAnalyticsUtil.logUnfollowUser(
+                              targetUserId: widget.userId,
+                              targetUsername: profile?['username'] ?? '',
+                              sourceScreen: 'other_profile_screen',
+                            );
                           } else {
                             // 팔로우
                             debugPrint('🔍 팔로우 버튼 클릭');
@@ -496,6 +518,19 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                             // 서버 요청 (백그라운드)
                             await followNotifier.follow();
                             debugPrint('🔍 팔로우 서버 요청 완료');
+                            
+                            // Firebase Analytics 이벤트 전송 (별도 try-catch)
+                            try {
+                              debugPrint('🚀🚀🚀 팔로우 이벤트 전송 시도: ${widget.userId}');
+                              await FirebaseAnalyticsUtil.logFollowUser(
+                                targetUserId: widget.userId,
+                                targetUsername: profile?['username'] ?? '',
+                                sourceScreen: 'other_profile_screen',
+                              );
+                              debugPrint('🎯🎯🎯 팔로우 이벤트 전송 완료: ${widget.userId}');
+                            } catch (analyticsError) {
+                              debugPrint('❌ 팔로우 이벤트 전송 실패: $analyticsError');
+                            }
                           }
                         } catch (e) {
                           // 실패 시 롤백

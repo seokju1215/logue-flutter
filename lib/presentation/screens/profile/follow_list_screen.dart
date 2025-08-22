@@ -10,6 +10,7 @@ import 'package:my_logue/domain/usecases/follows/is_following.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../core/providers/follow_state_provider.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
 
 class FollowListTab extends ConsumerStatefulWidget {
   final FollowListType type;
@@ -99,7 +100,21 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
     });
     
     // 서버 요청 (백그라운드)
-    followNotifier.follow().catchError((e) {
+    followNotifier.follow().then((_) {
+      // Firebase Analytics 이벤트 전송 (별도 try-catch)
+      try {
+        final targetUser = users.firstWhere((u) => u['id'] == targetUserId, orElse: () => {});
+        debugPrint('🚀🚀🚀 팔로우 리스트에서 이벤트 전송 시도: $targetUserId');
+        FirebaseAnalyticsUtil.logFollowUser(
+          targetUserId: targetUserId,
+          targetUsername: targetUser['username'] ?? '',
+          sourceScreen: 'follow_list_screen',
+        );
+        debugPrint('🎯🎯🎯 팔로우 리스트에서 이벤트 전송 완료: $targetUserId');
+      } catch (analyticsError) {
+        debugPrint('❌ 팔로우 리스트 이벤트 전송 실패: $analyticsError');
+      }
+    }).catchError((e) {
       debugPrint('❌ 팔로우 실패: $e');
       // 실패 시 롤백
       followNotifier.optimisticUnfollow();
@@ -132,7 +147,15 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
     });
     
     // 서버 요청 (백그라운드)
-    followNotifier.unfollow().catchError((e) {
+    followNotifier.unfollow().then((_) {
+      // Firebase Analytics 이벤트 전송
+      final targetUser = users.firstWhere((u) => u['id'] == targetUserId, orElse: () => {});
+      FirebaseAnalyticsUtil.logUnfollowUser(
+        targetUserId: targetUserId,
+        targetUsername: targetUser['username'] ?? '',
+        sourceScreen: 'follow_list_screen',
+      );
+    }).catchError((e) {
       debugPrint('❌ 언팔로우 실패: $e');
       // 실패 시 롤백
       followNotifier.optimisticFollow();

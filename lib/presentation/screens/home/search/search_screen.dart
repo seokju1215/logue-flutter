@@ -18,6 +18,7 @@ import 'package:my_logue/presentation/screens/book/book_detail_screen.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
 import 'package:my_logue/presentation/screens/profile/other_profile_screen.dart';
 import 'package:my_logue/core/constants/app_constants.dart';
+import '../../../../data/utils/firebase_analytics_util.dart';
 import 'package:my_logue/data/repositories/follow_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async'; // ✅ 타이머 패키지 추가
@@ -394,6 +395,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                               });
 
                                               await followNotifier.unfollow();
+                                              
+                                              // Firebase Analytics 이벤트 전송
+                                              await FirebaseAnalyticsUtil.logUnfollowUser(
+                                                targetUserId: e.id,
+                                                targetUsername: e.username,
+                                                sourceScreen: 'search_screen',
+                                              );
                                             } else {
                                               // 팔로우
                                               followNotifier.optimisticFollow();
@@ -408,6 +416,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                               });
 
                                               await followNotifier.follow();
+                                              
+                                              // Firebase Analytics 이벤트 전송 (별도 try-catch)
+                                              try {
+                                                debugPrint('🚀🚀🚀 검색에서 팔로우 이벤트 전송 시도: ${e.id}');
+                                                await FirebaseAnalyticsUtil.logFollowUser(
+                                                  targetUserId: e.id,
+                                                  targetUsername: e.username,
+                                                  sourceScreen: 'search_screen',
+                                                );
+                                                debugPrint('🎯🎯🎯 검색에서 팔로우 이벤트 전송 완료: ${e.id}');
+                                              } catch (analyticsError) {
+                                                debugPrint('❌ 검색 팔로우 이벤트 전송 실패: $analyticsError');
+                                              }
                                             }
                                           } catch (err) {
                                             debugPrint('❌ 팔로우 실패: $err');
@@ -551,6 +572,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                               });
 
                                               await followNotifier.unfollow();
+                                              
+                                              // Firebase Analytics 이벤트 전송
+                                              await FirebaseAnalyticsUtil.logUnfollowUser(
+                                                targetUserId: e.id,
+                                                targetUsername: e.username,
+                                                sourceScreen: 'search_screen',
+                                              );
                                             } else {
                                               // 팔로우
                                               followNotifier.optimisticFollow();
@@ -565,6 +593,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                                               });
 
                                               await followNotifier.follow();
+                                              
+                                              // Firebase Analytics 이벤트 전송 (별도 try-catch)
+                                              try {
+                                                debugPrint('🚀🚀🚀 검색에서 팔로우 이벤트 전송 시도: ${e.id}');
+                                                await FirebaseAnalyticsUtil.logFollowUser(
+                                                  targetUserId: e.id,
+                                                  targetUsername: e.username,
+                                                  sourceScreen: 'search_screen',
+                                                );
+                                                debugPrint('🎯🎯🎯 검색에서 팔로우 이벤트 전송 완료: ${e.id}');
+                                              } catch (analyticsError) {
+                                                debugPrint('❌ 검색 팔로우 이벤트 전송 실패: $analyticsError');
+                                              }
                                             }
                                           } catch (err) {
                                             debugPrint('❌ 팔로우 실패: $err');

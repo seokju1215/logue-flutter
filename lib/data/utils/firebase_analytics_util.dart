@@ -154,6 +154,231 @@ class FirebaseAnalyticsUtil {
     }
   }
 
+  // ===== 팔로우 관련 이벤트 =====
+  
+  /// 사용자 팔로우 이벤트
+  static Future<void> logFollowUser({
+    required String targetUserId,
+    required String targetUsername,
+    String? sourceScreen, // 어느 화면에서 팔로우했는지
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'target_user_id': targetUserId,
+        'target_username': targetUsername,
+        'source_screen': sourceScreen ?? 'unknown',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥🔥🔥 Firebase Analytics 이벤트 전송 시작: follow_user');
+      debugPrint('👤 대상 사용자: $targetUsername ($targetUserId)');
+      debugPrint('📱 소스 화면: $sourceScreen');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'follow_user',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅✅✅ Firebase Analytics 이벤트 전송 완료: follow_user');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 팔로우 이벤트 실패: $e');
+    }
+  }
+
+  /// 사용자 언팔로우 이벤트
+  static Future<void> logUnfollowUser({
+    required String targetUserId,
+    required String targetUsername,
+    String? sourceScreen, // 어느 화면에서 언팔로우했는지
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'target_user_id': targetUserId,
+        'target_username': targetUsername,
+        'source_screen': sourceScreen ?? 'unknown',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: unfollow_user');
+      debugPrint('👤 대상 사용자: $targetUsername ($targetUserId)');
+      debugPrint('📱 소스 화면: $sourceScreen');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'unfollow_user',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: unfollow_user');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 언팔로우 이벤트 실패: $e');
+    }
+  }
+
+  /// 프로필 공유 이벤트
+  static Future<void> logProfileShare({
+    required String sourceScreen, // 어느 화면에서 공유했는지
+    String? sharedUserId, // 공유된 사용자 ID (다른 사람 프로필 공유 시)
+    String? sharedUsername, // 공유된 사용자명
+    String? shareMethod, // 공유 방법 (앱 공유, 링크 복사 등)
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'source_screen': sourceScreen,
+        'shared_user_id': sharedUserId ?? '',
+        'shared_username': sharedUsername ?? '',
+        'share_method': shareMethod ?? 'unknown',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: profile_share');
+      debugPrint('📱 소스 화면: $sourceScreen');
+      debugPrint('👤 공유된 사용자: $sharedUsername ($sharedUserId)');
+      debugPrint('🔗 공유 방법: $shareMethod');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'profile_share',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: profile_share');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 프로필 공유 이벤트 실패: $e');
+    }
+  }
+
+  /// 프로필 링크 복사 이벤트
+  static Future<void> logCopyProfileLink({
+    required String sourceScreen, // 어느 화면에서 복사했는지
+    String? userId, // 복사한 사용자 ID
+    String? username, // 복사한 사용자명
+    String? copiedLink, // 복사된 링크
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'source_screen': sourceScreen,
+        'user_id': userId ?? '',
+        'username': username ?? '',
+        'copied_link': copiedLink ?? '',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: copy_profile_link');
+      debugPrint('📱 소스 화면: $sourceScreen');
+      debugPrint('👤 사용자: $username ($userId)');
+      debugPrint('🔗 복사된 링크: $copiedLink');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'copy_profile_link',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: copy_profile_link');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 프로필 링크 복사 이벤트 실패: $e');
+    }
+  }
+
+  /// 친구 찾기 버튼 클릭 이벤트
+  static Future<void> logFindFriendsClick({
+    required String sourceScreen, // 어느 화면에서 클릭했는지
+    String? userId, // 클릭한 사용자 ID
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'source_screen': sourceScreen,
+        'user_id': userId ?? '',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: find_friends_click');
+      debugPrint('📱 소스 화면: $sourceScreen');
+      debugPrint('👤 사용자 ID: $userId');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'find_friends_click',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: find_friends_click');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 친구 찾기 클릭 이벤트 실패: $e');
+    }
+  }
+
+  /// 사용자 이름 변경 이벤트
+  static Future<void> logUsernameChange({
+    required String oldUsername, // 기존 사용자 이름
+    required String newUsername, // 새로운 사용자 이름
+    String? userId, // 사용자 ID
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'old_username': oldUsername,
+        'new_username': newUsername,
+        'user_id': userId ?? '',
+        'username_length': newUsername.length,
+        'has_special_chars': newUsername.contains(RegExp(r'[^a-zA-Z0-9_]')) ? 'true' : 'false',
+        'has_numbers': newUsername.contains(RegExp(r'[0-9]')) ? 'true' : 'false',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: username_change');
+      debugPrint('👤 기존 사용자명: $oldUsername');
+      debugPrint('🆕 새로운 사용자명: $newUsername');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'username_change',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: username_change');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 사용자명 변경 이벤트 실패: $e');
+    }
+  }
+
   // ===== 책 관련 이벤트 =====
   
   /// 책 추가 이벤트 (신규 추가)
@@ -384,26 +609,6 @@ class FirebaseAnalyticsUtil {
   }
 
   // ===== 공유 및 바이럴 기능 이벤트 =====
-  
-  /// 프로필 공유 이벤트
-  static Future<void> logProfileShare({
-    required String shareMethod, // 'link_copy', 'social_share', 'friend_invite'
-    String? userId,
-  }) async {
-    try {
-      await _analytics.logEvent(
-        name: 'profile_shared',
-        parameters: {
-          'share_method': shareMethod,
-          'user_id': userId ?? '',
-          'timestamp': DateTime.now().toIso8601String(),
-          'date': DateTime.now().toIso8601String().split('T')[0],
-        },
-      );
-    } catch (e) {
-      print('❌ Firebase Analytics 프로필 공유 이벤트 실패: $e');
-    }
-  }
 
   /// 친구 초대 이벤트
   static Future<void> logFriendInvite({
@@ -517,67 +722,141 @@ class FirebaseAnalyticsUtil {
     }
   }
 
-  /// 사용자 이름 변경 이벤트
-  static Future<void> logUsernameChange({
-    required String oldUsername,
-    required String newUsername,
-    String? userId,
-  }) async {
-    try {
-      await _analytics.logEvent(
-        name: 'username_changed',
-        parameters: {
-          'old_username': oldUsername,
-          'new_username': newUsername,
-          'user_id': userId ?? '',
-          'timestamp': DateTime.now().toIso8601String(),
-          'date': DateTime.now().toIso8601String().split('T')[0],
-        },
-      );
-    } catch (e) {
-      print('❌ Firebase Analytics 사용자명 변경 이벤트 실패: $e');
-    }
-  }
+
 
   /// 프로필 사진 변경 이벤트
   static Future<void> logProfilePhotoChange({
     String? userId,
+    String? oldAvatarUrl, // 기존 아바타 URL
+    String? newAvatarUrl, // 새로운 아바타 URL
+    String? changeType,   // 'upload', 'select_preset', 'remove'
   }) async {
     try {
+      final now = DateTime.now();
+      final parameters = {
+        'user_id': userId ?? '',
+        'old_avatar_url': oldAvatarUrl ?? '',
+        'new_avatar_url': newAvatarUrl ?? '',
+        'change_type': changeType ?? 'unknown',
+        'is_custom_upload': (newAvatarUrl?.contains('supabase') == true) ? 'true' : 'false',
+        'is_default_avatar': (newAvatarUrl == 'basic' || newAvatarUrl?.isEmpty == true) ? 'true' : 'false',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: profile_photo_change');
+      debugPrint('📸 변경 타입: $changeType');
+      debugPrint('🖼️ 기존 아바타: $oldAvatarUrl');
+      debugPrint('🆕 새로운 아바타: $newAvatarUrl');
+      debugPrint('📊 파라미터: $parameters');
+      
       await _analytics.logEvent(
-        name: 'profile_photo_changed',
-        parameters: {
-          'user_id': userId ?? '',
-          'timestamp': DateTime.now().toIso8601String(),
-          'date': DateTime.now().toIso8601String().split('T')[0],
-        },
+        name: 'profile_photo_change',
+        parameters: parameters,
       );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: profile_photo_change');
     } catch (e) {
-      print('❌ Firebase Analytics 프로필 사진 변경 이벤트 실패: $e');
+      debugPrint('❌ Firebase Analytics 프로필 사진 변경 이벤트 실패: $e');
     }
   }
 
   // ===== 광고 및 수익화 이벤트 =====
   
-  /// 광고 배너 클릭 이벤트
-  static Future<void> logBannerAdClick({
-    required String bannerId,
-    required String bannerType,
+  /// 배너 클릭 이벤트
+  static Future<void> logBannerClick({
+    required String bannerId,      // 배너 고유 ID
+    required String bannerType,    // 배너 타입 (ad, promotion, feature 등)
+    required String sourceScreen,  // 어느 화면에서 클릭했는지
+    String? bannerTitle,           // 배너 제목
+    String? bannerUrl,             // 배너 링크 URL
+    String? position,              // 배너 위치 (top, middle, bottom)
     String? userId,
   }) async {
     try {
+      final now = DateTime.now();
+      final parameters = {
+        'banner_id': bannerId,
+        'banner_type': bannerType,
+        'source_screen': sourceScreen,
+        'banner_title': bannerTitle ?? '',
+        'banner_url': bannerUrl ?? '',
+        'position': position ?? 'unknown',
+        'user_id': userId ?? '',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: banner_click');
+      debugPrint('🎯 배너 ID: $bannerId');
+      debugPrint('📱 소스 화면: $sourceScreen');
+      debugPrint('🏷️ 배너 타입: $bannerType');
+      debugPrint('📍 배너 위치: $position');
+      debugPrint('📊 파라미터: $parameters');
+      
       await _analytics.logEvent(
-        name: 'banner_ad_clicked',
-        parameters: {
-          'banner_id': bannerId,
-          'banner_type': bannerType,
-          'user_id': userId ?? '',
-          'timestamp': DateTime.now().toIso8601String(),
-          'date': DateTime.now().toIso8601String().split('T')[0],
-        },
+        name: 'banner_click',
+        parameters: parameters,
       );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: banner_click');
     } catch (e) {
-      print('❌ Firebase Analytics 광고 배너 클릭 이벤트 실패: $e');
+      debugPrint('❌ Firebase Analytics 배너 클릭 이벤트 실패: $e');
+    }
+  }
+
+  /// 앱 시작 이벤트
+  static Future<void> logAppStart({
+    required String appVersion,
+    required String buildNumber,
+    String? userId,
+    String? platform, // 'android', 'ios'
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'app_version': appVersion,
+        'build_number': buildNumber,
+        'platform': platform ?? 'unknown',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      // user_id는 별도로 설정 (파라미터에 포함하지 않음)
+      if (userId != null) {
+        await _analytics.setUserId(id: userId);
+      }
+      
+      debugPrint('🔥🔥🔥 Firebase Analytics 이벤트 전송 시작: app_start');
+      debugPrint('📱 앱 버전: $appVersion');
+      debugPrint('🔢 빌드 번호: $buildNumber');
+      debugPrint('🖥️ 플랫폼: $platform');
+      debugPrint('👤 사용자 ID: $userId');
+      debugPrint('📊 전송할 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'app_start',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅✅✅ Firebase Analytics 이벤트 전송 완료: app_start');
+      debugPrint('🎯 이벤트명: app_start');
+      debugPrint('🎯 전송된 버전: $appVersion');
+      debugPrint('🎯 전송된 빌드: $buildNumber');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 앱 시작 이벤트 실패: $e');
     }
   }
 

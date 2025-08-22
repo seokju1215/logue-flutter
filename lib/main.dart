@@ -16,6 +16,8 @@ import 'package:flutter/services.dart';
 import 'package:my_logue/data/utils/mixpanel_util.dart';
 import 'package:my_logue/data/services/analytics_session_service.dart';
 import 'package:my_logue/data/services/book_activity_analytics_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:my_logue/data/utils/firebase_analytics_util.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: false);
@@ -59,6 +61,32 @@ void main() async {
         anonKey: supabaseAnonKey,
         debug: true,
       );
+
+      // 앱 시작 시 버전 정보 전송 (초기화 완료 후)
+      try {
+        final packageInfo = await PackageInfo.fromPlatform();
+        final platform = Platform.isAndroid ? 'android' : Platform.isIOS ? 'ios' : 'unknown';
+        final currentUser = Supabase.instance.client.auth.currentUser;
+        
+        await FirebaseAnalyticsUtil.logAppStart(
+          appVersion: packageInfo.version,
+          buildNumber: packageInfo.buildNumber,
+          userId: currentUser?.id,
+          platform: platform,
+        );
+        
+        // 현재 사용자가 있으면 사용자 속성도 설정
+        if (currentUser != null) {
+          await FirebaseAnalyticsUtil.setUserProperties(
+            appVersion: packageInfo.version,
+            userId: currentUser.id,
+          );
+        }
+        
+        print('✅ 앱 시작 시 버전 정보 전송 완료: ${packageInfo.version} (${packageInfo.buildNumber})');
+      } catch (e) {
+        print('❌ 앱 시작 시 버전 정보 전송 실패: $e');
+      }
 
 
     } catch (e, s) {
@@ -116,6 +144,29 @@ void main() async {
                 print('✅ 사용자 정보 설정 완료');
               } catch (e) {
                 print('⚠️ 사용자 정보 설정 실패: $e');
+              }
+              
+              // 앱 시작 이벤트 전송 (버전 정보 포함)
+              try {
+                final packageInfo = await PackageInfo.fromPlatform();
+                final platform = Platform.isAndroid ? 'android' : Platform.isIOS ? 'ios' : 'unknown';
+                
+                await FirebaseAnalyticsUtil.logAppStart(
+                  appVersion: packageInfo.version,
+                  buildNumber: packageInfo.buildNumber,
+                  userId: user.id,
+                  platform: platform,
+                );
+                
+                // 사용자 속성에도 앱 버전 설정
+                await FirebaseAnalyticsUtil.setUserProperties(
+                  appVersion: packageInfo.version,
+                  userId: user.id,
+                );
+                
+                print('✅ 앱 시작 이벤트 전송 완료');
+              } catch (e) {
+                print('❌ 앱 시작 이벤트 전송 실패: $e');
               }
               
               print('✅ AnalyticsSessionService 시작 완료');

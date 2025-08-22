@@ -11,6 +11,7 @@ import 'input_phone_number_screen.dart';
 import '../../../../core/widgets/follow/follow_user_tile.dart';
 import '../../../screens/profile/other_profile_screen.dart';
 import '../../../../core/providers/follow_state_provider.dart';
+import '../../../../data/utils/firebase_analytics_util.dart';
 
 class FindFriendsScreen extends ConsumerStatefulWidget {
   final String? contactNumber;
@@ -209,6 +210,20 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
                                 final username = response['username'];
                                 final profileLink = 'https://www.logue.it.kr/u/$username';
                                 Share.share(profileLink);
+                                
+                                // Firebase Analytics 이벤트 전송
+                                try {
+                                  debugPrint('🚀🚀🚀 친구찾기에서 친구초대 이벤트 전송 시도');
+                                  await FirebaseAnalyticsUtil.logProfileShare(
+                                    sourceScreen: 'find_friends_screen',
+                                    sharedUserId: userId,
+                                    sharedUsername: username,
+                                    shareMethod: 'invite_friends_button',
+                                  );
+                                  debugPrint('🎯🎯🎯 친구찾기에서 친구초대 이벤트 전송 완료');
+                                } catch (analyticsError) {
+                                  debugPrint('❌ 친구찾기 친구초대 이벤트 전송 실패: $analyticsError');
+                                }
                               }
                             },
                             style: _outlinedStyle(context),
@@ -267,6 +282,19 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
                               followNotifier.optimisticFollow();
                               try {
                                 await followNotifier.follow();
+                                
+                                // Firebase Analytics 이벤트 전송
+                                try {
+                                  debugPrint('🚀🚀🚀 친구찾기에서 팔로우 이벤트 전송 시도: ${friend['user_id']}');
+                                  await FirebaseAnalyticsUtil.logFollowUser(
+                                    targetUserId: friend['user_id'],
+                                    targetUsername: friend['username'] ?? '',
+                                    sourceScreen: 'find_friends_screen',
+                                  );
+                                  debugPrint('🎯🎯🎯 친구찾기에서 팔로우 이벤트 전송 완료: ${friend['user_id']}');
+                                } catch (analyticsError) {
+                                  debugPrint('❌ 친구찾기 팔로우 이벤트 전송 실패: $analyticsError');
+                                }
                               } catch (_) {
                                 followNotifier.optimisticUnfollow();
                               }
@@ -276,6 +304,19 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
                               followNotifier.optimisticUnfollow();
                               try {
                                 await followNotifier.unfollow();
+                                
+                                // Firebase Analytics 이벤트 전송
+                                try {
+                                  debugPrint('🚀🚀🚀 친구찾기에서 언팔로우 이벤트 전송 시도: ${friend['user_id']}');
+                                  await FirebaseAnalyticsUtil.logUnfollowUser(
+                                    targetUserId: friend['user_id'],
+                                    targetUsername: friend['username'] ?? '',
+                                    sourceScreen: 'find_friends_screen',
+                                  );
+                                  debugPrint('🎯🎯🎯 친구찾기에서 언팔로우 이벤트 전송 완료: ${friend['user_id']}');
+                                } catch (analyticsError) {
+                                  debugPrint('❌ 친구찾기 언팔로우 이벤트 전송 실패: $analyticsError');
+                                }
                               } catch (_) {
                                 followNotifier.optimisticFollow();
                               }

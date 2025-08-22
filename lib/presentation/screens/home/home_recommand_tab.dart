@@ -18,6 +18,7 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:my_logue/presentation/screens/home/find_friends/find_friends_screen.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
 
 class HomeRecommendTab extends ConsumerStatefulWidget {
   const HomeRecommendTab({super.key});
@@ -469,6 +470,20 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                             setState(() {
                               isFindingFriends = true;
                             });
+                            
+                            // Firebase Analytics 이벤트 전송
+                            try {
+                              final currentUserId = client.auth.currentUser?.id;
+                              debugPrint('🚀🚀🚀 홈 추천에서 친구찾기 버튼 클릭 이벤트 전송 시도');
+                              await FirebaseAnalyticsUtil.logFindFriendsClick(
+                                sourceScreen: 'home_recommend_tab',
+                                userId: currentUserId,
+                              );
+                              debugPrint('🎯🎯🎯 홈 추천에서 친구찾기 버튼 클릭 이벤트 전송 완료');
+                            } catch (analyticsError) {
+                              debugPrint('❌ 친구찾기 버튼 클릭 이벤트 전송 실패: $analyticsError');
+                            }
+                            
                             try {
                               await _handleFindFriends();
                             } finally {
@@ -566,6 +581,19 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                           followNotifier.optimisticFollow();
                           try {
                             await followNotifier.follow();
+                            
+                            // Firebase Analytics 이벤트 전송
+                            try {
+                              debugPrint('🚀🚀🚀 홈 추천에서 팔로우 이벤트 전송 시도: ${user['user_id']}');
+                              await FirebaseAnalyticsUtil.logFollowUser(
+                                targetUserId: user['user_id'],
+                                targetUsername: user['username'] ?? '',
+                                sourceScreen: 'home_recommend_tab',
+                              );
+                              debugPrint('🎯🎯🎯 홈 추천에서 팔로우 이벤트 전송 완료: ${user['user_id']}');
+                            } catch (analyticsError) {
+                              debugPrint('❌ 홈 추천 팔로우 이벤트 전송 실패: $analyticsError');
+                            }
                           } catch (e) {
                             followNotifier.optimisticUnfollow();
                           }
@@ -576,6 +604,19 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                           followNotifier.optimisticUnfollow();
                           try {
                             await followNotifier.unfollow();
+                            
+                            // Firebase Analytics 이벤트 전송
+                            try {
+                              debugPrint('🚀🚀🚀 홈 추천에서 언팔로우 이벤트 전송 시도: ${user['user_id']}');
+                              await FirebaseAnalyticsUtil.logUnfollowUser(
+                                targetUserId: user['user_id'],
+                                targetUsername: user['username'] ?? '',
+                                sourceScreen: 'home_recommend_tab',
+                              );
+                              debugPrint('🎯🎯🎯 홈 추천에서 언팔로우 이벤트 전송 완료: ${user['user_id']}');
+                            } catch (analyticsError) {
+                              debugPrint('❌ 홈 추천 언팔로우 이벤트 전송 실패: $analyticsError');
+                            }
                           } catch (e) {
                             followNotifier.optimisticFollow();
                           }
@@ -671,6 +712,19 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                         followNotifier.optimisticFollow();
                         try {
                           await followNotifier.follow();
+                          
+                          // Firebase Analytics 이벤트 전송
+                          try {
+                            debugPrint('🚀🚀🚀 홈 활성사용자에서 팔로우 이벤트 전송 시도: ${user['user_id']}');
+                            await FirebaseAnalyticsUtil.logFollowUser(
+                              targetUserId: user['user_id'],
+                              targetUsername: user['username'] ?? '',
+                              sourceScreen: 'home_recommend_tab',
+                            );
+                            debugPrint('🎯🎯🎯 홈 활성사용자에서 팔로우 이벤트 전송 완료: ${user['user_id']}');
+                          } catch (analyticsError) {
+                            debugPrint('❌ 홈 활성사용자 팔로우 이벤트 전송 실패: $analyticsError');
+                          }
                         } catch (e) {
                           followNotifier.optimisticUnfollow();
                         }
@@ -681,6 +735,19 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                         followNotifier.optimisticUnfollow();
                         try {
                           await followNotifier.unfollow();
+                          
+                          // Firebase Analytics 이벤트 전송
+                          try {
+                            debugPrint('🚀🚀🚀 홈 활성사용자에서 언팔로우 이벤트 전송 시도: ${user['user_id']}');
+                            await FirebaseAnalyticsUtil.logUnfollowUser(
+                              targetUserId: user['user_id'],
+                              targetUsername: user['username'] ?? '',
+                              sourceScreen: 'home_recommend_tab',
+                            );
+                            debugPrint('🎯🎯🎯 홈 활성사용자에서 언팔로우 이벤트 전송 완료: ${user['user_id']}');
+                          } catch (analyticsError) {
+                            debugPrint('❌ 홈 활성사용자 언팔로우 이벤트 전송 실패: $analyticsError');
+                          }
                         } catch (e) {
                           followNotifier.optimisticFollow();
                         }
