@@ -16,6 +16,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../core/providers/follow_state_provider.dart';
 
 import '../../../core/widgets/profile/bio_content.dart';
+
 // import 'package:logue/data/utils/amplitude_util.dart';
 import 'follow/follow_tab_screen.dart';
 
@@ -39,6 +40,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   Map<String, dynamic>? profile;
   late final GetUserBooks _getUserBooks;
   List<Map<String, dynamic>> books = [];
+
 
   @override
   void initState() {
@@ -82,11 +84,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   Future<void> _fetchProfile() async {
     final userId = widget.userId;
 
-    final data = await client
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
+    final data =
+        await client.from('profiles').select().eq('id', userId).maybeSingle();
 
     if (mounted) {
       setState(() {
@@ -119,8 +118,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
   Future<void> _loadBooks() async {
     final result = await _getUserBooks(widget.userId);
-    result.sort((a, b) =>
-        (a['order_index'] as int).compareTo(b['order_index'] as int));
+    result.sort(
+        (a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
     setState(() => books = result);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkIfScrollable();
@@ -153,7 +152,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                       fit: BoxFit.cover,
                       image: avatarUrl == 'basic'
                           ? const AssetImage('assets/basic_avatar.png')
-                      as ImageProvider
+                              as ImageProvider
                           : NetworkImage(avatarUrl),
                     ),
                   ),
@@ -170,7 +169,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   void dispose() {
     debugPrint('🔍 OtherProfileScreen dispose: ${widget.userId}');
     _scrollController.dispose();
-    
+
     // 화면이 dispose될 때도 상태 변경 여부를 반환
     if (_hasFollowStateChanged && mounted) {
       // 릴리즈 모드에서 네트워크 요청 완료를 보장하기 위한 대기
@@ -180,7 +179,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         }
       });
     }
-    
+
     super.dispose();
   }
 
@@ -189,10 +188,20 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     if (profile == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final profileUserId = profile?['id'];
+    final isMyProfile = currentUserId == profileUserId;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(profile?['username'] ?? 'User', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
+        title: Text(
+          profile?['username'] ?? 'User',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.black900,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         centerTitle: true,
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
@@ -207,7 +216,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
             child: IconButton(
               icon: SvgPicture.asset('assets/share_button.svg'),
               onPressed: () {
-                final profileLink = 'https://www.logue.it.kr/u/${profile?['username']}';
+                final profileLink =
+                    'https://www.logue.it.kr/u/${profile?['username']}';
                 if (profileLink.isNotEmpty) {
                   Share.share(profileLink);
                 }
@@ -221,38 +231,46 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           controller: _scrollController,
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildProfileHeader(),
-              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
+                child: _buildProfileHeader(),
+              ),
+              isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
+
               if (books.isNotEmpty)
-                _buildBookGrid()
-              else
-                ...[
-                  const SizedBox(height: 130),
-                  const Center(
-                    child: Text(
-                      '인생 책이 없어요.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.black500),
-                    ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 0, horizontal: 26),
+                  child: _buildBookGrid(),
+                )
+              else ...[
+                const SizedBox(height: 130),
+                const Center(
+                  child: Text(
+                    '인생 책이 없어요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: AppColors.black500),
                   ),
-                  const SizedBox(height: 90),
-                ]
+                ),
+                const SizedBox(height: 90),
+              ]
             ],
           ),
         ),
       ),
     );
   }
-  ButtonStyle _outlinedStyle(BuildContext context, {required bool isFollowing}) {
+
+  ButtonStyle _outlinedStyle(BuildContext context,
+      {required bool isFollowing}) {
     return ButtonStyle(
       foregroundColor: MaterialStateProperty.all(AppColors.black900),
       backgroundColor: MaterialStateProperty.all(Colors.white),
       overlayColor: MaterialStateProperty.resolveWith<Color?>(
-            (states) {
+        (states) {
           if (states.contains(MaterialState.pressed)) {
             return AppColors.black100;
           }
@@ -283,6 +301,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       ),
     );
   }
+
   String formatCount(int count) {
     if (count >= 1000) {
       double divided = count / 1000;
@@ -292,16 +311,17 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       return count.toString();
     }
   }
+
   Widget _buildProfileHeader() {
     final avatarUrl = profile?['avatar_url'] ?? 'basic';
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final profileUserId = profile?['id'];
     final isMyProfile = currentUserId == profileUserId;
-    
+
     // StateProvider에서 팔로우 상태 가져오기
     final riverpodIsFollowing = ref.watch(followStateProvider(widget.userId));
     final isFollowing = riverpodIsFollowing;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -315,20 +335,20 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                 children: [
                   Text(profile?['name'] ?? '',
                       style:
-                      TextStyle(fontSize: 22, color: AppColors.black900)),
+                          TextStyle(fontSize: 22, color: AppColors.black900)),
                   const SizedBox(height: 3),
-                  if (profile?['job'] == '')
-                    const SizedBox(height:4),
+                  if (profile?['job'] == '') const SizedBox(height: 4),
                   if (profile?['job'] != '')
                     Text(profile?['job'] ?? '',
-                        style: TextStyle(fontSize: 15, color: AppColors.black500)),
-                  if (profile?['job'] != '')
-                    const SizedBox(height: 9),
+                        style:
+                            TextStyle(fontSize: 15, color: AppColors.black500)),
+                  if (profile?['job'] != '') const SizedBox(height: 9),
                   _buildBio(context),
+                  if (profile?['job'] == '') const SizedBox(height: 5),
                   if (profile?['job'] == '')
-                    const SizedBox(height : 5),
-                  if (profile?['job'] == '')
-                    Text('', style: TextStyle(fontSize: 15, color: AppColors.black500)),
+                    Text('',
+                        style:
+                            TextStyle(fontSize: 15, color: AppColors.black500)),
                   const SizedBox(height: 9),
                 ],
               ),
@@ -346,12 +366,11 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                   ),
                   child: CircleAvatar(
                     radius: 40.5,
-                    backgroundImage: avatarUrl == 'basic'
-                        ? null
-                        : NetworkImage(avatarUrl),
+                    backgroundImage:
+                        avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
                     child: avatarUrl == 'basic'
                         ? Image.asset('assets/basic_avatar.png',
-                        width: 80, height: 80)
+                            width: 80, height: 80)
                         : null,
                   ),
                 ),
@@ -364,7 +383,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           builder: (context, snapshot) {
             final followerCount = snapshot.data?['followers'] ?? 0;
             final followingCount = snapshot.data?['following'] ?? 0;
-            
+
             return Row(
               children: [
                 GestureDetector(
@@ -422,86 +441,110 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                 ),
                 Spacer(),
                 if (!isMyProfile)
-                  OutlinedButton(
-                    onPressed: () async {
-                      if (_isFollowActionInProgress) {
-                        debugPrint('🔴 팔로우 액션 중복 방지');
-                        return;
-                      }
-
-                      _isFollowActionInProgress = true;
-                      debugPrint('🔍 팔로우 액션 시작: ${widget.userId}');
-                      final followNotifier = ref.read(followStateProvider(widget.userId).notifier);
-                      // 팔로워 카운트는 실시간 조회로 처리
-
-                      try {
-                        if (isFollowing) {
-                          // 언팔로우
-                          debugPrint('🔍 언팔로우 버튼 클릭');
-
-                          // 팔로우 상태 변경 플래그 설정
-                          _hasFollowStateChanged = true;
-
-                          // 즉시 UI 업데이트 (Optimistic Update)
-                          followNotifier.optimisticUnfollow();
-
-                          // 서버 요청 (백그라운드)
-                          await followNotifier.unfollow();
-                          debugPrint('🔍 언팔로우 서버 요청 완료');
-                        } else {
-                          // 팔로우
-                          debugPrint('🔍 팔로우 버튼 클릭');
-
-                          // 팔로우 상태 변경 플래그 설정
-                          _hasFollowStateChanged = true;
-
-                          // 즉시 UI 업데이트 (Optimistic Update)
-                          followNotifier.optimisticFollow();
-
-                          // 서버 요청 (백그라운드)
-                          await followNotifier.follow();
-                          debugPrint('🔍 팔로우 서버 요청 완료');
+                  SizedBox(
+                    height : 34,
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        if (_isFollowActionInProgress) {
+                          debugPrint('🔴 팔로우 액션 중복 방지');
+                          return;
                         }
 
-                        // 성공 시 UI 새로고침으로 최신 카운트 반영
-                        if (mounted) setState(() {});
-                      } catch (e) {
-                        // 실패 시 롤백
-                        if (isFollowing) {
-                          followNotifier.optimisticFollow();
-                        } else {
-                          followNotifier.optimisticUnfollow();
+                        _isFollowActionInProgress = true;
+                        debugPrint('🔍 팔로우 액션 시작: ${widget.userId}');
+                        final followNotifier =
+                            ref.read(followStateProvider(widget.userId).notifier);
+                        final currentFollowers = profile?['followers'] ?? 0;
+
+                        try {
+                          if (isFollowing) {
+                            // 언팔로우
+                            debugPrint('🔍 언팔로우 버튼 클릭');
+
+                            // 팔로우 상태 변경 플래그 설정
+                            _hasFollowStateChanged = true;
+
+                            // 즉시 UI 업데이트 (Optimistic Update)
+                            followNotifier.optimisticUnfollow();
+                            setState(() {
+                              profile = {
+                                ...?profile,
+                                'followers': (currentFollowers - 1)
+                                    .clamp(0, currentFollowers),
+                              };
+                            });
+
+                            // 서버 요청 (백그라운드)
+                            await followNotifier.unfollow();
+                            debugPrint('🔍 언팔로우 서버 요청 완료');
+                          } else {
+                            // 팔로우
+                            debugPrint('🔍 팔로우 버튼 클릭');
+
+                            // 팔로우 상태 변경 플래그 설정
+                            _hasFollowStateChanged = true;
+
+                            // 즉시 UI 업데이트 (Optimistic Update)
+                            followNotifier.optimisticFollow();
+                            setState(() {
+                              profile = {
+                                ...?profile,
+                                'followers': currentFollowers + 1,
+                              };
+                            });
+
+                            // 서버 요청 (백그라운드)
+                            await followNotifier.follow();
+                            debugPrint('🔍 팔로우 서버 요청 완료');
+                          }
+                        } catch (e) {
+                          // 실패 시 롤백
+                          if (isFollowing) {
+                            followNotifier.optimisticFollow();
+                          } else {
+                            followNotifier.optimisticUnfollow();
+                          }
+                          _hasFollowStateChanged = false; // 실패 시 플래그 리셋
+                          if (mounted) {
+                            setState(() {
+                              profile = {
+                                ...?profile,
+                                'followers': currentFollowers,
+                              };
+                            });
+                            debugPrint(
+                                '❌ ${isFollowing ? '언팔로우' : '팔로우'} 실패: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(
+                                      '${isFollowing ? '언팔로우' : '팔로우'}에 실패했습니다: $e')),
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            _isFollowActionInProgress = false;
+                            debugPrint('🔍 팔로우 액션 완료: ${widget.userId}');
+                          }
                         }
-                        _hasFollowStateChanged = false; // 실패 시 플래그 리셋
-                        if (mounted) {
-                          debugPrint('❌ ${isFollowing ? '언팔로우' : '팔로우'} 실패: $e');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('${isFollowing ? '언팔로우' : '팔로우'}에 실패했습니다: $e')),
-                          );
-                        }
-                      } finally {
-                        if (mounted) {
-                          _isFollowActionInProgress = false;
-                          debugPrint('🔍 팔로우 액션 완료: ${widget.userId}');
-                        }
-                      }
-                    },
-                    style: _outlinedStyle(context, isFollowing: isFollowing),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          isFollowing ? '팔로잉' : '팔로우 +',
-                          style: TextStyle(
-                            color: isFollowing ? AppColors.black500 : AppColors.black900,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            height: 1.23,
+                      },
+                      style: _outlinedStyle(context, isFollowing: isFollowing),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isFollowing ? '팔로잉' : '팔로우 +',
+                            style: TextStyle(
+                              color: isFollowing
+                                  ? AppColors.black500
+                                  : AppColors.black900,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              height: 1.23,
+                            ),
                           ),
-                        ),
-                        if (!isFollowing)
-                          const SizedBox(width: 1.8),
-                      ],
+                          if (!isFollowing) const SizedBox(width: 1.8),
+                        ],
+                      ),
                     ),
                   )
               ],
@@ -519,7 +562,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         final bookId = book['book_id'] ?? book['id']; // <- 🔥 보장
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => MyBookPostScreen(bookId: bookId, userId : widget.userId),
+            builder: (_) =>
+                MyBookPostScreen(bookId: bookId, userId: widget.userId),
           ),
         );
       },
@@ -541,20 +585,21 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
     return isTappable
         ? MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: content,
-    )
+            cursor: SystemMouseCursors.click,
+            child: content,
+          )
         : content;
   }
 
   Widget _buildBio(BuildContext context) {
     final bio = profile?['bio'] ?? '';
     const avatarSize = 40.0;
-    const horizontalPadding = 22.0;
+    const horizontalPadding = 11.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth - avatarSize - horizontalPadding;
+        final availableWidth =
+            constraints.maxWidth - avatarSize - horizontalPadding;
         return BioContent(bio: bio, maxWidth: availableWidth);
       },
     );
@@ -568,23 +613,19 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     // 팔로우 상태가 변경되었을 때만 true 반환
     final result = _hasFollowStateChanged ? true : null;
     debugPrint('🔍 Navigator.pop 실행 - result: $result');
-    
+
     if (mounted) {
       debugPrint('🔍 Navigator.pop 호출 전');
-      
+
       // 팔로우 상태가 변경된 경우 네트워크 요청 완료 대기
       if (_hasFollowStateChanged) {
         debugPrint('🔍 팔로우 상태 변경됨 - 네트워크 요청 완료 대기');
         // 릴리즈 모드에서 네트워크 요청 완료를 보장하기 위한 대기
         await Future.delayed(const Duration(milliseconds: 800));
       }
-      
+
       Navigator.pop(context, result);
       debugPrint('🔍 Navigator.pop 호출 후');
     }
   }
-
-
-
-
 }
