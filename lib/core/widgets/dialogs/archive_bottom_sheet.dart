@@ -82,15 +82,75 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
 
   /// archive_tab에서 순서 변경 시 즉시 호출되는 콜백
   void _onArchiveOrderChanged() {
-    debugPrint('🔄 ArchiveBottomSheet - 외부 순서 변경 알림 받음, 로딩 상태로 전환');
+    debugPrint('🚀 ArchiveBottomSheet - 외부 순서 변경 알림 받음, 즉시 로컬 업데이트');
     if (!mounted) return;
     
-    // 로딩 상태 표시 후 서버에서 최신 데이터 다시 로드
+    // 서버 조회 없이 즉시 로컬 데이터로 업데이트
+    _updateFromExternalData();
+  }
+
+  /// 외부(archive_tab)에서 변경된 데이터로 즉시 업데이트
+  void _updateFromExternalData() {
+    try {
+      // widget.allBooks에서 보관함 책들만 필터링하여 즉시 반영
+      final archivedBooks = widget.allBooks
+          .where((book) => book['is_archived'] == true)
+          .toList()
+        ..sort((a, b) {
+          final aIndex = a['archived_order_index'] ?? 0;
+          final bIndex = b['archived_order_index'] ?? 0;
+          return aIndex.compareTo(bIndex);
+        });
+
+      debugPrint('🚀 즉시 로컬 업데이트: ${archivedBooks.length}개 보관함 책');
+
+      if (mounted) {
+        setState(() {
+          _localBooks.clear();
+          _localBooks.addAll(archivedBooks);
+          
+          // 기준 순서 업데이트
+          originalOrder = _localBooks.map((b) => b['id'] as String).toList();
+          
+          // 선택 상태 업데이트
+          _updateSelectionFromLocalBooks();
+          
+          // 총 개수 업데이트
+          _totalCount = archivedBooks.length;
+          _hasMore = false; // 로컬 데이터이므로 더 불러올 것 없음
+          _offset = archivedBooks.length;
+          
+          // 로딩 상태 해제
+          _isInitialLoading = false;
+          _isPageLoading = false;
+        });
+      }
+
+      debugPrint('✅ 즉시 로컬 업데이트 완료: ${_localBooks.length}개 책 표시');
+      
+      // 백그라운드에서 서버 데이터와 동기화 (사용자는 기다리지 않음)
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _refreshFromServer();
+        }
+      });
+      
+    } catch (e) {
+      debugPrint('❌ 즉시 로컬 업데이트 실패: $e');
+      // 실패 시 기존 방식으로 폴백
+      _onArchiveOrderChangedFallback();
+    }
+  }
+
+  /// 폴백: 기존 서버 조회 방식
+  void _onArchiveOrderChangedFallback() {
+    debugPrint('🔄 ArchiveBottomSheet - 폴백: 서버에서 데이터 새로고침');
+    if (!mounted) return;
+    
     setState(() {
       _isInitialLoading = true;
     });
     
-    // 짧은 지연 후 새로고침 (즉시 저장이므로 빠르게 반영)
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) {
         _refreshFromServer();

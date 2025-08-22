@@ -281,7 +281,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     },
                     onArchiveOrderChanged: () {
                       debugPrint('🔄 ArchiveTab 순서 변경 - archive_bottom_sheet에 즉시 알림');
-                      // archive_bottom_sheet에 즉시 알림
+                      // archive_bottom_sheet에 즉시 알림 (업데이트된 allBooks와 함께)
                       _notifyArchiveBottomSheet?.call();
                     },
                     navigatorKey: widget.navigatorKey,

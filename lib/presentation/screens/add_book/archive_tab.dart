@@ -105,6 +105,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
   @override
   void dispose() {
     _autoScrollTimer?.cancel();
+    _dragCompleteTimer?.cancel(); // 드래그 완료 타이머 정리
     _scrollController.removeListener(_onScrollReachBottom);
     _scrollController.dispose();
     super.dispose();
@@ -210,6 +211,9 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
   // ========== 드래그 처리 (로컬만 변경, 저장은 flush에서) ==========
 
+  bool _isDraggingActive = false; // 드래그 진행 중 여부
+  Timer? _dragCompleteTimer; // 드래그 완료 감지 타이머
+
   void _onReorder(int oldIndex, int newIndex) {
     if (!mounted || oldIndex == newIndex) return;
 
@@ -217,12 +221,22 @@ class _ArchiveTabState extends State<ArchiveTab> {
       final item = _localBooks.removeAt(oldIndex);
       _localBooks.insert(newIndex, item);
       _hasLocalChanges = true;
+      _isDraggingActive = true; // 드래그 시작
     });
 
     widget.onBooksChanged?.call(List<Map<String, dynamic>>.from(_localBooks));
     
-    // 순서 변경 시 즉시 서버에 저장하고 알림
-    _saveOrderChangeImmediately();
+    // 기존 타이머 취소
+    _dragCompleteTimer?.cancel();
+    
+    // 드래그 완료 감지 타이머 (연속 드래그 시 마지막에만 실행)
+    _dragCompleteTimer = Timer(const Duration(milliseconds: 100), () {
+      if (_isDraggingActive && _hasLocalChanges) {
+        _isDraggingActive = false;
+        debugPrint('🎯 드래그 완료 감지 - 즉시 저장 및 알림');
+        _saveOrderChangeImmediately();
+      }
+    });
   }
 
   /// 순서 변경 시 즉시 서버에 저장하고 archive_bottom_sheet에 알림
@@ -236,7 +250,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
     try {
       debugPrint('🚀 순서 변경 즉시 저장 시작: ${_localBooks.length}개 책');
       
-      // 즉시 알림 먼저 보냄 (저장과 병렬 처리)
+      // 즉시 알림 - 로컬 데이터와 함께 전송
       widget.onArchiveOrderChanged?.call();
       
       // 변경된 순서만 추출하여 업데이트 (기존 최적화 로직 유지)
