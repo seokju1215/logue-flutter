@@ -49,6 +49,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
   
   // archive_tab의 변경사항 상태 추적
   bool _hasArchiveChanges = false;
+  
+  // archive_bottom_sheet에 즉시 순서 변경 알림을 위한 콜백
+  VoidCallback? _notifyArchiveBottomSheet;
 
   @override
   void initState() {
@@ -236,6 +239,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       });
                       widget.onLoadingStateChanged?.call(isLoading);
                     },
+                    onRegisterArchiveNotificationCallback: (callback) {
+                      debugPrint('🔗 ArchiveBottomSheet 알림 콜백 등록');
+                      _notifyArchiveBottomSheet = callback;
+                    },
                   ),
                   ArchiveTab(
                     key: _archiveTabStateKey, // GlobalKey 사용
@@ -271,6 +278,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
                         _hasArchiveChanges = true;
                         debugPrint('✅ _hasArchiveChanges = true로 설정');
                       });
+                    },
+                    onArchiveOrderChanged: () {
+                      debugPrint('🔄 ArchiveTab 순서 변경 - archive_bottom_sheet에 즉시 알림');
+                      // archive_bottom_sheet에 즉시 알림
+                      _notifyArchiveBottomSheet?.call();
                     },
                     navigatorKey: widget.navigatorKey,
                   ),

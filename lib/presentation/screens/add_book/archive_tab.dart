@@ -19,6 +19,7 @@ class ArchiveTab extends StatefulWidget {
   final Function(List<Map<String, dynamic>>)? onBooksChanged;
   final GlobalKey<NavigatorState>? navigatorKey;
   final VoidCallback? onFocusMe;
+  final VoidCallback? onArchiveOrderChanged; // 보관함 순서 변경 시 즉시 알림
 
   const ArchiveTab({
     Key? key,
@@ -28,6 +29,7 @@ class ArchiveTab extends StatefulWidget {
     this.onBooksChanged,
     this.navigatorKey,
     this.onFocusMe,
+    this.onArchiveOrderChanged,
   }) : super(key: key);
 
   @override
@@ -49,6 +51,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
   final List<Map<String, dynamic>> _localBooks = []; // 페이지를 쌓아서 보관
   List<String> originalOrder = [];
   bool _hasLocalChanges = false;   // 드래그 정렬 후 저장 대기
+  bool _isSavingOrder = false;     // 순서 변경 저장 중 상태
   Future<void> _fetchTotalCount() async {
     try {
       final uid = client.auth.currentUser?.id;
@@ -217,26 +220,113 @@ class _ArchiveTabState extends State<ArchiveTab> {
     });
 
     widget.onBooksChanged?.call(List<Map<String, dynamic>>.from(_localBooks));
+    
+    // 순서 변경 시 즉시 서버에 저장하고 알림
+    _saveOrderChangeImmediately();
+  }
+
+  /// 순서 변경 시 즉시 서버에 저장하고 archive_bottom_sheet에 알림
+  Future<void> _saveOrderChangeImmediately() async {
+    if (!_hasLocalChanges || _isSavingOrder) return;
+
+    setState(() {
+      _isSavingOrder = true;
+    });
+
+    try {
+      debugPrint('🚀 순서 변경 즉시 저장 시작: ${_localBooks.length}개 책');
+      
+      // 즉시 알림 먼저 보냄 (저장과 병렬 처리)
+      widget.onArchiveOrderChanged?.call();
+      
+      // 변경된 순서만 추출하여 업데이트 (기존 최적화 로직 유지)
+      final updates = <Map<String, dynamic>>[];
+      final currentOrder = _localBooks.map((b) => b['id'] as String).toList();
+
+      for (int i = 0; i < _localBooks.length; i++) {
+        final id = _localBooks[i]['id'];
+        final originalIndex = originalOrder.indexOf(id);
+
+        // 원래 순서와 다르거나, 원래 목록에 없던 새 책인 경우
+        if (originalIndex != i) {
+          updates.add({
+            'id': id,
+            'archived_order_index': i,
+          });
+        }
+      }
+
+      debugPrint('📝 즉시 업데이트 대상: ${updates.length}개 책');
+
+      // 변경된 책들만 업데이트
+      for (final update in updates) {
+        await client
+            .from('user_books')
+            .update({'archived_order_index': update['archived_order_index']})
+            .eq('id', update['id']);
+      }
+
+      _hasLocalChanges = false;
+      originalOrder = _localBooks.map((b) => b['id'] as String).toList();
+
+      debugPrint('✅ 순서 변경 즉시 저장 완료: ${updates.length}개 업데이트');
+
+      // 상위 새로고침은 하지 않음 (archive_bottom_sheet만 업데이트)
+    } catch (e) {
+      debugPrint('❌ 순서 변경 즉시 저장 실패: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingOrder = false;
+        });
+      }
+    }
   }
 
   /// 탭을 떠날 때/저장 버튼 등에서 호출하면 서버에 일괄 반영
   Future<void> flushPendingChanges() async {
-    if (!_hasLocalChanges) return;
+    if (!_hasLocalChanges) {
+      debugPrint('🔄 flushPendingChanges: 변경사항 없음 (이미 즉시 저장됨)');
+      return;
+    }
 
     try {
+      debugPrint('🔄 flushPendingChanges 시작 (백업용): ${_localBooks.length}개 책');
+      
+      // 변경된 순서만 추출하여 업데이트 (최적화)
+      final updates = <Map<String, dynamic>>[];
+      final currentOrder = _localBooks.map((b) => b['id'] as String).toList();
+
       for (int i = 0; i < _localBooks.length; i++) {
         final id = _localBooks[i]['id'];
+        final originalIndex = originalOrder.indexOf(id);
+
+        // 원래 순서와 다르거나, 원래 목록에 없던 새 책인 경우
+        if (originalIndex != i) {
+          updates.add({
+            'id': id,
+            'archived_order_index': i,
+          });
+        }
+      }
+
+      debugPrint('📝 백업 업데이트 대상: ${updates.length}개 책');
+
+      // 변경된 책들만 업데이트
+      for (final update in updates) {
         await client
             .from('user_books')
-            .update({'archived_order_index': i})
-            .eq('id', id);
+            .update({'archived_order_index': update['archived_order_index']})
+            .eq('id', update['id']);
       }
+
       _hasLocalChanges = false;
       originalOrder = _localBooks.map((b) => b['id'] as String).toList();
 
-      // 상위 새로고침 + 첫 페이지 재로드(선택)
+      debugPrint('✅ flushPendingChanges 완료: ${updates.length}개 업데이트');
+
+      // 상위 새로고침
       widget.onRefresh();
-      // await _refreshFromServer(); // 필요시 사용
     } catch (e) {
       debugPrint('❌ flush 실패: $e');
     }

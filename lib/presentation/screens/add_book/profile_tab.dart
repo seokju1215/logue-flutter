@@ -21,6 +21,7 @@ class ProfileTab extends StatefulWidget {
   final Function(bool)? onBookAdded; // 책 추가 완료 콜백
   final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
   final Function(bool)? onLoadingStateChanged; // 로딩 상태 변경 콜백
+  final Function(VoidCallback)? onRegisterArchiveNotificationCallback; // archive_bottom_sheet 알림 콜백 등록
 
   const ProfileTab({
     Key? key,
@@ -31,6 +32,7 @@ class ProfileTab extends StatefulWidget {
     this.onBookAdded,
     this.navigatorKey,
     this.onLoadingStateChanged,
+    this.onRegisterArchiveNotificationCallback,
   }) : super(key: key);
 
   @override
@@ -244,6 +246,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                         debugPrint('🔒 ArchiveBottomSheet 닫힘 - 선택 상태 초기화');
                                         setState(() {});
                                       },
+                                      onRegisterNotificationCallback: widget.onRegisterArchiveNotificationCallback,
                                       onBooksUpdated: (updatedBooks) async {
                                         if (!mounted) return;
 

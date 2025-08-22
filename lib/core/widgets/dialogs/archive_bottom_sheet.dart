@@ -10,12 +10,14 @@ class ArchiveBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> allBooks; // 모든 책 목록 (최신 상태)
   final Function(List<Map<String, dynamic>>)? onBooksUpdated; // 저장 시에만 호출
   final VoidCallback? onClose; // 완전히 닫을 때만 호출
+  final Function(VoidCallback)? onRegisterNotificationCallback; // 알림 콜백 등록
 
   const ArchiveBottomSheet({
     super.key,
     required this.allBooks,
     this.onBooksUpdated,
     this.onClose,
+    this.onRegisterNotificationCallback,
   });
 
   @override
@@ -61,6 +63,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScrollReachBottom);
 
+    // 외부에서 순서 변경 알림을 받을 수 있도록 콜백 등록
+    widget.onRegisterNotificationCallback?.call(_onArchiveOrderChanged);
+
     // 초기 페이지 로드
     _refreshFromServer().then((_) {
       // [NEW] 서버 선택 개수 가져오기 (페이지 로드와 독립적으로 가져와도 OK)
@@ -73,6 +78,24 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     _scrollController.removeListener(_onScrollReachBottom);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// archive_tab에서 순서 변경 시 즉시 호출되는 콜백
+  void _onArchiveOrderChanged() {
+    debugPrint('🔄 ArchiveBottomSheet - 외부 순서 변경 알림 받음, 로딩 상태로 전환');
+    if (!mounted) return;
+    
+    // 로딩 상태 표시 후 서버에서 최신 데이터 다시 로드
+    setState(() {
+      _isInitialLoading = true;
+    });
+    
+    // 짧은 지연 후 새로고침 (즉시 저장이므로 빠르게 반영)
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        _refreshFromServer();
+      }
+    });
   }
 
   // ========== 서버 호출 ==========
