@@ -366,8 +366,12 @@ class _ArchiveTabState extends State<ArchiveTab> {
               .update({'archived_order_index': newValue})
               .eq('id', update['id']);
               
-          // _localBooks도 함께 업데이트
-          _movedBook!['archived_order_index'] = newValue;
+          // _localBooks 배열에서 해당 책 찾아서 업데이트
+          final bookIndex = _localBooks.indexWhere((book) => book['id'] == update['id']);
+          if (bookIndex != -1) {
+            _localBooks[bookIndex]['archived_order_index'] = newValue;
+            debugPrint('📚 _localBooks 배열 업데이트: 위치 $bookIndex, archived_order_index: $newValue');
+          }
           
           debugPrint('📚 책 ${update['id']}: archived_order_index ${oldValue} → ${newValue}');
         }
