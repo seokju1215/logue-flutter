@@ -172,16 +172,16 @@ class _AddBookScreenState extends State<AddBookScreen> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      // ✅ 떠날 때 보관함 순서 저장
-              onWillPop: () async {
-          // 뒤로가기 시 보관함 변경사항 저장
-          final archiveTabState = _archiveTabStateKey.currentState;
-          if (archiveTabState != null) {
-            await (archiveTabState as dynamic).flushPendingChanges();
-          }
-          Navigator.of(context).pop(false);
-          return true;
-        },
+      // ✅ 뒤로가기 방지 (바텀 네비게이션 내부 화면이므로)
+      onWillPop: () async {
+        // 보관함 변경사항 저장
+        final archiveTabState = _archiveTabStateKey.currentState;
+        if (archiveTabState != null) {
+          await (archiveTabState as dynamic).flushPendingChanges();
+        }
+        // 뒤로가기 차단 (바텀 네비게이션에서 관리)
+        return false;
+      },
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -262,8 +262,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     allBooks: allBooks, // 모든 책 목록
                     onRefresh: _fetchAllBooks,
                     onBookAdded: (result) {
+                      // 책 추가 완료 시 데이터만 새로고침 (Navigator.pop 제거)
                       if (result == true) {
-                        Navigator.of(context).pop(true);
+                        debugPrint('📚 책 추가 완료 - 데이터 새로고침');
+                        _fetchAllBooks();
                       }
                     },
                     navigatorKey: widget.navigatorKey,

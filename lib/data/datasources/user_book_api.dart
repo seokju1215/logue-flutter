@@ -186,6 +186,31 @@ class UserBookApi {
     }
   }
 
+  /// 보관함 순서 일괄 업데이트 (archived_order_index 전용)
+  Future<void> updateArchivedOrderBatchRPC(List<Map<String, dynamic>> updates) async {
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) throw Exception('로그인된 사용자가 없습니다.');
+    if (updates.isEmpty) return;
+
+    // RPC에 보낼 데이터 (id와 archived_order_index만)
+    final payload = updates.map((update) => {
+      'id': update['id'],
+      'archived_order_index': update['archived_order_index'],
+    }).toList();
+
+    try {
+      debugPrint('🚀 보관함 순서 배치 업데이트 시작: ${payload.length}개 책');
+      
+      await client.rpc('update_archived_order_batch', params: {'_items': payload});
+      
+      debugPrint('✅ 보관함 순서 배치 업데이트 완료 (${payload.length}건)');
+    } catch (e, stack) {
+      debugPrint('❌ 보관함 순서 배치 업데이트 실패: $e');
+      debugPrint('🔍 스택: $stack');
+      rethrow;
+    }
+  }
+
   /// 보관함에 책을 추가할 때 archived_order_index 관리 (기존 로직 유지)
   Future<void> addBookToArchive(String bookId) async {
     final userId = client.auth.currentUser?.id;

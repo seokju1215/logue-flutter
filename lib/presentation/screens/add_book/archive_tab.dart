@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/themes/stroke_text_style.dart';
 import '../../../core/widgets/book/book_frame.dart';
 import '../../../core/widgets/dialogs/AnnouncementDialog.dart';
+import '../../../data/datasources/user_book_api.dart';
 
 class ArchiveTab extends StatefulWidget {
   /// NOTE: 이제 서버 페이지네이션으로 불러오므로 allBooks는 선택사항이지만
@@ -209,7 +210,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
     }
   }
 
-  // ========== 드래그 처리 (로컬만 변경, 저장은 flush에서) ==========
+  // ========== 드래그 처리 (드래그 완료 즉시 저장) ==========
 
   bool _isDraggingActive = false; // 드래그 진행 중 여부
   Timer? _dragCompleteTimer; // 드래그 완료 감지 타이머
@@ -222,6 +223,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
       _localBooks.insert(newIndex, item);
       _hasLocalChanges = true;
       _isDraggingActive = true; // 드래그 시작
+      _isDragging = true; // 자동 스크롤용 드래그 상태
     });
 
     widget.onBooksChanged?.call(List<Map<String, dynamic>>.from(_localBooks));
@@ -229,10 +231,11 @@ class _ArchiveTabState extends State<ArchiveTab> {
     // 기존 타이머 취소
     _dragCompleteTimer?.cancel();
     
-    // 드래그 완료 감지 타이머 (연속 드래그 시 마지막에만 실행)
-    _dragCompleteTimer = Timer(const Duration(milliseconds: 100), () {
-      if (_isDraggingActive && _hasLocalChanges) {
+    // 드래그 완료 감지 타이머 (더 빠른 반응성을 위해 30ms로 단축)
+    _dragCompleteTimer = Timer(const Duration(milliseconds: 30), () {
+      if (_isDraggingActive && _hasLocalChanges && mounted) {
         _isDraggingActive = false;
+        _isDragging = false; // 드래그 종료
         debugPrint('🎯 드래그 완료 감지 - 즉시 저장 및 알림');
         _saveOrderChangeImmediately();
       }
@@ -253,7 +256,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
       // 즉시 알림 - 로컬 데이터와 함께 전송
       widget.onArchiveOrderChanged?.call();
       
-      // 변경된 순서만 추출하여 업데이트 (기존 최적화 로직 유지)
+      // 변경된 순서만 추출하여 업데이트 (최적화)
       final updates = <Map<String, dynamic>>[];
       final currentOrder = _localBooks.map((b) => b['id'] as String).toList();
 
@@ -272,12 +275,13 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
       debugPrint('📝 즉시 업데이트 대상: ${updates.length}개 책');
 
-      // 변경된 책들만 업데이트
-      for (final update in updates) {
-        await client
-            .from('user_books')
-            .update({'archived_order_index': update['archived_order_index']})
-            .eq('id', update['id']);
+      // 🚀 배치 업데이트로 성능 향상 (RPC 메서드 사용)
+      if (updates.isNotEmpty) {
+        final api = UserBookApi(client);
+        await api.updateArchivedOrderBatchRPC(updates);
+        debugPrint('💾 DB 배치 업데이트 완료: ${updates.length}개 책');
+      } else {
+        debugPrint('ℹ️ 업데이트할 책이 없음');
       }
 
       _hasLocalChanges = false;
@@ -288,6 +292,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
       // 상위 새로고침은 하지 않음 (archive_bottom_sheet만 업데이트)
     } catch (e) {
       debugPrint('❌ 순서 변경 즉시 저장 실패: $e');
+      // 실패 시에도 로컬 상태는 유지 (사용자가 다시 시도할 수 있도록)
     } finally {
       if (mounted) {
         setState(() {
@@ -326,12 +331,10 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
       debugPrint('📝 백업 업데이트 대상: ${updates.length}개 책');
 
-      // 변경된 책들만 업데이트
-      for (final update in updates) {
-        await client
-            .from('user_books')
-            .update({'archived_order_index': update['archived_order_index']})
-            .eq('id', update['id']);
+      // 🚀 백업용도 새로운 RPC 사용
+      if (updates.isNotEmpty) {
+        final api = UserBookApi(client);
+        await api.updateArchivedOrderBatchRPC(updates);
       }
 
       _hasLocalChanges = false;
