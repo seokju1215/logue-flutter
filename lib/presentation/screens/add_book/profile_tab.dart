@@ -46,11 +46,76 @@ class _ProfileTabState extends State<ProfileTab> {
   bool isEdited = false;
   final GlobalKey _titleKey = GlobalKey(); // 텍스트 위젯의 위치를 측정하기 위한 키
   bool _isUpdatingBooks = false; // 책 변경 로딩 상태
+  
+  // 로컬 순서 상태 관리 (widget.books를 직접 수정하지 않음)
+  late List<Map<String, dynamic>> _localBooks;
 
   @override
   void initState() {
     super.initState();
+    _initializeLocalBooks();
+  }
+
+  void _initializeLocalBooks() {
+    _localBooks = List<Map<String, dynamic>>.from(widget.books);
     _updateOriginalOrder();
+  }
+
+  @override
+  void didUpdateWidget(ProfileTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // 상위에서 전달된 데이터가 변경되었을 때 즉시 반영
+    if (oldWidget.books != widget.books || oldWidget.allBooks != widget.allBooks) {
+      debugPrint('🔄 ProfileTab - 데이터 변경 감지, 즉시 반영');
+      debugPrint('  - books 변경: ${oldWidget.books.length} → ${widget.books.length}');
+      debugPrint('  - allBooks 변경: ${oldWidget.allBooks.length} → ${widget.allBooks.length}');
+      
+      // 순서 변경이 있는지 확인 (ID 순서 비교)
+      final oldBookIds = oldWidget.books.map((b) => b['id'] as String).toList();
+      final newBookIds = widget.books.map((b) => b['id'] as String).toList();
+      final hasOrderChange = !_areListsEqual(oldBookIds, newBookIds);
+      
+      if (hasOrderChange) {
+        debugPrint('🔄 순서 변경 감지 - 로컬 상태 동기화');
+        // 순서가 변경된 경우 로컬 상태를 상위 데이터로 동기화
+        _initializeLocalBooks();
+      } else {
+        debugPrint('ℹ️ 순서 변경 없음 - 로컬 순서 완전 보존');
+        // 순서가 변경되지 않은 경우 로컬 순서를 완전히 보존
+        // 단, 새로운 책이 추가/제거된 경우에만 해당 책들을 동기화
+        
+        // 추가된 책들만 로컬에 추가 (순서는 상위 데이터 기준)
+        final addedBooks = widget.books.where((b) => !oldBookIds.contains(b['id'])).toList();
+        if (addedBooks.isNotEmpty) {
+          // 추가된 책들을 로컬 순서에 맞게 삽입
+          for (final addedBook in addedBooks) {
+            final targetIndex = widget.books.indexWhere((b) => b['id'] == addedBook['id']);
+            if (targetIndex != -1 && targetIndex < _localBooks.length) {
+              _localBooks.insert(targetIndex, Map<String, dynamic>.from(addedBook));
+            } else {
+              _localBooks.add(Map<String, dynamic>.from(addedBook));
+            }
+          }
+          debugPrint('➕ ${addedBooks.length}개 책 추가됨');
+        }
+        
+        // 제거된 책들만 로컬에서 제거
+        final removedBookIds = oldBookIds.toSet().difference(newBookIds.toSet());
+        if (removedBookIds.isNotEmpty) {
+          _localBooks.removeWhere((b) => removedBookIds.contains(b['id']));
+          debugPrint('➖ ${removedBookIds.length}개 책 제거됨');
+        }
+        
+        // 로컬 순서는 그대로 유지 (사용자가 변경한 순서 보존)
+        debugPrint('🔒 로컬 순서 완전 보존: ${_localBooks.map((b) => b['id']).toList()}');
+      }
+      
+      // UI 강제 리빌드
+      setState(() {
+        debugPrint('✅ ProfileTab UI 즉시 업데이트 완료');
+      });
+    }
   }
 
   @override
@@ -61,7 +126,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
   void _updateOriginalOrder() {
     setState(() {
-      originalOrder = widget.books.map((book) => book['id'] as String).toList();
+      originalOrder = _localBooks.map((book) => book['id'] as String).toList();
       isEdited = false;
     });
   }
@@ -100,28 +165,52 @@ class _ProfileTabState extends State<ProfileTab> {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return;
 
-    // NOTE: 프로필 그리드에서 순서만 바꿀 때는 간단히 per-row 업데이트 유지
-    for (int i = 0; i < widget.books.length; i++) {
-      final bookId = widget.books[i]['id'];
-      await client.from('user_books').update({'order_index': i}).eq('id', bookId);
+    try {
+      debugPrint('🔄 ProfileTab - 순서 변경 저장 시작');
+      
+      // NOTE: 프로필 그리드에서 순서만 바꿀 때는 간단히 per-row 업데이트 유지
+      for (int i = 0; i < _localBooks.length; i++) {
+        final bookId = _localBooks[i]['id'];
+        await client.from('user_books').update({'order_index': i}).eq('id', bookId);
+        debugPrint('  - 책 ID: $bookId, 순서: $i');
+      }
+
+      // 로컬 상태 업데이트
+      setState(() {
+        originalOrder = _localBooks.map((b) => b['id'] as String).toList();
+        isEdited = false;
+      });
+
+      debugPrint('✅ ProfileTab - 순서 변경 저장 완료');
+      
+      // 순서 변경 후에는 상위 새로고침을 호출하지 않음 (순서 보존을 위해)
+      // widget.onRefresh(); // 이 줄 제거
+      
+    } catch (e) {
+      debugPrint('❌ ProfileTab - 순서 변경 저장 실패: $e');
+      // 실패 시 원래 순서로 되돌리기
+      setState(() {
+        _localBooks = List<Map<String, dynamic>>.from(widget.books);
+        _updateOriginalOrder();
+      });
     }
-
-    setState(() {
-      originalOrder = widget.books.map((b) => b['id'] as String).toList();
-      isEdited = false;
-    });
-
-    widget.onRefresh();
   }
 
   void _onReorder(int oldIndex, int newIndex) {
+    debugPrint('🔄 ProfileTab - 순서 변경: $oldIndex → $newIndex');
+    
     setState(() {
-      final item = widget.books.removeAt(oldIndex);
-      widget.books.insert(newIndex, item);
-      final currentOrder = widget.books.map((b) => b['id'] as String).toList();
+      final item = _localBooks.removeAt(oldIndex);
+      _localBooks.insert(newIndex, item);
+      final currentOrder = _localBooks.map((b) => b['id'] as String).toList();
       isEdited = !_areListsEqual(currentOrder, originalOrder);
+      
+      debugPrint('  - 변경된 순서: ${currentOrder}');
+      debugPrint('  - 원래 순서: ${originalOrder}');
+      debugPrint('  - 편집됨: $isEdited');
     });
 
+    // 순서 변경 후 즉시 서버에 저장
     _updateBookOrder();
   }
 
@@ -227,72 +316,116 @@ class _ProfileTabState extends State<ProfileTab> {
                               final titlePosition = titleBox?.localToGlobal(Offset.zero);
                               final titleBottom = titlePosition?.dy ?? 0;
 
-                              return Stack(
-                                children: [
-                                  Positioned.fill(
-                                    child: GestureDetector(
-                                      onTap: () => Navigator.pop(context),
-                                      child: Container(color: Colors.transparent),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: titleBottom + (titleBox?.size.height ?? 0) + 8,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    child: ArchiveBottomSheet(
-                                      allBooks: widget.allBooks, // 최신 allBooks 전달
-                                      onClose: () {
-                                        debugPrint('🔒 ArchiveBottomSheet 닫힘 - 선택 상태 초기화');
-                                        setState(() {});
-                                      },
-                                      onRegisterNotificationCallback: widget.onRegisterArchiveNotificationCallback,
-                                      onBooksUpdated: (updatedBooks) async {
-                                        if (!mounted) return;
-
-                                        setState(() => _isUpdatingBooks = true);
-                                        widget.onLoadingStateChanged?.call(false);
-
-                                        try {
-                                          final api = UserBookApi(Supabase.instance.client);
-
-                                          // 1) 변경된 것만 추림
-                                          final changed = _diffUserBooks(
-                                            updated: updatedBooks,
-                                            original: widget.allBooks,
-                                          );
-
-                                          // 변경이 없으면 바로 종료
-                                          if (changed.isEmpty) {
-                                            widget.onLoadingStateChanged?.call(false);
-                                            setState(() => _isUpdatingBooks = false);
-                                            return;
-                                          }
-
-                                          // 2) RPC 한 번으로 일괄 업데이트
-                                          await api.updateBooksBatchRPC(changed);
-
-                                          // 3) 캐시 리프레시 (예외 무시)
-                                          try {
-                                            HomeRecommendTab.refreshUsersWithSameBooks();
-                                          } catch (_) {}
-
-                                          // 4) UI 갱신
-                                          widget.onRefresh();
-                                        } catch (e) {
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('저장 중 오류: $e')),
-                                            );
-                                          }
-                                        } finally {
-                                          if (mounted) {
-                                            setState(() => _isUpdatingBooks = false);
-                                            widget.onLoadingStateChanged?.call(false);
-                                            _hideLoadingOverlay();
-                                          }
-                                        }
-                                      },
+                                                                return Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: GestureDetector(
+                                          onTap: () => Navigator.pop(context),
+                                          child: Container(color: Colors.transparent),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: titleBottom + (titleBox?.size.height ?? 0) + 8,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        child: ArchiveBottomSheet(
+                                          allBooks: widget.allBooks, // 최신 allBooks 전달
+                                          onClose: () {
+                                            debugPrint('🔒 ArchiveBottomSheet 닫힘 - 선택 상태 초기화');
+                                            setState(() {});
+                                          },
+                                          onRegisterNotificationCallback: widget.onRegisterArchiveNotificationCallback,
+                                          onProfileTabRefresh: () {
+                                            debugPrint('🚀 ProfileTab 즉시 새로고침 요청');
+                                            // ArchiveBottomSheet에서 저장 완료 후 즉시 새로고침
+                                            widget.onRefresh();
+                                            
+                                            // 로컬 상태도 즉시 업데이트
+                                            setState(() {
+                                              // ArchiveBottomSheet에서 저장 완료 후 로컬 상태 동기화
+                                              // 순서 변경이 있는 경우에만 로컬 순서 초기화
+                                              final currentBookIds = _localBooks.map((b) => b['id'] as String).toList();
+                                              final newBookIds = widget.books.map((b) => b['id'] as String).toList();
+                                              
+                                              if (!_areListsEqual(currentBookIds, newBookIds)) {
+                                                debugPrint('🔄 순서 변경 감지 - 로컬 순서 초기화');
+                                                _initializeLocalBooks();
+                                              } else {
+                                                debugPrint('ℹ️ 순서 변경 없음 - 로컬 순서 완전 보존');
+                                                // 순서 변경이 없는 경우 로컬 순서를 완전히 보존
+                                                // ArchiveBottomSheet에서 저장된 데이터로 개별 책 정보만 업데이트
+                                                for (int i = 0; i < _localBooks.length; i++) {
+                                                  final localBook = _localBooks[i];
+                                                  final updatedBook = widget.books.firstWhere(
+                                                    (b) => b['id'] == localBook['id'],
+                                                    orElse: () => localBook,
+                                                  );
+                                                  if (updatedBook != localBook) {
+                                                    // 개별 책 정보만 업데이트 (순서는 유지)
+                                                    _localBooks[i] = Map<String, dynamic>.from(updatedBook);
+                                                  }
+                                                }
+                                                debugPrint('🔒 로컬 순서 완전 보존: ${_localBooks.map((b) => b['id']).toList()}');
+                                              }
+                                              
+                                              debugPrint('🔄 ProfileTab 로컬 상태 즉시 업데이트');
+                                            });
+                                          },
+                                          onBooksUpdated: (updatedBooks) async {
+                                            if (!mounted) return;
+                                            
+                                            debugPrint('🔄 ArchiveBottomSheet에서 데이터 업데이트: ${updatedBooks.length}개 책');
+                                            setState(() => _isUpdatingBooks = true);
+                                            widget.onLoadingStateChanged?.call(true);
+                                            
+                                            try {
+                                              final api = UserBookApi(Supabase.instance.client);
+                                              
+                                              // 1) 변경된 것만 추림
+                                              final changed = _diffUserBooks(
+                                                updated: updatedBooks,
+                                                original: widget.allBooks,
+                                              );
+                                              
+                                              // 변경이 없으면 바로 종료
+                                              if (changed.isEmpty) {
+                                                debugPrint('ℹ️ 변경된 데이터가 없습니다');
+                                                widget.onLoadingStateChanged?.call(false);
+                                                setState(() => _isUpdatingBooks = false);
+                                                return;
+                                              }
+                                              
+                                              debugPrint('🔄 변경된 데이터 ${changed.length}개 처리 시작');
+                                              
+                                              // 2) RPC 한 번으로 일괄 업데이트
+                                              await api.updateBooksBatchRPC(changed);
+                                              
+                                              // 3) 캐시 리프레시 (예외 무시)
+                                              try {
+                                                HomeRecommendTab.refreshUsersWithSameBooks();
+                                              } catch (_) {}
+                                              
+                                              // 4) 즉시 상위 데이터 새로고침 (ProfileTab의 books 리스트 즉시 반영)
+                                              debugPrint('🔄 ProfileTab 즉시 새로고침 요청');
+                                              widget.onRefresh();
+                                              
+                                              debugPrint('✅ 데이터 업데이트 완료, ProfileTab 새로고침 완료');
+                                            } catch (e) {
+                                              debugPrint('❌ 데이터 업데이트 실패: $e');
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('저장 중 오류: $e')),
+                                                );
+                                              }
+                                            } finally {
+                                              if (mounted) {
+                                                setState(() => _isUpdatingBooks = false);
+                                                widget.onLoadingStateChanged?.call(false);
+                                                _hideLoadingOverlay();
+                                              }
+                                            }
+                                          },
                                     ),
                                   ),
                                 ],
@@ -322,7 +455,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     const Text('책을 길게 눌러 위치를 변경할 수 있어요.',
                         style: TextStyle(fontSize: 12, color: AppColors.black500)),
                     Text(
-                      '${widget.books.where((book) => book['is_archived'] == false).length}/9',
+                      '${_localBooks.length}/9',
                       style: const TextStyle(fontSize: 13, color: AppColors.black500),
                     ),
                   ],
@@ -351,7 +484,7 @@ class _ProfileTabState extends State<ProfileTab> {
                       runSpacing: mainAxisSpacing,
                       needsLongPressDraggable: true,
                       onReorder: _onReorder,
-                      children: widget.books.map((book) {
+                      children: _localBooks.map((book) {
                         return GestureDetector(
                           child: SizedBox(
                             key: ValueKey(book['id']),

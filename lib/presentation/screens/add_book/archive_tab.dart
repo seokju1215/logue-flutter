@@ -18,6 +18,7 @@ class ArchiveTab extends StatefulWidget {
   final VoidCallback onRefresh;
   final VoidCallback? onBookAdded;
   final Function(List<Map<String, dynamic>>)? onBooksChanged;
+
   final GlobalKey<NavigatorState>? navigatorKey;
   final VoidCallback? onFocusMe;
   final VoidCallback? onArchiveOrderChanged; // 보관함 순서 변경 시 즉시 알림
@@ -28,6 +29,7 @@ class ArchiveTab extends StatefulWidget {
     required this.onRefresh,
     this.onBookAdded,
     this.onBooksChanged,
+
     this.navigatorKey,
     this.onFocusMe,
     this.onArchiveOrderChanged,

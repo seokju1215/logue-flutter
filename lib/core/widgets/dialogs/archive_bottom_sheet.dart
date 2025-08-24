@@ -11,6 +11,7 @@ class ArchiveBottomSheet extends StatefulWidget {
   final Function(List<Map<String, dynamic>>)? onBooksUpdated; // 저장 시에만 호출
   final VoidCallback? onClose; // 완전히 닫을 때만 호출
   final Function(VoidCallback)? onRegisterNotificationCallback; // 알림 콜백 등록
+  final VoidCallback? onProfileTabRefresh; // ProfileTab 새로고침 콜백
 
   const ArchiveBottomSheet({
     super.key,
@@ -18,6 +19,7 @@ class ArchiveBottomSheet extends StatefulWidget {
     this.onBooksUpdated,
     this.onClose,
     this.onRegisterNotificationCallback,
+    this.onProfileTabRefresh,
   });
 
   @override
@@ -713,11 +715,17 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                             await _markUnarchivedAndCollectIds();
 
                             // 2) 상위로 최신 상태 전달 & 시트 닫기 (즉시 실행)
-                            widget.onBooksUpdated?.call(
-                              _localBooks
-                                  .map((e) => Map<String, dynamic>.from(e))
-                                  .toList(),
-                            );
+                            final updatedBooks = _localBooks
+                                .map((e) => Map<String, dynamic>.from(e))
+                                .toList();
+                            debugPrint('🚀 ArchiveBottomSheet - 상위로 데이터 전달: ${updatedBooks.length}개 책');
+                            widget.onBooksUpdated?.call(updatedBooks);
+                            
+                            // 🚀 ProfileTab 즉시 새로고침 (약간의 지연 후)
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              widget.onProfileTabRefresh?.call();
+                            });
+                            
                             widget.onClose?.call();
                             if (mounted) Navigator.pop(context, true);
 

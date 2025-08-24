@@ -141,6 +141,10 @@ class _AddBookScreenState extends State<AddBookScreen> {
           allBooks = List<Map<String, dynamic>>.from(widget.persistentAllBooks);
           isLoading = false;
         });
+        
+        // ProfileTab 키를 새로 생성하여 강제 리빌드 (데이터 변경 즉시 반영)
+        _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
+        debugPrint('🔄 ProfileTab 키 새로 생성: $_profileTabKey');
       }
       debugPrint('✅ AddBookScreen - 새로고침 완료: ${allBooks.length}개 책');
     }
@@ -171,6 +175,16 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ProfileTab에 전달할 books 리스트를 computed property로 생성
+    final profileBooks = allBooks
+        .where((book) => book['is_archived'] == false)
+        .toList()
+      ..sort((a, b) {
+        final aIndex = a['order_index'] ?? 0;
+        final bIndex = b['order_index'] ?? 0;
+        return aIndex.compareTo(bIndex);
+      });
+    
     return WillPopScope(
       // ✅ 뒤로가기 방지 (바텀 네비게이션 내부 화면이므로)
       onWillPop: () async {
@@ -252,13 +266,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   ProfileTab(
                     key: ValueKey(_profileTabKey),
                     isLimitReached: widget.isLimitReached,
-                    books: List.from(
-                      allBooks.where((book) => book['is_archived'] == false),
-                    )..sort((a, b) {
-                      final aIndex = a['order_index'] ?? 0;
-                      final bIndex = b['order_index'] ?? 0;
-                      return aIndex.compareTo(bIndex);
-                    }),
+                    books: profileBooks, // computed property 사용
                     allBooks: allBooks, // 모든 책 목록
                     onRefresh: _fetchAllBooks,
                     onBookAdded: (result) {
@@ -323,6 +331,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                       // archive_bottom_sheet에 즉시 알림 (업데이트된 allBooks와 함께)
                       _notifyArchiveBottomSheet?.call();
                     },
+
                     navigatorKey: widget.navigatorKey,
                   ),
                 ],
