@@ -239,25 +239,19 @@ class _ArchiveTabState extends State<ArchiveTab> {
         _isDraggingActive = false;
         _isDragging = false; // 드래그 종료
         debugPrint('🎯 드래그 완료 감지 - 즉시 저장 및 알림');
-        _saveOrderChangeImmediately();
+        _saveOrderImmediately();
       }
     });
   }
 
-  /// 순서 변경 시 즉시 서버에 저장하고 archive_bottom_sheet에 알림
-  Future<void> _saveOrderChangeImmediately() async {
-    if (!_hasLocalChanges || _isSavingOrder) return;
-
-    setState(() {
-      _isSavingOrder = true;
-    });
+  /// 드래그 완료 시 즉시 저장 (간격 방식)
+  Future<void> _saveOrderImmediately() async {
+    if (_isSavingOrder) return;
 
     try {
-      debugPrint('🚀 순서 변경 즉시 저장 시작: ${_localBooks.length}개 책');
-      
-      // 즉시 알림 - 로컬 데이터와 함께 전송
-      widget.onArchiveOrderChanged?.call();
-      
+      _isSavingOrder = true;
+      debugPrint('🔄 순서 변경 즉시 저장 시작 (간격 방식)');
+
       // 변경된 순서만 추출하여 업데이트 (최적화)
       final updates = <Map<String, dynamic>>[];
       final currentOrder = _localBooks.map((b) => b['id'] as String).toList();
@@ -268,16 +262,61 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
         // 원래 순서와 다르거나, 원래 목록에 없던 새 책인 경우
         if (originalIndex != i) {
+          // 실제 이동하고 싶은 위치의 이전/다음 책 찾기
+          double prev = 0.0;
+          double next = 1000.0;
+          
+          // 현재 책의 새로운 archived_order_index 값
+          final targetValue = i.toDouble(); // 0, 1, 2, 3, 4, 5...
+          
+          // 이전 책 찾기: archived_order_index가 targetValue보다 작은 값 중 가장 큰 값
+          final prevBooks = _localBooks.where((book) {
+            final bookValue = (book['archived_order_index'] as num).toDouble();
+            return bookValue < targetValue;
+          }).toList();
+          
+          if (prevBooks.isNotEmpty) {
+            final prevBook = prevBooks.reduce((a, b) {
+              final aValue = (a['archived_order_index'] as num).toDouble();
+              final bValue = (b['archived_order_index'] as num).toDouble();
+              return aValue > bValue ? a : b;
+            });
+            prev = (prevBook['archived_order_index'] as num).toDouble();
+            debugPrint('📚 책 $id: prev 찾음 - ${prevBook['id']} (${prevBook['archived_order_index']})');
+          }
+          
+          // 다음 책 찾기: archived_order_index가 targetValue보다 큰 값 중 가장 작은 값
+          final nextBooks = _localBooks.where((book) {
+            final bookValue = (book['archived_order_index'] as num).toDouble();
+            return bookValue > targetValue;
+          }).toList();
+          
+          if (nextBooks.isNotEmpty) {
+            final nextBook = nextBooks.reduce((a, b) {
+              final aValue = (a['archived_order_index'] as num).toDouble();
+              final bValue = (b['archived_order_index'] as num).toDouble();
+              return aValue < bValue ? a : b;
+            });
+            next = (nextBook['archived_order_index'] as num).toDouble();
+            debugPrint('📚 책 $id: next 찾음 - ${nextBook['id']} (${nextBook['archived_order_index']})');
+          }
+          
           updates.add({
             'id': id,
             'archived_order_index': i,
+            // 간격 방식에서 필요한 실제 DB 값들
+            'current_archived_order_index': _localBooks[i]['archived_order_index'],
+            'prev_archived_order_index': prev,
+            'next_archived_order_index': next,
           });
+          
+          debugPrint('📚 책 $id: targetValue=$targetValue, prev=$prev, next=$next');
         }
       }
 
       debugPrint('📝 즉시 업데이트 대상: ${updates.length}개 책');
 
-      // 🚀 배치 업데이트로 성능 향상 (RPC 메서드 사용)
+      // 🚀 간격 방식 배치 업데이트
       if (updates.isNotEmpty) {
         final api = UserBookApi(client);
         await api.updateArchivedOrderBatchRPC(updates);
@@ -304,7 +343,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
     }
   }
 
-  /// 탭을 떠날 때/저장 버튼 등에서 호출하면 서버에 일괄 반영
+  /// 탭을 떠날 때/저장 버튼 등에서 호출하면 서버에 일괄 반영 (간격 방식)
   Future<void> flushPendingChanges() async {
     if (!_hasLocalChanges) {
       debugPrint('🔄 flushPendingChanges: 변경사항 없음 (이미 즉시 저장됨)');
@@ -312,7 +351,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
     }
 
     try {
-      debugPrint('🔄 flushPendingChanges 시작 (백업용): ${_localBooks.length}개 책');
+      debugPrint('🔄 flushPendingChanges 시작 (간격 방식): ${_localBooks.length}개 책');
       
       // 변경된 순서만 추출하여 업데이트 (최적화)
       final updates = <Map<String, dynamic>>[];
@@ -324,16 +363,61 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
         // 원래 순서와 다르거나, 원래 목록에 없던 새 책인 경우
         if (originalIndex != i) {
+          // 실제 이동하고 싶은 위치의 이전/다음 책 찾기
+          double prev = 0.0;
+          double next = 1000.0;
+          
+          // 현재 책의 새로운 archived_order_index 값
+          final targetValue = i.toDouble(); // 0, 1, 2, 3, 4, 5...
+          
+          // 이전 책 찾기: archived_order_index가 targetValue보다 작은 값 중 가장 큰 값
+          final prevBooks = _localBooks.where((book) {
+            final bookValue = (book['archived_order_index'] as num).toDouble();
+            return bookValue < targetValue;
+          }).toList();
+          
+          if (prevBooks.isNotEmpty) {
+            final prevBook = prevBooks.reduce((a, b) {
+              final aValue = (a['archived_order_index'] as num).toDouble();
+              final bValue = (b['archived_order_index'] as num).toDouble();
+              return aValue > bValue ? a : b;
+            });
+            prev = (prevBook['archived_order_index'] as num).toDouble();
+            debugPrint('📚 책 $id: prev 찾음 - ${prevBook['id']} (${prevBook['archived_order_index']})');
+          }
+          
+          // 다음 책 찾기: archived_order_index가 targetValue보다 큰 값 중 가장 작은 값
+          final nextBooks = _localBooks.where((book) {
+            final bookValue = (book['archived_order_index'] as num).toDouble();
+            return bookValue > targetValue;
+          }).toList();
+          
+          if (nextBooks.isNotEmpty) {
+            final nextBook = nextBooks.reduce((a, b) {
+              final aValue = (a['archived_order_index'] as num).toDouble();
+              final bValue = (b['archived_order_index'] as num).toDouble();
+              return aValue < bValue ? a : b;
+            });
+            next = (nextBook['archived_order_index'] as num).toDouble();
+            debugPrint('📚 책 $id: next 찾음 - ${nextBook['id']} (${nextBook['archived_order_index']})');
+          }
+          
           updates.add({
             'id': id,
             'archived_order_index': i,
+            // 간격 방식에서 필요한 실제 DB 값들
+            'current_archived_order_index': _localBooks[i]['archived_order_index'],
+            'prev_archived_order_index': prev,
+            'next_archived_order_index': next,
           });
+          
+          debugPrint('📚 책 $id: targetValue=$targetValue, prev=$prev, next=$next');
         }
       }
 
       debugPrint('📝 백업 업데이트 대상: ${updates.length}개 책');
 
-      // 🚀 백업용도 새로운 RPC 사용
+      // 🚀 간격 방식 백업 업데이트
       if (updates.isNotEmpty) {
         final api = UserBookApi(client);
         await api.updateArchivedOrderBatchRPC(updates);
@@ -471,6 +555,8 @@ class _ArchiveTabState extends State<ArchiveTab> {
                   child: _HeaderText(),
                 ),
                 const SizedBox(height: 13),
+
+                
 
                 // 상단 버튼
                 Padding(

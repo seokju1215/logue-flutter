@@ -186,24 +186,48 @@ class UserBookApi {
     }
   }
 
-  /// 보관함 순서 일괄 업데이트 (archived_order_index 전용)
+  /// 보관함 순서 일괄 업데이트 (간격 방식만 사용)
   Future<void> updateArchivedOrderBatchRPC(List<Map<String, dynamic>> updates) async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) throw Exception('로그인된 사용자가 없습니다.');
     if (updates.isEmpty) return;
 
-    // RPC에 보낼 데이터 (id와 archived_order_index만)
-    final payload = updates.map((update) => {
-      'id': update['id'],
-      'archived_order_index': update['archived_order_index'],
-    }).toList();
-
     try {
-      debugPrint('🚀 보관함 순서 배치 업데이트 시작: ${payload.length}개 책');
+      debugPrint('🚀 보관함 순서 배치 업데이트 시작: ${updates.length}개 책 (간격 방식)');
       
-      await client.rpc('update_archived_order_batch', params: {'_items': payload});
+      // 모든 경우에 간격 방식 사용
+      final payload = <Map<String, dynamic>>[];
       
-      debugPrint('✅ 보관함 순서 배치 업데이트 완료 (${payload.length}건)');
+      for (int i = 0; i < updates.length; i++) {
+        final update = updates[i];
+        final id = update['id'];
+        
+        // prev, next 값 계산 - ArchiveTab에서 전달한 실제 DB 값 사용
+        double prev = 0.0;
+        double next = 1000.0;
+        
+        // 이전 책의 실제 archived_order_index 값 사용
+        if (update['prev_archived_order_index'] != null) {
+          prev = (update['prev_archived_order_index'] as num).toDouble();
+        }
+        
+        // 다음 책의 실제 archived_order_index 값 사용
+        if (update['next_archived_order_index'] != null) {
+          next = (update['next_archived_order_index'] as num).toDouble();
+        }
+        
+        debugPrint('📚 책 $id: prev=$prev, next=$next');
+        
+        payload.add({
+          'id': id,
+          'prev': prev,
+          'next': next,
+        });
+      }
+      
+      await client.rpc('update_archived_order_index_partial', params: {'_items': payload});
+      debugPrint('✅ 간격 방식 업데이트 완료 (${updates.length}건)');
+      
     } catch (e, stack) {
       debugPrint('❌ 보관함 순서 배치 업데이트 실패: $e');
       debugPrint('🔍 스택: $stack');
