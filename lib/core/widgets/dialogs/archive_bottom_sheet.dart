@@ -97,10 +97,21 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       // widget.allBooks에서 보관함 책들만 필터링하여 즉시 반영
       final archivedBooks = widget.allBooks
           .where((book) => book['is_archived'] == true)
+          .map((book) {
+            // archived_order_index를 강제로 double 타입으로 변환
+            final item = Map<String, dynamic>.from(book);
+            if (item['archived_order_index'] != null) {
+              final rawValue = item['archived_order_index'];
+              final doubleValue = (rawValue as num).toDouble();
+              item['archived_order_index'] = doubleValue;
+              debugPrint('🔍 ArchiveBottomSheet 타입 변환: ${item['id']} -> $rawValue (${rawValue.runtimeType}) -> $doubleValue (${doubleValue.runtimeType})');
+            }
+            return item;
+          })
           .toList()
         ..sort((a, b) {
-          final aIndex = a['archived_order_index'] ?? 0;
-          final bIndex = b['archived_order_index'] ?? 0;
+          final aIndex = (a['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+          final bIndex = (b['archived_order_index'] as num?)?.toDouble() ?? 0.0;
           return aIndex.compareTo(bIndex);
         });
 
@@ -250,13 +261,23 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
         }
       }
 
-      // 3) rows + image merge
+      // 3) rows + image merge + archived_order_index 타입 보장
       final pageItems = rows.map((e) {
         final bookId = e['book_id'];
-        return {
+        final item = {
           ...e,
           'books': imagesByBookId[bookId] ?? {'id': bookId, 'image': null},
         };
+        
+        // archived_order_index를 강제로 double 타입으로 변환
+        if (item['archived_order_index'] != null) {
+          final rawValue = item['archived_order_index'];
+          final doubleValue = (rawValue as num).toDouble();
+          item['archived_order_index'] = doubleValue;
+          debugPrint('🔍 ArchiveBottomSheet _loadNextPage 타입 변환: ${item['id']} -> $rawValue (${rawValue.runtimeType}) -> $doubleValue (${doubleValue.runtimeType})');
+        }
+        
+        return item;
       }).toList();
 
       // 4) 로컬 리스트에 추가
@@ -308,8 +329,8 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   List<Map<String, dynamic>> _getArchivedBooks() {
     return _localBooks.toList()
       ..sort((a, b) {
-        final aIndex = a['archived_order_index'] ?? 0;
-        final bIndex = b['archived_order_index'] ?? 0;
+        final aIndex = (a['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        final bIndex = (b['archived_order_index'] as num?)?.toDouble() ?? 0.0;
         return aIndex.compareTo(bIndex);
       });
   }

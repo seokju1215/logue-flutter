@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/widgets/book/book_frame.dart';
 import '../../../core/widgets/dialogs/book_limit_dialog.dart';
+import '../../../core/services/book_data_service.dart';
 import '../../../data/utils/mixpanel_util.dart';
 import 'profile_tab.dart';
 import 'archive_tab.dart';
@@ -54,6 +55,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
   bool isLoading = true;
   bool _isProfileTabLoading = false; // ProfileTab 로딩 상태
   
+  // BookDataService 인스턴스
+  late final BookDataService _bookDataService;
+  
   // ArchiveTab의 State에 접근하기 위한 GlobalKey
   final GlobalKey<State<ArchiveTab>> _archiveTabStateKey = GlobalKey<State<ArchiveTab>>();
   
@@ -67,6 +71,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0); // 프로필 탭을 기본으로 설정
+
+    // BookDataService 초기화
+    _bookDataService = BookDataService();
 
     // 화면 방문 트래킹
     MixpanelUtil.trackScreenView('Add Book');
@@ -291,6 +298,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   ArchiveTab(
                     key: _archiveTabStateKey, // GlobalKey 사용
                     allBooks: allBooks, // 모든 책 목록 전달
+                    bookDataService: _bookDataService, // BookDataService 전달
                     onRefresh: _fetchAllBooks,
                     onFocusMe: focusArchiveTab,
                     onBookAdded: () {

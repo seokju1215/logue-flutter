@@ -10,14 +10,16 @@ import '../../../core/themes/stroke_text_style.dart';
 import '../../../core/widgets/book/book_frame.dart';
 import '../../../core/widgets/dialogs/AnnouncementDialog.dart';
 import '../../../data/datasources/user_book_api.dart';
+import '../../../core/services/book_data_service.dart';
 
 class ArchiveTab extends StatefulWidget {
-  /// NOTE: 이제 서버 페이지네이션으로 불러오므로 allBooks는 선택사항이지만
+  /// NOTE: 이제 BookDataService를 사용하므로 allBooks는 선택사항이지만
   /// 기존 상위 코드 호환을 위해 남겨둠. (처음 렌더 속도 개선용 seed로도 사용 가능)
   final List<Map<String, dynamic>> allBooks;
   final VoidCallback onRefresh;
   final VoidCallback? onBookAdded;
   final Function(List<Map<String, dynamic>>)? onBooksChanged;
+  final BookDataService? bookDataService; // BookDataService 인스턴스
 
   final GlobalKey<NavigatorState>? navigatorKey;
   final VoidCallback? onFocusMe;
@@ -29,6 +31,7 @@ class ArchiveTab extends StatefulWidget {
     required this.onRefresh,
     this.onBookAdded,
     this.onBooksChanged,
+    this.bookDataService,
 
     this.navigatorKey,
     this.onFocusMe,
@@ -41,6 +44,7 @@ class ArchiveTab extends StatefulWidget {
 
 class _ArchiveTabState extends State<ArchiveTab> {
   final client = Supabase.instance.client;
+  late final BookDataService _bookDataService; // BookDataService 인스턴스
 
   // ===== 페이지네이션 상태 =====
   static const int _pageSize = 200;
@@ -101,6 +105,10 @@ class _ArchiveTabState extends State<ArchiveTab> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScrollReachBottom);
+    
+    // BookDataService 초기화
+    _bookDataService = widget.bookDataService ?? BookDataService();
+    
     // 초기 페이지 로드
     _refreshFromServer();
   }
@@ -120,24 +128,49 @@ class _ArchiveTabState extends State<ArchiveTab> {
     setState(() {
       _isInitialLoading = true;
       _offset = 0;
-      _localBooks.clear();
+      _localBooks.clear(); // 기존 데이터 완전히 지우기
       _hasMore = true;
       _totalCount = 0;
       _hasLocalChanges = false;
     });
-    await _fetchTotalCount();
-    await _loadNextPage(); // 첫 페이지
+
+    // BookDataService의 데이터를 우선적으로 사용
+    if (widget.bookDataService != null) {
+      await widget.bookDataService!.loadAllBooks();
+      final archivedBooks = widget.bookDataService!.archivedBooks;
+      
+      if (mounted) {
+        setState(() {
+          _localBooks.addAll(archivedBooks);
+          _totalCount = archivedBooks.length;
+          _hasMore = false;
+          originalOrder = _localBooks.map((b) => b['id'] as String).toList();
+          _isInitialLoading = false;
+        });
+        debugPrint('✅ BookDataService에서 보관함 데이터 로드 완료: ${archivedBooks.length}권');
+        return;
+      }
+    }
+    
+    // BookDataService가 없거나 실패한 경우 기존 RPC 함수 사용
+    await _loadNextPage();
+    
     if (mounted) {
-      setState(() => _isInitialLoading = false);
+      setState(() {
+        _isInitialLoading = false;
+      });
     }
   }
 
   Future<void> _loadNextPage() async {
     if (_isPageLoading || !_hasMore) return;
 
-    setState(() {
-      _isPageLoading = true;
-    });
+    // 초기 로딩 중일 때는 _isPageLoading을 설정하지 않음
+    if (!_isInitialLoading) {
+      setState(() {
+        _isPageLoading = true;
+      });
+    }
 
     try {
       // 1) RPC로 user_books 페이지 가져오기 (정렬/카운트 포함)
@@ -146,12 +179,15 @@ class _ArchiveTabState extends State<ArchiveTab> {
         params: {
           'p_limit': _pageSize,
           'p_offset': _offset,
-          'p_only_archived': true, // 보관함만
         },
       ) as List<dynamic>;
 
       final rows = rpc.cast<Map<String, dynamic>>();
 
+      // total_count 추출
+      if (rows.isNotEmpty) {
+        _totalCount = (rows.first['total_count'] as int?) ?? 0;
+      }
 
       // 2) 현재 페이지의 book 이미지 한번에 조회
       final bookIds = rows
@@ -175,31 +211,116 @@ class _ArchiveTabState extends State<ArchiveTab> {
         }
       }
 
-      // 3) rows + image merge
+      // 3) rows + image merge + archived_order_index 타입 보장
       final pageItems = rows.map((e) {
         final bookId = e['book_id'];
-        return {
+        final item = {
           ...e,
           'books': imagesByBookId[bookId] ?? {'id': bookId, 'image': null},
         };
+        
+        // archived_order_index를 강제로 double 타입으로 변환 (소수점 값 보존)
+        if (item['archived_order_index'] != null) {
+          final rawValue = item['archived_order_index'];
+          final rawType = rawValue.runtimeType;
+          
+          // 더 강력한 타입 변환 및 소수점 값 보존
+          double finalValue;
+          if (rawValue is int) {
+            // int인 경우 double로 변환
+            finalValue = rawValue.toDouble();
+            debugPrint('🔍 int -> double 변환: ${item['id']} -> $rawValue (int) -> $finalValue (double)');
+          } else if (rawValue is double) {
+            // 이미 double인 경우 그대로 사용
+            finalValue = rawValue;
+            debugPrint('🔍 이미 double: ${item['id']} -> $rawValue (double)');
+          } else if (rawValue is num) {
+            // num인 경우 double로 변환
+            finalValue = rawValue.toDouble();
+            debugPrint('🔍 num -> double 변환: ${item['id']} -> $rawValue ($rawType) -> $finalValue (double)');
+          } else {
+            // 기타 타입인 경우 문자열로 변환 후 double로 파싱
+            try {
+              finalValue = double.parse(rawValue.toString());
+              debugPrint('🔍 문자열 파싱 -> double: ${item['id']} -> $rawValue ($rawType) -> $finalValue (double)');
+            } catch (e) {
+              // 파싱 실패 시 기본값 사용
+              finalValue = 0.0;
+              debugPrint('⚠️ 파싱 실패, 기본값 사용: ${item['id']} -> $rawValue ($rawType) -> $finalValue (double)');
+            }
+          }
+          
+          item['archived_order_index'] = finalValue;
+          debugPrint('✅ 최종 타입 변환 완료: ${item['id']} -> $finalValue (${finalValue.runtimeType})');
+        }
+        
+        return item;
       }).toList();
 
-      // 4) 로컬 리스트에 추가
+      // 4) 로컬 리스트에 추가 (기존 archived_order_index 값 보존)
       if (mounted) {
         setState(() {
-          _localBooks.addAll(pageItems);
+          // 새 데이터만 추가 (중복 방지)
+          for (final newBook in pageItems) {
+            // 이미 존재하는 책인지 확인
+            final existingIndex = _localBooks.indexWhere(
+              (book) => book['id'] == newBook['id'],
+            );
+            
+            if (existingIndex == -1) {
+              // 새 책이면 추가
+              _localBooks.add(newBook);
+            } else {
+              // 기존 책이면 archived_order_index 값만 업데이트 (소수점 보존)
+              final existingBook = _localBooks[existingIndex];
+              if (existingBook['archived_order_index'] != null && 
+                  existingBook['archived_order_index'] is double) {
+                newBook['archived_order_index'] = existingBook['archived_order_index'];
+                debugPrint('🔄 archived_order_index 값 보존: ${newBook['id']} -> ${existingBook['archived_order_index']}');
+              }
+              // 기존 책을 새 데이터로 교체
+              _localBooks[existingIndex] = newBook;
+            }
+          }
+          
+          // archived_order_index 순서대로 정렬
+          _localBooks.sort((a, b) {
+            final aIndex = (a['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+            final bIndex = (b['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+            return aIndex.compareTo(bIndex);
+          });
+          
           _offset += rows.length;
           _hasMore = _offset < _totalCount;
           // 기준 순서 업데이트
           originalOrder = _localBooks.map((b) => b['id'] as String).toList();
+          
+          // BookDataService와 동기화
+          _syncWithBookDataService();
         });
       }
     } catch (e) {
       debugPrint('❌ 페이지 로드 실패: $e');
     } finally {
-      if (mounted) {
+      if (mounted && !_isInitialLoading) {
         setState(() => _isPageLoading = false);
       }
+    }
+  }
+  
+  /// BookDataService와 데이터 동기화
+  void _syncWithBookDataService() {
+    try {
+      // BookDataService의 archivedBooks를 현재 로컬 데이터로 업데이트
+      final bookDataService = widget.bookDataService;
+      if (bookDataService != null) {
+        // BookDataService의 _archivedBooks를 직접 업데이트 (private 필드이므로 reflection 사용 불가)
+        // 대신 BookDataService의 refresh 메서드를 호출하여 동기화
+        bookDataService.refresh();
+        debugPrint('🔄 BookDataService와 데이터 동기화 완료');
+      }
+    } catch (e) {
+      debugPrint('⚠️ BookDataService 동기화 실패: $e');
     }
   }
 
@@ -223,183 +344,154 @@ class _ArchiveTabState extends State<ArchiveTab> {
   int? _newIndex;
 
   void _onReorder(int oldIndex, int newIndex) {
-    if (!mounted || oldIndex == newIndex) return;
+    if (oldIndex == newIndex) return;
 
-    // 이동한 책 정보 저장
-    _movedBook = _localBooks[oldIndex];
-    _oldIndex = oldIndex;
+    debugPrint('🔄 _onReorder - 이동 전 archived_order_index: ${_localBooks[oldIndex]['archived_order_index']}');
     
+    // 이동할 책 정보 저장
+    final movedBook = Map<String, dynamic>.from(_localBooks[oldIndex]);
+    final movedBookId = movedBook['id'] as String;
+    
+    debugPrint('🔄 _onReorder - 배열 조작 전:');
+    debugPrint('  위치 $oldIndex: ${movedBook['id']} -> archived_order_index: ${movedBook['archived_order_index']} (이동할 책)');
+    
+    // 배열에서 제거
+    _localBooks.removeAt(oldIndex);
+    
+    // 새 위치에 삽입
+    _localBooks.insert(newIndex, movedBook);
+    
+    // 이동된 책의 archived_order_index 계산 (double 타입 명시)
+    double newValue = 0.0;
+    if (newIndex == 0) {
+      // 맨 앞으로 이동: 첫 번째 책보다 작은 값
+      final firstBookIndex = (_localBooks[1]['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+      newValue = (firstBookIndex - 1.0).toDouble();
+      debugPrint('🔍 맨 앞 이동: firstBookIndex=$firstBookIndex, newValue=$newValue (타입: ${newValue.runtimeType})');
+    } else if (newIndex == _localBooks.length - 1) {
+      // 맨 뒤로 이동: 마지막 책보다 큰 값
+      final lastBookIndex = (_localBooks[newIndex - 1]['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+      newValue = (lastBookIndex + 1.0).toDouble();
+      debugPrint('🔍 맨 뒤 이동: lastBookIndex=$lastBookIndex, newValue=$newValue (타입: ${newValue.runtimeType})');
+    } else {
+      // 중간에 삽입: 이전/다음 책의 중간값을 더 정밀하게 계산
+      final prevBookIndex = (_localBooks[newIndex - 1]['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+      final nextBookIndex = (_localBooks[newIndex + 1]['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+      
+      // 더 정밀한 중간값 계산
+      if (prevBookIndex == nextBookIndex) {
+        // 같은 값이면 0.5 추가 (double 타입 보장)
+        newValue = prevBookIndex + 0.5;
+        debugPrint('🔍 같은 값 처리: prev=$prevBookIndex, next=$nextBookIndex, newValue=$newValue (타입: ${newValue.runtimeType})');
+      } else {
+        // 다른 값이면 정확한 중간값 계산
+        newValue = (prevBookIndex + nextBookIndex) / 2.0;
+        
+        // 만약 중간값이 정수라면 더 정밀하게 조정
+        if (newValue == newValue.roundToDouble()) {
+          // 이전 값과의 차이를 계산하여 더 작은 단위로 조정
+          final diff = (nextBookIndex - prevBookIndex).abs();
+          if (diff > 1.0) {
+            newValue = prevBookIndex + (diff / 4.0); // 1/4 지점
+          } else {
+            newValue = prevBookIndex + 0.25; // 0.25 단위로 조정
+          }
+        }
+        debugPrint('🔍 다른 값 처리: prev=$prevBookIndex, next=$nextBookIndex, newValue=$newValue (타입: ${newValue.runtimeType})');
+      }
+      
+      debugPrint('🔍 정밀한 중간값 계산: prev=$prevBookIndex, next=$nextBookIndex, newValue=$newValue');
+    }
+    
+    // 이동된 책의 archived_order_index 업데이트 (double 타입 보장)
+    // newValue가 double 타입인지 확인하고 강제로 double로 설정
+    final finalValue = newValue.toDouble();
+    movedBook['archived_order_index'] = finalValue;
+    _localBooks[newIndex] = movedBook;
+    
+    debugPrint('🔍 타입 보장: newValue=$newValue (${newValue.runtimeType}) -> finalValue=$finalValue (${finalValue.runtimeType})');
+    
+    debugPrint('🔄 _onReorder - 배열 조작 후:');
+    debugPrint('  위치 $newIndex: ${movedBook['id']} -> archived_order_index: ${movedBook['archived_order_index']} (이동된 책)');
+    
+    // 상태 업데이트
     setState(() {
-      final item = _localBooks.removeAt(oldIndex);
-      _localBooks.insert(newIndex, item);
       _hasLocalChanges = true;
-      _isDraggingActive = true; // 드래그 시작
-      _isDragging = true; // 자동 스크롤용 드래그 상태
+      _movedBook = movedBook;
+      _oldIndex = oldIndex;
+      _newIndex = newIndex;
     });
     
-    // 중요: 배열이 변경된 후의 실제 위치를 저장
-    _newIndex = newIndex;
-    
-    // 디버깅: 변경된 배열 상태 확인
     debugPrint('🔄 _onReorder 후 배열 상태:');
     for (int i = 0; i < _localBooks.length; i++) {
       final book = _localBooks[i];
-      if (book['id'] == _movedBook!['id']) {
-        debugPrint('  위치 $i: ${book['id']} -> archived_order_index: ${book['archived_order_index']} (이동된 책)');
-      } else {
-        debugPrint('  위치 $i: ${book['id']} -> archived_order_index: ${book['archived_order_index']}');
-      }
+      final isMoved = book['id'] == movedBookId;
+      final orderIndex = book['archived_order_index'];
+      debugPrint('  위치 $i: ${book['id']} -> archived_order_index: $orderIndex (타입: ${orderIndex.runtimeType})${isMoved ? ' (이동된 책)' : ''}');
     }
-
-    widget.onBooksChanged?.call(List<Map<String, dynamic>>.from(_localBooks));
     
-    // 기존 타이머 취소
-    _dragCompleteTimer?.cancel();
-    
-    // 드래그 완료 감지 타이머 (더 빠른 반응성을 위해 30ms로 단축)
-    _dragCompleteTimer = Timer(const Duration(milliseconds: 30), () {
-      if (_isDraggingActive && _hasLocalChanges && mounted) {
-        _isDraggingActive = false;
-        _isDragging = false; // 드래그 종료
-        debugPrint('🎯 드래그 완료 감지 - 즉시 저장 및 알림');
-        _saveOrderImmediately();
-      }
-    });
+    // 즉시 저장
+    _saveOrderImmediately();
   }
 
   /// 드래그 완료 시 즉시 저장 (간격 방식)
   Future<void> _saveOrderImmediately() async {
-    if (_isSavingOrder) return;
-    
-    // 이동한 책이 없으면 리턴
-    if (_movedBook == null || _oldIndex == null || _newIndex == null) {
-      debugPrint('⚠️ 이동한 책 정보가 없음');
+    if (_movedBook == null) {
+      debugPrint('⚠️ _movedBook이 null이므로 저장 건너뜀');
       return;
     }
 
-    try {
-      _isSavingOrder = true;
-      debugPrint('🔄 순서 변경 즉시 저장 시작 (간격 방식) - 이동한 책: ${_movedBook!['id']}');
+    debugPrint('🔄 순서 변경 즉시 저장 시작 (간격 방식) - 이동한 책: ${_movedBook!['id']}');
+    
+    // 현재 위치에서 이동된 책 찾기
+    final newPosition = _localBooks.indexWhere((book) => book['id'] == _movedBook!['id']);
+    if (newPosition == -1) {
+      debugPrint('❌ 이동된 책을 찾을 수 없음');
+      return;
+    }
 
-      // 이동한 책만 업데이트
-      final updates = <Map<String, dynamic>>[];
+    // 이동된 책의 새로운 archived_order_index 값 (double 타입 보장)
+    final rawValue = _movedBook!['archived_order_index'];
+    final newValue = (rawValue as num).toDouble();
+    
+    debugPrint('📚 책 ${_movedBook!['id']}: newPosition=$newPosition, rawValue=$rawValue (${rawValue.runtimeType}), newValue=$newValue (${newValue.runtimeType})');
+    
+    try {
+      // 이동된 책만 업데이트
+      final oldValue = _movedBook!['archived_order_index'];
       
-      // 이동한 책의 현재 위치를 정확하게 찾기
-      final currentPosition = _localBooks.indexWhere((book) => book['id'] == _movedBook!['id']);
-      if (currentPosition == -1) {
-        debugPrint('⚠️ 이동한 책을 찾을 수 없음: ${_movedBook!['id']}');
-        return;
+      await client
+          .from('user_books')
+          .update({'archived_order_index': newValue})
+          .eq('id', _movedBook!['id']);
+      
+      debugPrint('📚 책 ${_movedBook!['id']}: archived_order_index ${oldValue} → ${newValue}');
+      
+      // 로컬 상태 업데이트 (double 타입 보장)
+      final bookIndex = _localBooks.indexWhere((book) => book['id'] == _movedBook!['id']);
+      if (bookIndex != -1) {
+        final finalValue = newValue.toDouble();
+        _localBooks[bookIndex]['archived_order_index'] = finalValue;
+        debugPrint('📚 _localBooks 배열 업데이트: 위치 $bookIndex, archived_order_index: $finalValue (타입: ${finalValue.runtimeType})');
       }
       
-      // 이동한 책의 새로운 위치
-      final newPosition = currentPosition;
+      debugPrint('💾 DB 직접 업데이트 완료: 1개 책');
       
-      // 디버깅: _localBooks 배열 상태 확인
-      debugPrint('🔍 _localBooks 배열 상태 (이동 후):');
-      for (int i = 0; i < _localBooks.length; i++) {
-        final book = _localBooks[i];
-        if (book['id'] == _movedBook!['id']) {
-          debugPrint('  위치 $i: ${book['id']} -> archived_order_index: ${book['archived_order_index']} (이동된 책)');
-        } else {
-          debugPrint('  위치 $i: ${book['id']} -> archived_order_index: ${book['archived_order_index']}');
-        }
-      }
-      
-      // 이전 책과 다음 책의 archived_order_index 값
-      double prev = 0.0;
-      double next = 1000.0;
-      
-      if (newPosition > 0) {
-        // 이전 책: newPosition-1 위치의 책
-        final prevBook = _localBooks[newPosition - 1];
-        
-        // 중요: 이전 책이 방금 업데이트된 책인지 확인
-        if (prevBook['id'] == _movedBook!['id']) {
-          // 방금 업데이트된 책이라면, 더 이전 위치의 책을 찾기
-          if (newPosition > 1) {
-            prev = (_localBooks[newPosition - 2]['archived_order_index'] as num).toDouble();
-            debugPrint('📚 책 ${_movedBook!['id']}: prev 찾음 (건너뛰기) - ${_localBooks[newPosition - 2]['id']} (위치: ${newPosition - 2}, 값: $prev)');
-          }
-        } else {
-          prev = (prevBook['archived_order_index'] as num).toDouble();
-          debugPrint('📚 책 ${_movedBook!['id']}: prev 찾음 - ${prevBook['id']} (위치: ${newPosition - 1}, 값: $prev)');
-        }
-      }
-      
-      if (newPosition < _localBooks.length - 1) {
-        // 다음 책: newPosition+1 위치의 책  
-        final nextBook = _localBooks[newPosition + 1];
-        
-        // 중요: 다음 책이 방금 업데이트된 책인지 확인
-        if (nextBook['id'] == _movedBook!['id']) {
-          // 방금 업데이트된 책이라면, 더 다음 위치의 책을 찾기
-          if (newPosition < _localBooks.length - 2) {
-            next = (_localBooks[newPosition + 2]['archived_order_index'] as num).toDouble();
-            debugPrint('📚 책 ${_movedBook!['id']}: next 찾음 (건너뛰기) - ${_localBooks[newPosition + 2]['id']} (위치: ${newPosition + 2}, 값: $next)');
-          }
-        } else {
-          next = (nextBook['archived_order_index'] as num).toDouble();
-          debugPrint('📚 책 ${_movedBook!['id']}: next 찾음 - ${nextBook['id']} (위치: ${newPosition + 1}, 값: $next)');
-        }
-      }
-      
-      // 새로운 값 = (prev + next) / 2.0
-      final newValue = (prev + next) / 2.0;
-      
-      updates.add({
-        'id': _movedBook!['id'],
-        'archived_order_index': newValue, // 이미 계산된 값
+      // 변경사항 초기화
+      setState(() {
+        _hasLocalChanges = false;
+        _movedBook = null;
+        _oldIndex = null;
+        _newIndex = null;
       });
       
-      debugPrint('📚 책 ${_movedBook!['id']}: newPosition=$newPosition, prev=$prev, next=$next, newValue=$newValue');
-
-      debugPrint('📝 즉시 업데이트 대상: ${updates.length}개 책');
-
-      // 🚀 직접 Supabase 업데이트
-      if (updates.isNotEmpty) {
-        for (final update in updates) {
-          final oldValue = _movedBook!['archived_order_index'];
-          final newValue = update['archived_order_index'];
-          
-          await client
-              .from('user_books')
-              .update({'archived_order_index': newValue})
-              .eq('id', update['id']);
-              
-          // _localBooks 배열에서 해당 책 찾아서 업데이트
-          final bookIndex = _localBooks.indexWhere((book) => book['id'] == update['id']);
-          if (bookIndex != -1) {
-            _localBooks[bookIndex]['archived_order_index'] = newValue;
-            debugPrint('📚 _localBooks 배열 업데이트: 위치 $bookIndex, archived_order_index: $newValue');
-          }
-          
-          debugPrint('📚 책 ${update['id']}: archived_order_index ${oldValue} → ${newValue}');
-        }
-        debugPrint('💾 DB 직접 업데이트 완료: ${updates.length}개 책');
-      } else {
-        debugPrint('ℹ️ 업데이트할 책이 없음');
-      }
-
-      _hasLocalChanges = false;
-      originalOrder = _localBooks.map((b) => b['id'] as String).toList();
-
-      debugPrint('✅ 순서 변경 즉시 저장 완료: ${updates.length}개 업데이트');
-
-      // 상위 새로고침은 하지 않음 (archive_bottom_sheet만 업데이트)
-    } catch (e) {
-      debugPrint('❌ 순서 변경 즉시 저장 실패: $e');
-      // 실패 시에도 로컬 상태는 유지 (사용자가 다시 시도할 수 있도록)
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSavingOrder = false;
-        });
-      }
+      // 콜백 호출
+      widget.onBooksChanged?.call(List<Map<String, dynamic>>.from(_localBooks));
       
-      // 이동한 책 정보 초기화
-      _movedBook = null;
-      _oldIndex = null;
-      _newIndex = null;
+      debugPrint('✅ 순서 변경 즉시 저장 완료: 1개 업데이트');
+      
+    } catch (e) {
+      debugPrint('❌ 순서 저장 실패: $e');
     }
   }
 
@@ -442,15 +534,15 @@ class _ArchiveTabState extends State<ArchiveTab> {
             debugPrint('📚 책 $id: next 찾음 - ${_localBooks[newPosition + 1]['id']} (위치: ${newPosition + 1}, 값: $next)');
           }
           
-          // 새로운 값 = (prev + next) / 2.0
-          final newValue = (prev + next) / 2.0;
+          // 새로운 값 = (prev + next) / 2.0 (double 타입 보장)
+          final newValue = ((prev + next) / 2.0).toDouble();
           
           updates.add({
             'id': id,
-            'archived_order_index': newValue, // 이미 계산된 값
+            'archived_order_index': newValue, // double 타입 보장
           });
           
-          debugPrint('📚 책 $id: newPosition=$newPosition, prev=$prev, next=$next, newValue=$newValue');
+          debugPrint('📚 책 $id: newPosition=$newPosition, prev=$prev, next=$next, newValue=$newValue (타입: ${newValue.runtimeType})');
         }
       }
 
@@ -467,7 +559,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
               .update({'archived_order_index': newValue})
               .eq('id', update['id']);
               
-          debugPrint('📚 책 ${update['id']}: archived_order_index ${oldValue} → ${newValue}');
+          debugPrint('📚 책 ${update['id']}: archived_order_index ${oldValue} (${oldValue.runtimeType}) → ${newValue} (${newValue.runtimeType})');
         }
       }
 

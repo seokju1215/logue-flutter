@@ -105,7 +105,7 @@ class BookDataService extends ChangeNotifier {
         final bookId = newOrder[i]['id'];
         await _client
             .from('user_books')
-            .update({'archived_order_index': i})
+            .update({'archived_order_index': i.toDouble()})
             .eq('id', bookId);
       }
       
@@ -134,14 +134,16 @@ class BookDataService extends ChangeNotifier {
         final bookId = book['id'];
         final isArchived = book['is_archived'] as bool;
         final orderIndex = book['order_index'] as int? ?? 0;
-        final archivedOrderIndex = book['archived_order_index'] as int? ?? 0;
+        // archived_order_index 설정
+        final archivedOrderIndex = (book['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        final nextArchivedOrderIndex = archivedOrderIndex + 1.0;
         
         await _client
             .from('user_books')
             .update({
               'is_archived': isArchived,
               'order_index': isArchived ? null : orderIndex,
-              'archived_order_index': isArchived ? archivedOrderIndex : null,
+              'archived_order_index': isArchived ? nextArchivedOrderIndex : null,
             })
             .eq('id', bookId);
       }
@@ -248,13 +250,52 @@ class BookDataService extends ChangeNotifier {
   }
   
   /// 보관함에서 프로필로 이동한 책들의 archived_order_index 정리
+  Future<void> _reorderArchivedBooks() async {
+    final archivedBooks = _allBooks
+        .where((book) => book['is_archived'] == true)
+        .toList()
+      ..sort((a, b) {
+        final aIndex = (a['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        final bIndex = (b['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        return aIndex.compareTo(bIndex);
+      });
+
+    for (int i = 0; i < archivedBooks.length; i++) {
+      final bookIndex = _allBooks.indexWhere((book) => book['id'] == archivedBooks[i]['id']);
+      if (bookIndex != -1) {
+        _allBooks[bookIndex]['archived_order_index'] = i.toDouble();
+      }
+    }
+  }
+
+  /// 보관함 책 순서 변경 후 _allBooks 리스트 업데이트
   void _updateAllBooksFromArchived() {
     for (int i = 0; i < _archivedBooks.length; i++) {
       final bookId = _archivedBooks[i]['id'];
       final bookIndex = _allBooks.indexWhere((book) => book['id'] == bookId);
       if (bookIndex != -1) {
-        _allBooks[bookIndex]['archived_order_index'] = i;
+        _allBooks[bookIndex]['archived_order_index'] = i.toDouble();
       }
+    }
+  }
+  
+  /// 보관함 순서 업데이트
+  Future<void> _updateBookOrder() async {
+    final archivedBooks = _allBooks
+        .where((book) => book['is_archived'] == true)
+        .toList()
+      ..sort((a, b) {
+        final aIndex = (a['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        final bIndex = (b['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        return aIndex.compareTo(bIndex);
+      });
+
+    for (int i = 0; i < archivedBooks.length; i++) {
+      final bookId = archivedBooks[i]['id'];
+      await _client
+          .from('user_books')
+          .update({'archived_order_index': i.toDouble()})
+          .eq('id', bookId);
     }
   }
   

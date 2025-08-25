@@ -236,33 +236,28 @@ class UserBookApi {
   }
 
   /// 보관함에 책을 추가할 때 archived_order_index 관리 (기존 로직 유지)
-  Future<void> addBookToArchive(String bookId) async {
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) throw Exception('로그인된 사용자가 없습니다.');
-    debugPrint("🔍 addBookToArchive 시작: bookId=$bookId, userId=$userId");
-
+  Future<void> addBookToArchive(String userBookId) async {
     try {
-      final currentArchiveBooks = await client
+      // 현재 보관함의 최대 archived_order_index 찾기
+      final result = await client
           .from('user_books')
           .select('id, archived_order_index')
-          .eq('user_id', userId)
+          .eq('is_archived', true)
           .order('archived_order_index', ascending: true);
 
-      for (final book in currentArchiveBooks) {
-        final currentOrderIndex = book['archived_order_index'] as int? ?? 0;
-        await client.from('user_books').update({'archived_order_index': currentOrderIndex + 1}).eq('id', book['id']);
+      if (result.isNotEmpty) {
+        final book = result.last;
+        final currentOrderIndex = (book['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        await client.from('user_books').update({'archived_order_index': currentOrderIndex + 1.0}).eq('id', book['id']);
       }
 
+      // 새로 추가되는 책은 archived_order_index = 0
       await client
           .from('user_books')
-          .update({'archived_order_index': 0})
-          .eq('id', bookId)
-          .eq('user_id', userId);
-
-      debugPrint("✅ 책 보관함 추가 성공: $bookId");
-    } catch (e, stack) {
-      debugPrint("❌ 책 보관함 추가 중 오류: $e");
-      debugPrint("🔍 스택 트레이스: $stack");
+          .update({'archived_order_index': 0.0})
+          .eq('id', userBookId);
+    } catch (e) {
+      debugPrint('❌ 보관함에 책 추가 실패: $e');
       rethrow;
     }
   }

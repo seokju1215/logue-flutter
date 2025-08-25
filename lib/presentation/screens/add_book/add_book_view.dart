@@ -52,6 +52,19 @@ class AddBookViewState extends State<AddBookView> with AutomaticKeepAliveClientM
     if (uid == null) return;
 
     try {
+      // 기존 데이터를 임시로 저장 (소수점 값 보존용)
+      final existingBooks = List<Map<String, dynamic>>.from(_persistentAllBooks);
+      debugPrint('🔄 서버 데이터 요청 전 기존 데이터: ${existingBooks.length}개 책');
+      
+      // 기존 소수점 값들 로깅
+      for (final book in existingBooks) {
+        if (book['archived_order_index'] != null && 
+            book['archived_order_index'] is double &&
+            book['archived_order_index'] != (book['archived_order_index'] as double).roundToDouble()) {
+          debugPrint('🔍 기존 소수점 값: ${book['id']} -> ${book['archived_order_index']}');
+        }
+      }
+      
       final response = await client
           .from('user_books')
           .select('''
@@ -62,8 +75,39 @@ class AddBookViewState extends State<AddBookView> with AutomaticKeepAliveClientM
           .order('created_at', ascending: false);
 
       if (mounted) {
+        final books = (response as List<dynamic>).cast<Map<String, dynamic>>();
+        debugPrint('🔄 서버에서 받은 데이터: ${books.length}개 책');
+        
+        // 첫 번째 책의 전체 구조와 타입 로깅
+        if (books.isNotEmpty) {
+          final firstBook = books.first;
+          debugPrint('🔍 첫 번째 책 전체 구조:');
+          for (final entry in firstBook.entries) {
+            final value = entry.value;
+            final type = value?.runtimeType;
+            debugPrint('  ${entry.key}: $value (타입: $type)');
+          }
+        }
+        
+        // archived_order_index를 double로 변환
+        for (final book in books) {
+          if (book['archived_order_index'] != null) {
+            // 서버에서 받은 값의 타입과 값 로깅
+            final rawValue = book['archived_order_index'];
+            final rawType = rawValue.runtimeType;
+            debugPrint('🔍 서버 데이터 타입 확인: ${book['id']} -> 값: $rawValue, 타입: $rawType');
+            
+            // 강제로 double로 변환
+            final serverValue = (rawValue as num).toDouble();
+            book['archived_order_index'] = serverValue;
+            debugPrint('  ✅ 타입 변환 완료: $rawValue ($rawType) -> $serverValue (double)');
+          }
+        }
+        
+        debugPrint('🔄 서버 데이터로 완전 교체 완료');
+        
         setState(() {
-          _persistentAllBooks = (response as List<dynamic>).cast<Map<String, dynamic>>();
+          _persistentAllBooks = books;
         });
         debugPrint('🔄 AddBookView - 서버에서 데이터 업데이트: ${_persistentAllBooks.length}개 책');
       }
@@ -81,13 +125,25 @@ class AddBookViewState extends State<AddBookView> with AutomaticKeepAliveClientM
   /// 로컬 데이터 업데이트 (archive_tab에서 순서 변경 시)
   void updateLocalBooks(List<Map<String, dynamic>> updatedBooks) {
     debugPrint('🔄 AddBookView - 로컬 데이터 업데이트: ${updatedBooks.length}개 책');
+    
+    // 책 추가 시에는 완전히 새로고침 (기존 데이터 기억하지 않음)
+    if (updatedBooks.length > _persistentAllBooks.length) {
+      debugPrint('🔄 책 추가 감지: 완전 새로고침 실행');
+      _fetchAllBooksFromServer();
+      return;
+    }
+    
+    // 순서 변경 시에만 로컬 업데이트
     if (mounted) {
       setState(() {
-        // 기존 _persistentAllBooks에서 업데이트된 책들의 순서 정보 반영
         for (final updatedBook in updatedBooks) {
           final index = _persistentAllBooks.indexWhere((book) => book['id'] == updatedBook['id']);
           if (index != -1) {
-            _persistentAllBooks[index]['archived_order_index'] = updatedBook['archived_order_index'];
+            final newValue = (updatedBook['archived_order_index'] as num?)?.toDouble();
+            if (newValue != null) {
+              _persistentAllBooks[index]['archived_order_index'] = newValue;
+              debugPrint('🔄 archived_order_index 업데이트: ${updatedBook['id']} -> $newValue');
+            }
           }
         }
       });

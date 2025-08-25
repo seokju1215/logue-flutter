@@ -223,14 +223,13 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   /// archived_order_index 기준으로 책들을 정렬하는 메서드
-  List<Map<String, dynamic>> _getSortedBooks() {
-    final sortedBooks = List<Map<String, dynamic>>.from(widget.allBooks);
-    sortedBooks.sort((a, b) {
-      final aOrder = a['archived_order_index'] as int? ?? 0;
-      final bOrder = b['archived_order_index'] as int? ?? 0;
-      return aOrder.compareTo(bOrder);
-    });
-    return sortedBooks;
+  List<Map<String, dynamic>> _sortBooksByArchivedOrderIndex(List<Map<String, dynamic>> books) {
+    return books.toList()
+      ..sort((a, b) {
+        final aOrder = (a['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        final bOrder = (b['archived_order_index'] as num?)?.toDouble() ?? 0.0;
+        return aOrder.compareTo(bOrder);
+      });
   }
 
   /// 변경된 책만 추려서 RPC에 넘기기 위한 diff
