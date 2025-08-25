@@ -541,12 +541,10 @@ class _ArchiveTabState extends State<ArchiveTab> {
             'id': id,
             'archived_order_index': newValue, // double 타입 보장
           });
-          
-          debugPrint('📚 책 $id: newPosition=$newPosition, prev=$prev, next=$next, newValue=$newValue (타입: ${newValue.runtimeType})');
+
         }
       }
 
-      debugPrint('📝 백업 업데이트 대상: ${updates.length}개 책');
 
       // 🚀 직접 Supabase 백업 업데이트
       if (updates.isNotEmpty) {

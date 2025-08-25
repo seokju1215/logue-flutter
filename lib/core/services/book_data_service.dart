@@ -58,7 +58,6 @@ class BookDataService extends ChangeNotifier {
       ..sort((a, b) => (a['order_index'] ?? 0).compareTo(b['order_index'] ?? 0));
     
     _archivedBooks = _allBooks
-        .where((book) => book['is_archived'] == true)
         .toList()
       ..sort((a, b) => (a['archived_order_index'] ?? 0).compareTo(b['archived_order_index'] ?? 0));
     
