@@ -32,6 +32,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late String name;
   late String job;
   late String bio;
+  late bool showArchivedBooks;
   bool isEdited = false;
   bool _isSaving = false; // 저장 중 중복 실행 방지
   File? tempAvatarFile; // 임시 아바타 파일
@@ -46,6 +47,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     name = profile['name'] ?? '';
     job = profile['job'] ?? '';
     bio = profile['bio'] ?? '';
+    showArchivedBooks = (profile['show_archived_books'] as bool?) ?? false;
   }
 
   void onValueChanged() {
@@ -129,6 +131,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         'job': job,
         'bio': bio,
         'avatar_url': finalAvatarUrl,
+        'show_archived_books': showArchivedBooks,
       }).eq('id', userId);
 
       // Firebase Analytics: 사용자 이름 변경 추적
@@ -370,8 +373,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   Transform.scale(
                     scale: 0.8,
                     child: Switch(
-                      value: true,
-                      onChanged: (_) {
+                      value: showArchivedBooks,
+                      onChanged: (value) {
+                        setState(() {
+                          showArchivedBooks = value;
+                          isEdited = true;
+                        });
                       },
                       activeColor: AppColors.white500,
                       activeTrackColor: AppColors.black900,
