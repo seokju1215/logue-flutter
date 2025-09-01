@@ -44,7 +44,7 @@ class RejectDeleteDialog extends StatelessWidget {
                           TextSpan(
                             children: [
                               TextSpan(
-                                text: '프로필에 게시된 책이에요.\n프로필에서 책을 내린 후 삭제해주세요.',
+                                text: '대표 책으로 게시된 책이에요.\n대표 탭에서 책을 내린 후 삭제해주세요.',
                                 style: TextStyle(fontSize: 13, color: AppColors.black500),
                               ),
                             ],
