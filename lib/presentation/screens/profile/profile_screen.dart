@@ -426,6 +426,9 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   padding: EdgeInsets.zero,
+                  physics: (profile?['show_archived_books'] as bool?) ?? false 
+                      ? const AlwaysScrollableScrollPhysics() 
+                      : const NeverScrollableScrollPhysics(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -449,7 +452,10 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                           Padding(
                             padding: const EdgeInsets.symmetric(
                                 vertical: 0, horizontal: 26),
-                            child: _buildBookGrid(),
+                            child: SizedBox(
+                              height: null,
+                              child: _buildBookGrid(),
+                            ),
                           ),
                           const SizedBox(height: 20),
                         ] else ...[

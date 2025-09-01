@@ -34,12 +34,16 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   
   // ===== 로컬 상태 =====
   final List<Map<String, dynamic>> _localArchivedBooks = []; // 페이지를 쌓아서 보관
+  
+  // ===== 실시간 업데이트 구독 =====
+  late final RealtimeChannel _bookChannel;
 
   @override
   void initState() {
     super.initState();
     _fetchTotalCount();
     _loadNextPage();
+    _subscribeToBookUpdates();
   }
 
   Future<void> _fetchTotalCount() async {
@@ -183,8 +187,44 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     }
   }
 
+  void _subscribeToBookUpdates() {
+    final user = _client.auth.currentUser;
+    if (user == null) return;
+
+    _bookChannel = _client.channel('public:user_books')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'user_books',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'user_id',
+          value: user.id,
+        ),
+        callback: (payload) async {
+          if (!mounted) return;
+          
+          // archive_tab에서 순서 변경 시 ProfileBooksTabView도 새로고침
+          debugPrint('🔄 ProfileBooksTabView - user_books 변경 감지: ${payload.eventType}');
+          
+          // 로컬 데이터 초기화 후 다시 로드
+          setState(() {
+            _localArchivedBooks.clear();
+            _offset = 0;
+            _hasMore = true;
+          });
+          
+          // 데이터 다시 로드
+          await _fetchTotalCount();
+          await _loadNextPage();
+        },
+      )
+      ..subscribe();
+  }
+
   @override
   void dispose() {
+    _bookChannel.unsubscribe();
     super.dispose();
   }
 
@@ -259,13 +299,11 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   }
 
   Widget _buildPages() {
-    return IndexedStack(
-      index: currentIndex,
-      children: [
-        _buildRepresentativeTab(),
-        _buildAllBooksTab(),
-      ],
-    );
+    if (currentIndex == 0) {
+      return _buildRepresentativeTab();
+    } else {
+      return _buildAllBooksTab();
+    }
   }
 
   Widget _buildRepresentativeTab() {
@@ -275,9 +313,9 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 26),
-      child: UserBookGrid(
-        books: books,
-        onTap: _onBookTap,
+      child:UserBookGrid(
+          books: books,
+          onTap: _onBookTap,
       ),
     );
   }
