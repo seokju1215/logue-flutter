@@ -23,6 +23,7 @@ import 'follow_list_screen.dart';
 import 'notification_screen.dart';
 import 'profile_view.dart';
 import 'package:flutter/gestures.dart';
+import 'widgets/profile_books_tab_view.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -438,42 +439,54 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                         child: _buildActionButtons(),
                       ),
                       const SizedBox(height: 20),
-                      if (books.isNotEmpty) ...[
+                      if ((profile?['show_archived_books'] as bool?) ?? false) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               vertical: 0, horizontal: 26),
-                          child: _buildBookGrid(),
+                          child: ProfileBooksTabView(
+                            nonArchivedBooks: books,
+                            userId: profile?['id'] as String,
+                          ),
                         ),
                         const SizedBox(height: 20),
                       ] else ...[
-                        const SizedBox(height: 76),
-                        Center(
-                          child: Column(
-                            children: [
-                              Builder(
-                                builder: (context) {
-                                  return TextButton(
-                                    onPressed: () async {
-                                      // MainNavigationScreen의 AddBookView로 이동
-                                      final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
-                                      if (mainNavigationState != null) {
-                                        mainNavigationState.navigateToAddBookProfileTab();
-                                      }
-                                    },
-                                    child: const Text(
-                                      "책 추가 +",
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          color: AppColors.black900,
-                                          fontWeight: FontWeight.w400),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                        if (books.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 0, horizontal: 26),
+                            child: _buildBookGrid(),
                           ),
-                        ),
-                        const SizedBox(height: 90),
+                          const SizedBox(height: 20),
+                        ] else ...[
+                          const SizedBox(height: 76),
+                          Center(
+                            child: Column(
+                              children: [
+                                Builder(
+                                  builder: (context) {
+                                    return TextButton(
+                                      onPressed: () async {
+                                        // MainNavigationScreen의 AddBookView로 이동
+                                        final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
+                                        if (mainNavigationState != null) {
+                                          mainNavigationState.navigateToAddBookProfileTab();
+                                        }
+                                      },
+                                      child: const Text(
+                                        "책 추가 +",
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.black900,
+                                            fontWeight: FontWeight.w400),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 90),
+                        ]
                       ]
                     ],
                   ),
