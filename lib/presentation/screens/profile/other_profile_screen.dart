@@ -17,6 +17,7 @@ import '../../../core/providers/follow_state_provider.dart';
 import '../../../data/utils/firebase_analytics_util.dart';
 
 import '../../../core/widgets/profile/bio_content.dart';
+import 'widgets/profile_books_tab_view.dart';
 
 // import 'package:logue/data/utils/amplitude_util.dart';
 import 'follow/follow_tab_screen.dart';
@@ -255,22 +256,43 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
               ),
               isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
 
-              if (books.isNotEmpty)
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 0, horizontal: 26),
-                  child: _buildBookGrid(),
-                )
-              else ...[
-                const SizedBox(height: 130),
-                const Center(
-                  child: Text(
-                    '인생 책이 없어요.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: AppColors.black500),
+              if ((profile?['show_archived_books'] as bool?) ?? false) ...[
+                if (books.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                    child: ProfileBooksTabView(
+                      nonArchivedBooks: books,
+                      userId: profile?['id'] as String,
+                    ),
+                  )
+                else ...[
+                  const SizedBox(height: 130),
+                  const Center(
+                    child: Text(
+                      '인생 책이 없어요.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: AppColors.black500),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 90),
+                  const SizedBox(height: 90),
+                ]
+              ] else ...[
+                if (books.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 26),
+                    child: _buildBookGrid(),
+                  )
+                else ...[
+                  const SizedBox(height: 130),
+                  const Center(
+                    child: Text(
+                      '인생 책이 없어요.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: AppColors.black500),
+                    ),
+                  ),
+                  const SizedBox(height: 90),
+                ]
               ]
             ],
           ),
