@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <!-- 주소록 접근용 -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Android 13 이상: 광고 ID 접근용 -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     <application
         android:label="Logue"
         android:name="${applicationName}"

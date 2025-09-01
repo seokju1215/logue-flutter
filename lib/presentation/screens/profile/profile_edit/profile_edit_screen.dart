@@ -349,7 +349,36 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   ),
                   const SizedBox(height: 14),
                   ProfileLinkTile(link: profileLink),
-                  const SizedBox(height: 38),
+                  const SizedBox(height: 33),
+                ],
+              ),
+            ),
+            Container(
+              height: 1,
+              width: double.infinity,
+              color: AppColors.black300,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(35, 0, 26, 40),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '내 프로필에 전체 책장 표시',
+                    style: TextStyle(fontSize: 14, color: AppColors.black900),
+                  ),
+                  Transform.scale(
+                    scale: 0.8,
+                    child: Switch(
+                      value: true,
+                      onChanged: (_) {
+                      },
+                      activeColor: AppColors.white500,
+                      activeTrackColor: AppColors.black900,
+                      inactiveThumbColor: AppColors.black900,
+                      inactiveTrackColor: AppColors.white500,
+                    ),
+                  ),
                 ],
               ),
             ),
