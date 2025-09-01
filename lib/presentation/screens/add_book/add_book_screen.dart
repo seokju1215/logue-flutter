@@ -224,8 +224,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 absorbing: _tabsDisabled, // 로딩 중 탭 터치 차단
                 child: Row(
                   children: [
-                    _buildTab('프로필', 0),
-                    _buildTab('보관함', 1),
+                    _buildTab('대표', 0),
+                    _buildTab('전체', 1),
                   ],
                 ),
               ),

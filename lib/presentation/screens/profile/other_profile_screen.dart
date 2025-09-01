@@ -254,7 +254,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                 padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
                 child: _buildProfileHeader(),
               ),
-              isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
+              profile?['show_archived_books'] ? SizedBox(height: 0,) :isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
 
               if ((profile?['show_archived_books'] as bool?) ?? false) ...[
                 if (books.isNotEmpty)
