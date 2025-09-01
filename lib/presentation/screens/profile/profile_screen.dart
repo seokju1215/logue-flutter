@@ -438,16 +438,11 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                             vertical: 0, horizontal: 16),
                         child: _buildActionButtons(),
                       ),
-                      const SizedBox(height: 20),
                       if ((profile?['show_archived_books'] as bool?) ?? false) ...[
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 0, horizontal: 26),
-                          child: ProfileBooksTabView(
+                          ProfileBooksTabView(
                             nonArchivedBooks: books,
                             userId: profile?['id'] as String,
                           ),
-                        ),
                         const SizedBox(height: 20),
                       ] else ...[
                         if (books.isNotEmpty) ...[

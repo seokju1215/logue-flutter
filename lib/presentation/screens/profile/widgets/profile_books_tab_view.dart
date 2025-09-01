@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
+import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:my_logue/core/widgets/book/user_book_grid.dart';
 import 'package:my_logue/data/datasources/user_book_api.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
@@ -58,9 +59,9 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         _buildTabs(),
         const SizedBox(height: 16),
         SizedBox(
-          height: null,
-          child: _buildPages(),
-        ),
+            height: null,
+            child: _buildPages(),
+          ),
       ],
     );
   }
@@ -136,9 +137,12 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     if (books.isEmpty) {
       return _buildEmptyState();
     }
-    return UserBookGrid(
-      books: books,
-      onTap: _onBookTap,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: UserBookGrid(
+        books: books,
+        onTap: _onBookTap,
+      ),
     );
   }
 
@@ -150,10 +154,77 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     if (combined.isEmpty) {
       return _buildEmptyState();
     }
-    return UserBookGrid(
-      books: combined,
-      onTap: _onBookTap,
+    return _buildBookshelfLayout(combined);
+  }
+
+  Widget _buildBookshelfLayout(List<Map<String, dynamic>> books) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const crossAxisCount = 5;
+        const crossAxisSpacing = 11.7;
+        const itemAspectRatio = 98 / 145;
+        const bookPadding = 22.0;
+
+        final availableWidth = constraints.maxWidth - (bookPadding * 2);
+        final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
+        final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
+        final itemHeight = itemWidth / itemAspectRatio;
+
+        return Stack(
+          children: [
+            // 책들 - 양옆 22 패딩
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
+              child: Wrap(
+                spacing: crossAxisSpacing,
+                runSpacing: 35,
+                children: books.map((book) {
+                  return SizedBox(
+                    width: itemWidth,
+                    height: itemHeight,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(0),
+                      child: BookFrame(
+                        imageUrl: book['books']?['image'] ?? '',
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            // 선반 - 전체 너비
+            ..._buildShelves(books.length, itemHeight),
+          ],
+        );
+      },
     );
+  }
+
+  List<Widget> _buildShelves(int bookCount, double itemHeight) {
+    const booksPerRow = 5;
+    final shelfCount = (bookCount / booksPerRow).ceil();
+
+    return List.generate(shelfCount, (i) {
+      final shelfY = (itemHeight + 35) * i + itemHeight;
+      return Positioned(
+        top: shelfY,
+        left: 0,
+        right: 0,
+        child: Container(
+          height: 5,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF6F6F6),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 4,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   void _onBookTap(Map<String, dynamic> book) async {
