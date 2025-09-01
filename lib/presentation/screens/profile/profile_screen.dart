@@ -89,8 +89,8 @@ class ProfileScreen extends StatefulWidget {
 
 class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   final client = Supabase.instance.client;
-  final ScrollController _scrollController = ScrollController();
-  bool _isScrollable = false;
+
+
 
   Map<String, dynamic>? profile;
   late final RealtimeChannel _profileChannel;
@@ -111,9 +111,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     _subscribeToBookUpdates();
     _subscribeToFollowUpdates(); // 팔로우 변경사항 실시간 감지
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkIfScrollable();
-    });
+
 
     client.auth.onAuthStateChange.listen((_) {
       if (mounted) setState(() {});
@@ -147,13 +145,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     });
   }
 
-  void _checkIfScrollable() {
-    if (!_scrollController.hasClients) return;
-    final isNowScrollable = _scrollController.position.maxScrollExtent > 0;
-    if (mounted && isNowScrollable != _isScrollable) {
-      setState(() => _isScrollable = isNowScrollable);
-    }
-  }
+
 
   String _truncateTextToFit(
     String text,
@@ -199,7 +191,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
 
   @override
   void dispose() {
-    _scrollController.dispose();
     _profileChannel.unsubscribe();
     _bookChannel.unsubscribe();
     super.dispose();
@@ -273,10 +264,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
 
     setState(() {
       books = result;
-      // ✅ 스크롤 가능 여부 즉시 반영
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkIfScrollable();
-      });
     });
   }
 
@@ -300,9 +287,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
           data.sort((a, b) =>
               (a['order_index'] as int).compareTo(b['order_index'] as int));
           setState(() => books = data);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _checkIfScrollable();
-          });
         },
       )
       ..subscribe();
@@ -418,80 +402,68 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         child: Stack(
           children: [
             Positioned.fill(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (_) {
-                  _checkIfScrollable();
-                  return false;
-                },
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: EdgeInsets.zero,
-                  physics: (profile?['show_archived_books'] as bool?) ?? false 
-                      ? const AlwaysScrollableScrollPhysics() 
-                      : const NeverScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
-                        child: _buildProfileHeader(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
+                    child: _buildProfileHeader(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 0, horizontal: 16),
+                    child: _buildActionButtons(),
+                  ),
+                  if ((profile?['show_archived_books'] as bool?) ?? false) ...[
+                    Expanded(
+                      child: ProfileBooksTabView(
+                        nonArchivedBooks: books,
+                        userId: profile?['id'] as String,
                       ),
+                    ),
+                  ] else ...[
+                    if (books.isNotEmpty) ...[
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 0, horizontal: 16),
-                        child: _buildActionButtons(),
+                            vertical: 0, horizontal: 26),
+                        child: SizedBox(
+                          height: null,
+                          child: _buildBookGrid(),
+                        ),
                       ),
-                      if ((profile?['show_archived_books'] as bool?) ?? false) ...[
-                          ProfileBooksTabView(
-                            nonArchivedBooks: books,
-                            userId: profile?['id'] as String,
-                          ),
-                        const SizedBox(height: 20),
-                      ] else ...[
-                        if (books.isNotEmpty) ...[
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 0, horizontal: 26),
-                            child: SizedBox(
-                              height: null,
-                              child: _buildBookGrid(),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ] else ...[
-                          const SizedBox(height: 76),
-                          Center(
-                            child: Column(
-                              children: [
-                                Builder(
-                                  builder: (context) {
-                                    return TextButton(
-                                      onPressed: () async {
-                                        // MainNavigationScreen의 AddBookView로 이동
-                                        final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
-                                        if (mainNavigationState != null) {
-                                          mainNavigationState.navigateToAddBookProfileTab();
-                                        }
-                                      },
-                                      child: const Text(
-                                        "책 추가 +",
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: AppColors.black900,
-                                            fontWeight: FontWeight.w400),
-                                      ),
-                                    );
+                      const SizedBox(height: 20),
+                    ] else ...[
+                      const SizedBox(height: 76),
+                      Center(
+                        child: Column(
+                          children: [
+                            Builder(
+                              builder: (context) {
+                                return TextButton(
+                                  onPressed: () async {
+                                    // MainNavigationScreen의 AddBookView로 이동
+                                    final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
+                                    if (mainNavigationState != null) {
+                                      mainNavigationState.navigateToAddBookProfileTab();
+                                    }
                                   },
-                                ),
-                              ],
+                                  child: const Text(
+                                    "책 추가 +",
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.black900,
+                                        fontWeight: FontWeight.w400),
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                          const SizedBox(height: 90),
-                        ]
-                      ]
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                     ],
-                  ),
-                ),
+                  ],
+                ],
               ),
             ),
           ],

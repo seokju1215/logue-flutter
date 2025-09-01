@@ -21,6 +21,7 @@ class ProfileBooksTabView extends StatefulWidget {
 }
 
 class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
+  late PageController _pageController;
   int currentIndex = 0;
   final _client = Supabase.instance.client;
   
@@ -36,11 +37,12 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   final List<Map<String, dynamic>> _localArchivedBooks = []; // 페이지를 쌓아서 보관
   
   // ===== 실시간 업데이트 구독 =====
-  late final RealtimeChannel _bookChannel;
+  RealtimeChannel? _bookChannel;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: 0);
     _fetchTotalCount();
     _loadNextPage();
     _subscribeToBookUpdates();
@@ -52,18 +54,16 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         'p_user_id': widget.userId
       });
 
-      int count;
-      if (res == null) {
-        count = 0;
-      } else if (res is int) {
-        count = res;
-      } else if (res is num) {
-        count = res.toInt();
-      } else if (res is Map && res.values.isNotEmpty) {
-        final v = res.values.first;
-        count = (v is num) ? v.toInt() : 0;
-      } else {
-        count = 0;
+      int count = 0;
+      if (res != null) {
+        if (res is int) {
+          count = res;
+        } else if (res is num) {
+          count = res.toInt();
+        } else if (res is Map && res.values.isNotEmpty) {
+          final v = res.values.first;
+          count = (v is num) ? v.toInt() : 0;
+        }
       }
 
       if (mounted) {
@@ -71,6 +71,9 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       }
     } catch (e) {
       debugPrint('❌ 총 권수 가져오기 실패: $e');
+      if (mounted) {
+        setState(() => _totalCount = 0);
+      }
     }
   }
 
@@ -90,9 +93,14 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
           'p_limit': _pageSize,
           'p_offset': _offset,
         },
-      ) as List<dynamic>;
+      );
 
-      final rows = rpc.cast<Map<String, dynamic>>();
+      if (rpc == null) {
+        debugPrint('❌ RPC 결과가 null입니다');
+        return;
+      }
+
+      final rows = (rpc as List<dynamic>).cast<Map<String, dynamic>>();
 
       if (rows.isNotEmpty) {
         _totalCount = (rows.first['total_count'] as int?) ?? 0;
@@ -111,11 +119,16 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
             .select('id, image')
             .inFilter('id', bookIds);
 
-        for (final b in (booksRes as List)) {
-          imagesByBookId[b['id'] as String] = {
-            'id': b['id'],
-            'image': b['image'],
-          };
+        if (booksRes != null) {
+          for (final b in (booksRes as List)) {
+            final bookId = b['id'] as String?;
+            if (bookId != null) {
+              imagesByBookId[bookId] = {
+                'id': bookId,
+                'image': b['image'],
+              };
+            }
+          }
         }
       }
 
@@ -123,6 +136,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         final bookId = e['book_id'];
         final item = {
           ...e,
+          'id': e['id'] ?? e['book_id'], // id 필드 추가
           'books': imagesByBookId[bookId] ?? {'id': bookId, 'image': null},
         };
         
@@ -191,6 +205,9 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     final user = _client.auth.currentUser;
     if (user == null) return;
 
+    // 이미 구독 중이면 중복 구독 방지
+    if (_bookChannel != null) return;
+
     _bookChannel = _client.channel('public:user_books')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
@@ -224,7 +241,8 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   @override
   void dispose() {
-    _bookChannel.unsubscribe();
+    _pageController.dispose();
+    _bookChannel?.unsubscribe();
     super.dispose();
   }
 
@@ -234,10 +252,21 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       children: [
         _buildTabs(),
         const SizedBox(height: 16),
-        SizedBox(
-            height: null,
-            child: _buildPages(),
+        Expanded(
+          child: PageView(
+            controller: _pageController,
+            physics: const ClampingScrollPhysics(),
+            onPageChanged: (index) {
+              setState(() {
+                currentIndex = index;
+              });
+            },
+            children: [
+              _buildRepresentativeTab(),
+              _buildAllBooksTab(),
+            ],
           ),
+        ),
       ],
     );
   }
@@ -259,7 +288,11 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          setState(() => currentIndex = index);
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+          );
         },
         child: Stack(
           alignment: Alignment.bottomCenter,
@@ -298,24 +331,20 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     );
   }
 
-  Widget _buildPages() {
-    if (currentIndex == 0) {
-      return _buildRepresentativeTab();
-    } else {
-      return _buildAllBooksTab();
-    }
-  }
+
 
   Widget _buildRepresentativeTab() {
     final books = widget.nonArchivedBooks;
     if (books.isEmpty) {
       return _buildEmptyState();
     }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 26),
-      child:UserBookGrid(
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 26),
+        child: UserBookGrid(
           books: books,
           onTap: _onBookTap,
+        ),
       ),
     );
   }
@@ -368,81 +397,84 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   }
 
   Widget _buildBookshelfLayout(List<Map<String, dynamic>> books) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const crossAxisCount = 5;
-        const crossAxisSpacing = 11.7;
-        const itemAspectRatio = 98 / 145;
-        const bookPadding = 22.0;
+    const crossAxisCount = 5;
+    const crossAxisSpacing = 11.7;
+    const itemAspectRatio = 98 / 145;
+    const bookPadding = 22.0;
 
-        final availableWidth = constraints.maxWidth - (bookPadding * 2);
-        final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
-        final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
-        final itemHeight = itemWidth / itemAspectRatio;
-
-        return Stack(
-          children: [
-            // 책들 - 양옆 22 패딩
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
-              child: Wrap(
-                spacing: crossAxisSpacing,
-                runSpacing: 35,
-                children: books.map((book) {
-                  return SizedBox(
-                    width: itemWidth,
-                    height: itemHeight,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(0),
-                      child: BookFrame(
-                        imageUrl: book['books']?['image'] ?? '',
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Column(
+        children: [
+          // 책들
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 10),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: crossAxisSpacing,
+              mainAxisSpacing: 35,
+              childAspectRatio: itemAspectRatio,
             ),
-            // 선반 - 전체 너비
-            ..._buildShelves(books.length, itemHeight),
-          ],
-        );
-      },
+            itemCount: books.length,
+            itemBuilder: (context, index) {
+              final book = books[index];
+              final booksData = book['books'] as Map<String, dynamic>?;
+              final imageUrl = booksData?['image'] as String? ?? '';
+              
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(0),
+                child: BookFrame(
+                  imageUrl: imageUrl,
+                ),
+              );
+            },
+          ),
+          // 선반들
+          ..._buildShelvesColumn(books.length),
+        ],
+      ),
     );
   }
 
-  List<Widget> _buildShelves(int bookCount, double itemHeight) {
+  List<Widget> _buildShelvesColumn(int bookCount) {
     const booksPerRow = 5;
     final shelfCount = (bookCount / booksPerRow).ceil();
 
     return List.generate(shelfCount, (i) {
-      final shelfY = (itemHeight + 35) * i + itemHeight;
-      return Positioned(
-        top: shelfY,
-        left: 0,
-        right: 0,
-        child: Container(
-          height: 5,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF6F6F6),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 4,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+      return Container(
+        height: 5,
+        margin: const EdgeInsets.only(top: 35),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F6F6),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 4,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
       );
     });
   }
 
   void _onBookTap(Map<String, dynamic> book) async {
+    // nonArchivedBooks와 _localArchivedBooks의 구조가 다를 수 있음
+    final bookId = book['book_id'] as String? ?? book['id'] as String?;
+    final userBookId = book['id'] as String? ?? book['user_book_id'] as String?;
+    
+    if (bookId == null || userBookId == null) {
+      debugPrint('❌ 책 정보가 누락되었습니다: book=$book, bookId=$bookId, userBookId=$userBookId');
+      return;
+    }
+    
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => MyBookPostScreen(
-          bookId: book['book_id'] as String,
-          userBookId: book['id'] as String,
+          bookId: bookId,
+          userBookId: userBookId,
         ),
       ),
     );
