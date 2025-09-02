@@ -251,7 +251,6 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     return Column(
       children: [
         _buildTabs(),
-        const SizedBox(height: 16),
         Expanded(
           child: PageView(
             controller: _pageController,
@@ -340,7 +339,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     }
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 26),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
         child: UserBookGrid(
           books: books,
           onTap: _onBookTap,
@@ -374,17 +373,20 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         return false;
       },
       child: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildBookshelfLayout(combined),
-            if (_isPageLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.black900),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              _buildBookshelfLayout(combined),
+              if (_isPageLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.black900),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -402,59 +404,72 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     const itemAspectRatio = 98 / 145;
     const bookPadding = 22.0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        children: [
-          // 책들
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 10),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: crossAxisSpacing,
-              mainAxisSpacing: 35,
-              childAspectRatio: itemAspectRatio,
-            ),
-            itemCount: books.length,
-            itemBuilder: (context, index) {
-              final book = books[index];
-              final booksData = book['books'] as Map<String, dynamic>?;
-              final imageUrl = booksData?['image'] as String? ?? '';
-              
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(0),
-                child: BookFrame(
-                  imageUrl: imageUrl,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth - (bookPadding * 2);
+        final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
+        final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
+        final itemHeight = itemWidth / itemAspectRatio;
+
+        return Stack(
+          children: [
+            // 책들
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: crossAxisSpacing,
+                  mainAxisSpacing: 35,
+                  childAspectRatio: itemAspectRatio,
                 ),
-              );
-            },
-          ),
-          // 선반들
-          ..._buildShelvesColumn(books.length),
-        ],
-      ),
+                itemCount: books.length,
+                itemBuilder: (context, index) {
+                  final book = books[index];
+                  final booksData = book['books'] as Map<String, dynamic>?;
+                  final imageUrl = booksData?['image'] as String? ?? '';
+                  
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(0),
+                    child: BookFrame(
+                      imageUrl: imageUrl,
+                    ),
+                  );
+                },
+              ),
+            ),
+            // 선반들
+            ..._buildShelves(books.length, itemHeight),
+          ],
+        );
+      },
     );
   }
 
-  List<Widget> _buildShelvesColumn(int bookCount) {
+  List<Widget> _buildShelves(int bookCount, double itemHeight) {
     const booksPerRow = 5;
     final shelfCount = (bookCount / booksPerRow).ceil();
 
     return List.generate(shelfCount, (i) {
-      return Container(
-        height: 5,
-        margin: const EdgeInsets.only(top: 35),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF6F6F6),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 4,
-              offset: const Offset(0, 4),
-            ),
-          ],
+      final shelfY = 90 + (itemHeight + 35) * i;
+      return Positioned(
+        top: shelfY,
+        left: 0,
+        right: 0,
+        child: Container(
+          height: 5,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF6F6F6),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 4,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
         ),
       );
     });
