@@ -89,8 +89,7 @@ class ProfileScreen extends StatefulWidget {
 
 class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   final client = Supabase.instance.client;
-
-
+  late final ScrollController _scrollController;
 
   Map<String, dynamic>? profile;
   late final RealtimeChannel _profileChannel;
@@ -103,6 +102,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _checkUnreadNotifications();
     _getUserBooks = GetUserBooks(UserBookApi(client));
     _fetchProfile();
@@ -191,9 +191,32 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _profileChannel.unsubscribe();
     _bookChannel.unsubscribe();
     super.dispose();
+  }
+
+  double _calculateProfileBooksTabHeight() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final paddingTop = MediaQuery.of(context).padding.top;
+    final paddingBottom = MediaQuery.of(context).padding.bottom;
+    final appBarHeight = kToolbarHeight;
+    
+    // 기본 높이 (화면 높이에서 상단/하단 패딩과 앱바 높이 제외)
+    final baseHeight = screenHeight - paddingTop - appBarHeight - paddingBottom;
+    
+    // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 200px)
+    final headerHeight = 200.0;
+    
+    // 책이 6권 이하면 모든 높이 사용, 6권 초과면 화면의 80% 사용
+    if (books.length <= 6) {
+      // 6권 이하: 헤더 높이를 제외한 나머지 높이 사용
+      return (baseHeight - headerHeight).clamp(200.0, baseHeight * 0.8);
+    } else {
+      // 6권 초과: 화면의 대부분을 사용 (기본 높이의 80%)
+      return (baseHeight * 0.8).clamp(300.0, baseHeight * 0.9);
+    }
   }
 
   Future<void> _fetchProfile() async {
@@ -399,77 +422,82 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         elevation: 0,
       ),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Positioned.fill(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
-                    child: _buildProfileHeader(),
-                  ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
+                      child: _buildProfileHeader(),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 16),
+                      child: _buildActionButtons(),
+                    ),
+                    if ((profile?['show_archived_books'] as bool?) ?? false) ...[
+                      SizedBox(
+                        height: _calculateProfileBooksTabHeight(),
+                        child: ProfileBooksTabView(
+                          nonArchivedBooks: books,
+                          userId: profile?['id'] as String,
+                          parentScrollController: _scrollController,
+                        ),
+                      ),
+                    ] else ...[
+                if (books.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: 0, horizontal: 16),
-                    child: _buildActionButtons(),
-                  ),
-                  if ((profile?['show_archived_books'] as bool?) ?? false) ...[
-                    Expanded(
-                      child: ProfileBooksTabView(
-                        nonArchivedBooks: books,
-                        userId: profile?['id'] as String,
-                      ),
+                        vertical: 0, horizontal: 26),
+                    child: SizedBox(
+                      height: null,
+                      child: _buildBookGrid(),
                     ),
-                  ] else ...[
-                    if (books.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 0, horizontal: 26),
-                        child: SizedBox(
-                          height: null,
-                          child: _buildBookGrid(),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ] else ...[
-                      const SizedBox(height: 76),
-                      Center(
-                        child: Column(
-                          children: [
-                            Builder(
-                              builder: (context) {
-                                return TextButton(
-                                  onPressed: () async {
-                                    // MainNavigationScreen의 AddBookView로 이동
-                                    final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
-                                    if (mainNavigationState != null) {
-                                      mainNavigationState.navigateToAddBookProfileTab();
-                                    }
-                                  },
-                                  child: const Text(
-                                    "책 추가 +",
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.black900,
-                                        fontWeight: FontWeight.w400),
-                                  ),
-                                );
+                  ),
+                  const SizedBox(height: 20),
+                ] else ...[
+                  const SizedBox(height: 76),
+                  Center(
+                    child: Column(
+                      children: [
+                        Builder(
+                          builder: (context) {
+                            return TextButton(
+                              onPressed: () async {
+                                // MainNavigationScreen의 AddBookView로 이동
+                                final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
+                                if (mainNavigationState != null) {
+                                  mainNavigationState.navigateToAddBookProfileTab();
+                                }
                               },
-                            ),
-                          ],
+                              child: const Text(
+                                "책 추가 +",
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.black900,
+                                    fontWeight: FontWeight.w400),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                 ],
-              ),
-            ),
-          ],
+              ],
+            ],
+          ),
         ),
       ),
-    );
+    ],
+  ),
+  ),
+  );
   }
 
   Widget _buildProfileHeader() {
