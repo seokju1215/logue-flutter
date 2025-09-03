@@ -82,7 +82,7 @@ class _SinglePostScreenState extends State<SinglePostScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          '보관함',
+          '책장',
           style: TextStyle(
             fontSize: 16,
             color: AppColors.black900,

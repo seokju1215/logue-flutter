@@ -713,7 +713,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                                   return const AnnouncementDialog(
                                     title: '안내',
                                     body:
-                                    '현재 보관함에 추가 가능한\n책의 한도는 1,000권이에요.\n더 많은 책을 추가하실 수 있도록\n빠른 시일 내로 확장해드릴게요!!\n독서를 좋아해 주셔서 감사합니다.',
+                                    '현재 책장에 추가 가능한\n책의 한도는 1,000권이에요.\n더 많은 책을 추가하실 수 있도록\n빠른 시일 내로 확장해드릴게요!!\n독서를 좋아해 주셔서 감사합니다.',
                                   );
                                 },
                               );
@@ -925,7 +925,7 @@ class _HeaderText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StrokeTextStyle.createStrokeText(
-      text: "읽었던 책들을 보관함에 정리해보세요.",
+      text: "읽었던 책들을 책장에 정리해보세요.",
       fontSize: 16,
       fontWeight: FontWeight.w400,
       color: AppColors.black900,

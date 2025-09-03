@@ -704,7 +704,7 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                   padding: const EdgeInsets.only(top:20),
                   child: Center(
                   child: Text(
-                    '보관함',
+                    '전체',
                     style: TextStyle(
                       fontSize: 16,
                       color: AppColors.black900,
