@@ -5,6 +5,7 @@ import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/add_book/add_book_screen.dart';
 import 'package:my_logue/presentation/screens/setting/setting_screen.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/data/datasources/user_book_api.dart';
 import 'package:my_logue/domain/usecases/get_user_books.dart';
@@ -662,7 +663,11 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                   'https://www.logue.it.kr/u/${profile?['username']}';
               final userId = profile?['id'];
               if (profileLink != null && profileLink.isNotEmpty) {
-                Share.share(profileLink);
+                // 클립보드에 복사
+                await Clipboard.setData(ClipboardData(text: profileLink));
+                
+                // 스낵바 표시
+                _showSnackBar('링크를 복사했어요');
                 
                 // Firebase Analytics 이벤트 전송
                 try {
@@ -671,7 +676,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                     sourceScreen: 'profile_screen',
                     sharedUserId: userId,
                     sharedUsername: profile?['username'] ?? '',
-                    shareMethod: 'share_button',
+                    shareMethod: 'copy_button',
                   );
                   debugPrint('🎯🎯🎯 프로필 화면에서 공유 이벤트 전송 완료');
                 } catch (analyticsError) {
@@ -679,7 +684,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 }
               }
             },
-            child: const Text("프로필 공유",
+            child: const Text("링크 복사",
                 style: TextStyle(color: AppColors.black900, fontSize: 13)),
           ),
         ),
@@ -811,6 +816,19 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
           fontWeight: FontWeight.w400,
           height: 1.25,
         ),
+      ),
+    );
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Center(child: Text(message, style: const TextStyle(fontSize: 16, height: 1.1))),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 90, vertical: 100),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        backgroundColor: AppColors.black500,
       ),
     );
   }
