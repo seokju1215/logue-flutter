@@ -218,7 +218,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final profileLink = 'https://www.logue.it.kr/u/${username}';
+    final profileLink = 'https://www.logue.it.kr/${username}';
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,

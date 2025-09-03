@@ -660,7 +660,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
             style: _outlinedStyle(context),
             onPressed: () async {
               final profileLink =
-                  'https://www.logue.it.kr/u/${profile?['username']}';
+                  'https://www.logue.it.kr/${profile?['username']}';
               final userId = profile?['id'];
               if (profileLink != null && profileLink.isNotEmpty) {
                 // 클립보드에 복사

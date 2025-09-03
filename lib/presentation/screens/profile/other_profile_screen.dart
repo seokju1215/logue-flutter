@@ -219,7 +219,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
               icon: SvgPicture.asset('assets/share_button.svg'),
               onPressed: () async {
                 final profileLink =
-                    'https://www.logue.it.kr/u/${profile?['username']}';
+                    'https://www.logue.it.kr/${profile?['username']}';
                 if (profileLink.isNotEmpty) {
                   Share.share(profileLink);
                   
