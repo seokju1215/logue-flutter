@@ -54,6 +54,31 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     setState(() => isEdited = true);
   }
 
+  // 토글 상태를 즉시 DB에 저장하는 함수
+  Future<void> _saveShowArchivedBooksToggle(bool value) async {
+    try {
+      final client = Supabase.instance.client;
+      final userId = client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      await client.from('profiles').update({
+        'show_archived_books': value,
+      }).eq('id', userId);
+
+      debugPrint('✅ show_archived_books 토글 즉시 저장 완료: $value');
+    } catch (e) {
+      debugPrint('❌ show_archived_books 토글 저장 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('설정 저장에 실패했어요. 다시 시도해주세요.'),
+            backgroundColor: AppColors.red500,
+          ),
+        );
+      }
+    }
+  }
+
   void _launchUrl(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -124,14 +149,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         }
       }
       
-      // 프로필 업데이트
+      // 프로필 업데이트 (show_archived_books는 토글에서 즉시 저장되므로 제외)
       await client.from('profiles').update({
         'username': username,
         'name': name,
         'job': job,
         'bio': bio,
         'avatar_url': finalAvatarUrl,
-        'show_archived_books': showArchivedBooks,
       }).eq('id', userId);
 
       // Firebase Analytics: 사용자 이름 변경 추적
@@ -374,11 +398,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     scale: 0.8,
                     child: Switch(
                       value: showArchivedBooks,
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         setState(() {
                           showArchivedBooks = value;
                           isEdited = true;
                         });
+                        // 토글 상태를 즉시 DB에 저장
+                        await _saveShowArchivedBooksToggle(value);
                       },
                       activeColor: AppColors.white500,
                       activeTrackColor: AppColors.black900,
