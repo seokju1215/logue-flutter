@@ -447,6 +447,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                           nonArchivedBooks: books,
                           userId: profile?['id'] as String,
                           parentScrollController: _scrollController,
+                          isOtherUser: false,
                         ),
                       ),
                     ] else ...[

@@ -10,12 +10,14 @@ class ProfileBooksTabView extends StatefulWidget {
   final List<Map<String, dynamic>> nonArchivedBooks;
   final String userId;
   final ScrollController? parentScrollController;
+  final bool isOtherUser;
 
   const ProfileBooksTabView({
     super.key,
     required this.nonArchivedBooks,
     required this.userId,
     this.parentScrollController,
+    this.isOtherUser = false,
   });
 
   @override
@@ -527,28 +529,44 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   }
 
   Widget _buildEmptyState() {
-    return Column(
-      children: [
-        const SizedBox(height: 76),
-        TextButton(
-          onPressed: () async {
-            final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
-            if (mainNavigationState != null) {
-              mainNavigationState.navigateToAddBookProfileTab();
-            }
-          },
-          child: const Text(
-            '책 추가 +',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.black900,
-              fontWeight: FontWeight.w400,
+    if (widget.isOtherUser) {
+      // 다른 사용자의 프로필일 때
+      return Column(
+        children: [
+          const SizedBox(height: 76),
+          const Text(
+            '인생책이 없어요.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: AppColors.black500),
+          ),
+          const SizedBox(height: 90),
+        ],
+      );
+    } else {
+      // 내 프로필일 때
+      return Column(
+        children: [
+          const SizedBox(height: 76),
+          TextButton(
+            onPressed: () async {
+              final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
+              if (mainNavigationState != null) {
+                mainNavigationState.navigateToAddBookProfileTab();
+              }
+            },
+            child: const Text(
+              '책 추가 +',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.black900,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 90),
-      ],
-    );
+          const SizedBox(height: 90),
+        ],
+      );
+    }
   }
 }
 

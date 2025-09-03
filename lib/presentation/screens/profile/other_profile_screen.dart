@@ -260,26 +260,15 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                     profile?['show_archived_books'] ? SizedBox(height: 0,) :isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
 
                     if ((profile?['show_archived_books'] as bool?) ?? false) ...[
-                      if (books.isNotEmpty) ...[
-                        SizedBox(
-                          height: _calculateProfileBooksTabHeight(),
-                          child: ProfileBooksTabView(
-                            nonArchivedBooks: books,
-                            userId: profile?['id'] as String,
-                            parentScrollController: _scrollController,
-                          ),
+                      SizedBox(
+                        height: _calculateProfileBooksTabHeight(),
+                        child: ProfileBooksTabView(
+                          nonArchivedBooks: books,
+                          userId: profile?['id'] as String,
+                          parentScrollController: _scrollController,
+                          isOtherUser: true,
                         ),
-                      ] else ...[
-                        const SizedBox(height: 130),
-                        const Center(
-                          child: Text(
-                            '인생 책이 없어요.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 13, color: AppColors.black500),
-                          ),
-                        ),
-                        const SizedBox(height: 90),
-                      ],
+                      ),
                     ] else ...[
                       if (books.isNotEmpty) ...[
                         Padding(
