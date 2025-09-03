@@ -59,23 +59,19 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   Future<void> _fetchTotalCount() async {
     try {
-      final res = await _client.rpc('get_archived_books_count', params: {
-        'p_user_id': widget.userId
-      });
+      // 새로운 RPC 함수에서 total_count를 가져오기 위해 첫 번째 페이지 조회
+      final rpc = await _client.rpc(
+        'get_other_user_archived_books_page',
+        params: {
+          'p_user_id': widget.userId,
+          'p_limit': 1,
+          'p_offset': 0,
+        },
+      ) as List<dynamic>;
 
-      int count;
-      if (res == null) {
-        count = 0;
-      } else if (res is int) {
-        count = res;
-      } else if (res is num) {
-        count = res.toInt();
-      } else if (res is Map && res.values.isNotEmpty) {
-        // 드물게 {"get_archived_books_count": 123} 형태일 수도 있음
-        final v = res.values.first;
-        count = (v is num) ? v.toInt() : 0;
-      } else {
-        count = 0;
+      int count = 0;
+      if (rpc.isNotEmpty) {
+        count = (rpc.first['total_count'] as int?) ?? 0;
       }
 
       if (mounted) {
@@ -100,10 +96,11 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     }
 
     try {
-      // 1) RPC로 user_books 페이지 가져오기 (정렬/카운트 포함)
+      // 1) 새로운 RPC 함수로 다른 사용자의 책 가져오기
       final rpc = await _client.rpc(
-        'get_archived_books_page',
+        'get_other_user_archived_books_page',
         params: {
+          'p_user_id': widget.userId,
           'p_limit': _pageSize,
           'p_offset': _offset,
         },
@@ -116,34 +113,10 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         _totalCount = (rows.first['total_count'] as int?) ?? 0;
       }
 
-      // 2) 현재 페이지의 book 이미지 한번에 조회
-      final bookIds = rows
-          .map((e) => e['book_id'])
-          .where((id) => id != null)
-          .toSet()
-          .toList();
-
-      Map<String, dynamic> imagesByBookId = {};
-      if (bookIds.isNotEmpty) {
-        final booksRes = await _client
-            .from('books')
-            .select('id, image')
-            .inFilter('id', bookIds);
-
-        for (final b in (booksRes as List)) {
-          imagesByBookId[b['id'] as String] = {
-            'id': b['id'],
-            'image': b['image'],
-          };
-        }
-      }
-
-      // 3) rows + image merge + archived_order_index 타입 보장
+      // 2) rows + archived_order_index 타입 보장 (이미 books 정보 포함됨)
       final pageItems = rows.map((e) {
-        final bookId = e['book_id'];
         final item = {
           ...e,
-          'books': imagesByBookId[bookId] ?? {'id': bookId, 'image': null},
         };
         
         // archived_order_index를 강제로 double 타입으로 변환 (소수점 값 보존)
@@ -199,9 +172,6 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   }
 
   void _subscribeToBookUpdates() {
-    final user = _client.auth.currentUser;
-    if (user == null) return;
-
     // 이미 구독 중이면 중복 구독 방지
     if (_bookChannel != null) return;
 
@@ -213,7 +183,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         filter: PostgresChangeFilter(
           type: PostgresChangeFilterType.eq,
           column: 'user_id',
-          value: user.id,
+          value: widget.userId,
         ),
         callback: (payload) async {
           if (!mounted) return;

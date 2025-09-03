@@ -245,57 +245,65 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
-                child: _buildProfileHeader(),
-              ),
-              profile?['show_archived_books'] ? SizedBox(height: 0,) :isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
+                      child: _buildProfileHeader(),
+                    ),
+                    profile?['show_archived_books'] ? SizedBox(height: 0,) :isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
 
-              if ((profile?['show_archived_books'] as bool?) ?? false) ...[
-                if (books.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-                    child: ProfileBooksTabView(
-                      nonArchivedBooks: books,
-                      userId: profile?['id'] as String,
-                    ),
-                  )
-                else ...[
-                  const SizedBox(height: 130),
-                  const Center(
-                    child: Text(
-                      '인생 책이 없어요.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.black500),
-                    ),
-                  ),
-                  const SizedBox(height: 90),
-                ]
-              ] else ...[
-                if (books.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 26),
-                    child: _buildBookGrid(),
-                  )
-                else ...[
-                  const SizedBox(height: 130),
-                  const Center(
-                    child: Text(
-                      '인생 책이 없어요.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.black500),
-                    ),
-                  ),
-                  const SizedBox(height: 90),
-                ]
-              ]
-            ],
-          ),
+                    if ((profile?['show_archived_books'] as bool?) ?? false) ...[
+                      if (books.isNotEmpty) ...[
+                        SizedBox(
+                          height: _calculateProfileBooksTabHeight(),
+                          child: ProfileBooksTabView(
+                            nonArchivedBooks: books,
+                            userId: profile?['id'] as String,
+                            parentScrollController: _scrollController,
+                          ),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 130),
+                        const Center(
+                          child: Text(
+                            '인생 책이 없어요.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13, color: AppColors.black500),
+                          ),
+                        ),
+                        const SizedBox(height: 90),
+                      ],
+                    ] else ...[
+                      if (books.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 26),
+                          child: _buildBookGrid(),
+                        ),
+                        const SizedBox(height: 20),
+                      ] else ...[
+                        const SizedBox(height: 130),
+                        const Center(
+                          child: Text(
+                            '인생 책이 없어요.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13, color: AppColors.black500),
+                          ),
+                        ),
+                        const SizedBox(height: 90),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -683,6 +691,28 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
       Navigator.pop(context, result);
       debugPrint('🔍 Navigator.pop 호출 후');
+    }
+  }
+
+  double _calculateProfileBooksTabHeight() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final paddingTop = MediaQuery.of(context).padding.top;
+    final paddingBottom = MediaQuery.of(context).padding.bottom;
+    final appBarHeight = kToolbarHeight;
+    
+    // 기본 높이 (화면 높이에서 상단/하단 패딩과 앱바 높이 제외)
+    final baseHeight = screenHeight - paddingTop - appBarHeight - paddingBottom;
+    
+    // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 200px)
+    final headerHeight = 227;
+    
+    // 책이 6권 이하면 모든 높이 사용, 6권 초과면 화면의 80% 사용
+    if (books.length <= 6) {
+      // 6권 이하: 헤더 높이를 제외한 나머지 높이 사용
+      return (baseHeight - headerHeight).clamp(200.0, baseHeight * 0.8);
+    } else {
+      // 6권 초과: 화면의 대부분을 사용 (기본 높이의 80%)
+      return (baseHeight * 0.8).clamp(300.0, baseHeight * 0.9);
     }
   }
 }

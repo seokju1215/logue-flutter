@@ -207,7 +207,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     final baseHeight = screenHeight - paddingTop - appBarHeight - paddingBottom;
     
     // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 200px)
-    final headerHeight = 200.0;
+    final headerHeight = 275.0;
     
     // 책이 6권 이하면 모든 높이 사용, 6권 초과면 화면의 80% 사용
     if (books.length <= 6) {
