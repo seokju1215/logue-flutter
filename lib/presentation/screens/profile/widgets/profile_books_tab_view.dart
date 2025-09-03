@@ -63,16 +63,19 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         'p_user_id': widget.userId
       });
 
-      int count = 0;
-      if (res != null) {
-        if (res is int) {
-          count = res;
-        } else if (res is num) {
-          count = res.toInt();
-        } else if (res is Map && res.values.isNotEmpty) {
-          final v = res.values.first;
-          count = (v is num) ? v.toInt() : 0;
-        }
+      int count;
+      if (res == null) {
+        count = 0;
+      } else if (res is int) {
+        count = res;
+      } else if (res is num) {
+        count = res.toInt();
+      } else if (res is Map && res.values.isNotEmpty) {
+        // 드물게 {"get_archived_books_count": 123} 형태일 수도 있음
+        final v = res.values.first;
+        count = (v is num) ? v.toInt() : 0;
+      } else {
+        count = 0;
       }
 
       if (mounted) {
@@ -89,6 +92,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   Future<void> _loadNextPage() async {
     if (_isPageLoading || !_hasMore) return;
 
+    // 초기 로딩 중일 때는 _isPageLoading을 설정하지 않음
     if (!_isInitialLoading) {
       setState(() {
         _isPageLoading = true;
@@ -96,25 +100,23 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     }
 
     try {
+      // 1) RPC로 user_books 페이지 가져오기 (정렬/카운트 포함)
       final rpc = await _client.rpc(
         'get_archived_books_page',
         params: {
           'p_limit': _pageSize,
           'p_offset': _offset,
         },
-      );
+      ) as List<dynamic>;
 
-      if (rpc == null) {
-        debugPrint('❌ RPC 결과가 null입니다');
-        return;
-      }
+      final rows = rpc.cast<Map<String, dynamic>>();
 
-      final rows = (rpc as List<dynamic>).cast<Map<String, dynamic>>();
-
+      // total_count 추출
       if (rows.isNotEmpty) {
         _totalCount = (rows.first['total_count'] as int?) ?? 0;
       }
 
+      // 2) 현재 페이지의 book 이미지 한번에 조회
       final bookIds = rows
           .map((e) => e['book_id'])
           .where((id) => id != null)
@@ -128,68 +130,54 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
             .select('id, image')
             .inFilter('id', bookIds);
 
-        if (booksRes != null) {
-          for (final b in (booksRes as List)) {
-            final bookId = b['id'] as String?;
-            if (bookId != null) {
-              imagesByBookId[bookId] = {
-                'id': bookId,
-                'image': b['image'],
-              };
-            }
-          }
+        for (final b in (booksRes as List)) {
+          imagesByBookId[b['id'] as String] = {
+            'id': b['id'],
+            'image': b['image'],
+          };
         }
       }
 
+      // 3) rows + image merge + archived_order_index 타입 보장
       final pageItems = rows.map((e) {
         final bookId = e['book_id'];
         final item = {
           ...e,
-          'id': e['id'] ?? e['book_id'], // id 필드 추가
           'books': imagesByBookId[bookId] ?? {'id': bookId, 'image': null},
         };
         
-        if (item['archived_order_index'] != null) {
-          final rawValue = item['archived_order_index'];
-          double finalValue;
-          if (rawValue is int) {
-            finalValue = rawValue.toDouble();
-          } else if (rawValue is double) {
-            finalValue = rawValue;
-          } else if (rawValue is num) {
-            finalValue = rawValue.toDouble();
-          } else {
-            try {
-              finalValue = double.parse(rawValue.toString());
-            } catch (e) {
-              finalValue = 0.0;
-            }
-          }
-          item['archived_order_index'] = finalValue;
-        }
+        // archived_order_index를 강제로 double 타입으로 변환 (소수점 값 보존)
         
         return item;
       }).toList();
 
+      // 4) 로컬 리스트에 추가 (기존 archived_order_index 값 보존)
       if (mounted) {
         setState(() {
+          // 새 데이터만 추가 (중복 방지)
           for (final newBook in pageItems) {
+            // 이미 존재하는 책인지 확인
             final existingIndex = _localArchivedBooks.indexWhere(
               (book) => book['id'] == newBook['id'],
             );
             
             if (existingIndex == -1) {
+              // 새 책이면 추가
               _localArchivedBooks.add(newBook);
             } else {
+              // 기존 책이면 archived_order_index 값만 업데이트 (소수점 보존)
               final existingBook = _localArchivedBooks[existingIndex];
               if (existingBook['archived_order_index'] != null && 
                   existingBook['archived_order_index'] is double) {
                 newBook['archived_order_index'] = existingBook['archived_order_index'];
+                debugPrint('🔄 archived_order_index 값 보존: ${newBook['id']} -> ${existingBook['archived_order_index']}');
               }
+              // 기존 책을 새 데이터로 교체
               _localArchivedBooks[existingIndex] = newBook;
             }
           }
           
+          // archived_order_index 순서대로 정렬
           _localArchivedBooks.sort((a, b) {
             final aIndex = (a['archived_order_index'] as num?)?.toDouble() ?? 0.0;
             final bIndex = (b['archived_order_index'] as num?)?.toDouble() ?? 0.0;
@@ -436,13 +424,8 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       return const Center(child: CircularProgressIndicator());
     }
     
-    // archived_order_index 기준으로 정렬
-    final combined = <Map<String, dynamic>>[...widget.nonArchivedBooks, ..._localArchivedBooks];
-    combined.sort((a, b) {
-      final aOrder = (a['archived_order_index'] as num?)?.toDouble() ?? 0.0;
-      final bOrder = (b['archived_order_index'] as num?)?.toDouble() ?? 0.0;
-      return aOrder.compareTo(bOrder);
-    });
+    // get_archived_books_page에서 가져온 데이터만 사용 (이미 archived_order_index 기준으로 정렬됨)
+    final combined = _localArchivedBooks;
     
     if (combined.isEmpty) {
       return _buildEmptyState();
