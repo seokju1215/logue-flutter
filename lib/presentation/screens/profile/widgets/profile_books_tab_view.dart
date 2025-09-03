@@ -28,9 +28,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   int currentIndex = 0;
   final _client = Supabase.instance.client;
   
-  // 스크롤 동작 제어를 위한 상태
-  bool _isBooksOnlyScrolling = false;
-  double _thresholdHeight = 0;
+
   
   // ===== 페이지네이션 상태 =====
   static const int _pageSize = 200;
@@ -51,7 +49,6 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     super.initState();
     _pageController = PageController(initialPage: 0);
     _booksScrollController = ScrollController();
-    _booksScrollController.addListener(_onBooksScroll);
     _fetchTotalCount();
     _loadNextPage();
     _subscribeToBookUpdates();
@@ -214,36 +211,9 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     super.dispose();
   }
 
-  void _onBooksScroll() {
-    if (!_booksScrollController.hasClients) return;
-    
-    // 6권 이하면 스크롤 모드 전환하지 않음
-    if (widget.nonArchivedBooks.length <= 6) return;
-    
-    final scrollOffset = _booksScrollController.offset;
-    
-    // 임계 높이에 도달하면 책 부분만 스크롤
-    if (scrollOffset >= _thresholdHeight && !_isBooksOnlyScrolling) {
-      setState(() {
-        _isBooksOnlyScrolling = true;
-      });
-    } else if (scrollOffset < _thresholdHeight && _isBooksOnlyScrolling) {
-      setState(() {
-        _isBooksOnlyScrolling = false;
-      });
-    }
-  }
 
-  void _setThresholdHeight(double height) {
-    // 6권 이하면 임계 높이 설정하지 않음
-    if (widget.nonArchivedBooks.length <= 6) return;
-    
-    if (_thresholdHeight == 0) {
-      setState(() {
-        _thresholdHeight = height;
-      });
-    }
-  }
+
+
 
 
 
@@ -401,55 +371,49 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       return _buildEmptyState();
     }
     
-    // 6권 이하면 항상 책들만 스크롤, 6권 초과면 조건부 스크롤
-    final shouldUseBooksOnlyScroll = widget.nonArchivedBooks.length <= 6 || _isBooksOnlyScrolling;
-    
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (notification is ScrollEndNotification) {
           _onScrollReachBottom();
         }
+        
+        // 책 부분에서 맨 위로 올린 후 더 올리면 탭바 윗부분도 같이 스크롤
+        if (notification is ScrollUpdateNotification) {
+          if (notification.metrics.pixels <= 0 && 
+              notification.scrollDelta! < 0 && 
+              widget.parentScrollController != null) {
+            // 책 부분이 맨 위에 있고, 더 위로 스크롤하려고 할 때
+            final parentOffset = widget.parentScrollController!.offset;
+            if (parentOffset > 0) {
+              // 부모가 스크롤 가능한 상태면 부모로 스크롤 전달
+              widget.parentScrollController!.jumpTo(
+                parentOffset + notification.scrollDelta!,
+              );
+            }
+          }
+        }
+        
         return false;
       },
-      child: shouldUseBooksOnlyScroll
-          ? SingleChildScrollView(
-              controller: _booksScrollController,
-              physics: const ClampingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  children: [
-                    _buildBookshelfLayout(combined),
-                    if (_isPageLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: CircularProgressIndicator(color: AppColors.black900),
-                        ),
-                      ),
-                  ],
+      child: SingleChildScrollView(
+        controller: _booksScrollController,
+        physics: const ClampingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              _buildBookshelfLayout(combined),
+              if (_isPageLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.black900),
+                  ),
                 ),
-              ),
-            )
-          : SingleChildScrollView(
-              controller: widget.parentScrollController,
-              physics: const ClampingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  children: [
-                    _buildBookshelfLayout(combined),
-                    if (_isPageLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: CircularProgressIndicator(color: AppColors.black900),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -472,10 +436,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
         final itemHeight = itemWidth / itemAspectRatio;
 
-        // 임계 높이 설정 (첫 번째 줄의 높이)
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _setThresholdHeight(itemHeight + 35);
-        });
+
 
         return Stack(
           children: [
