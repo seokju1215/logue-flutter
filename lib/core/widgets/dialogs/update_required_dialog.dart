@@ -19,9 +19,14 @@ class UpdateRequiredDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: forceUpdate ? null : () => Navigator.pop(context),
-      child: Stack(
+    return WillPopScope(
+      onWillPop: () async {
+        // forceUpdate가 true면 뒤로가기 차단
+        return !forceUpdate;
+      },
+      child: GestureDetector(
+        onTap: forceUpdate ? null : () => Navigator.pop(context),
+        child: Stack(
         children: [
           Positioned.fill(
             child: BackdropFilter(
@@ -104,6 +109,7 @@ class UpdateRequiredDialog extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

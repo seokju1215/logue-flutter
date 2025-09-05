@@ -13,6 +13,8 @@ import 'package:my_logue/core/widgets/book/user_book_grid.dart';
 import 'package:my_logue/data/utils/fetch_profile.dart';
 import 'package:my_logue/data/utils/firebase_analytics_util.dart';
 import 'package:my_logue/presentation/screens/profile/profile_edit/profile_edit_screen.dart';
+import 'package:my_logue/core/widgets/dialogs/AnnouncementDialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui'; // 맨 위에 추가
 
 import '../../../core/widgets/profile/bio_content.dart';
@@ -99,6 +101,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
   bool _showFullBio = false;
   List<Map<String, dynamic>> books = [];
   bool _hasUnreadNotifications = false;
+  bool _hasShownProfileAnnouncement = false; // 프로필 안내 팝업 표시 여부
 
   @override
   void initState() {
@@ -112,7 +115,10 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     _subscribeToBookUpdates();
     _subscribeToFollowUpdates(); // 팔로우 변경사항 실시간 감지
 
-
+    // 프로필 안내 팝업 표시 체크
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowProfileAnnouncement();
+    });
 
     client.auth.onAuthStateChange.listen((_) {
       if (mounted) setState(() {});
@@ -144,6 +150,49 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     setState(() {
       _hasUnreadNotifications = res.isNotEmpty;
     });
+  }
+
+  /// 프로필 안내 팝업 표시 체크 및 표시
+  Future<void> _checkAndShowProfileAnnouncement() async {
+    if (_hasShownProfileAnnouncement) return;
+
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'profile_announcement_count_$userId';
+      final count = prefs.getInt(key) ?? 0;
+
+      // 총 2번까지만 표시
+      if (count < 2) {
+        if (mounted) {
+          _showProfileAnnouncementDialog();
+          
+          // 표시 횟수 증가
+          await prefs.setInt(key, count + 1);
+          debugPrint('📢 프로필 안내 팝업 표시: ${count + 1}/2');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ 프로필 안내 팝업 체크 실패: $e');
+    }
+  }
+
+  /// 프로필 안내 팝업 표시
+  void _showProfileAnnouncementDialog() {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return const AnnouncementDialog(
+          title: '안내',
+          body: '신규 기능인 내 프로필의 책장 탭은\n[프로필 편집]에서 "전체 책장 표시"\n비활성화를 통해 숨길 수 있어요.',
+        );
+      },
+    );
   }
 
 
