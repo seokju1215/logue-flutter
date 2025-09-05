@@ -614,10 +614,15 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       books: books,
       onTap: (book) {
         final bookId = book['book_id'] ?? book['id']; // <- 🔥 보장
+        final userBookId = book['id']; // user_book_id 전달
+        debugPrint('🔍 other_profile_screen - 책 탭됨: bookId=$bookId, userBookId=$userBookId, userId=${widget.userId}');
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) =>
-                MyBookPostScreen(bookId: bookId, userId: widget.userId),
+            builder: (_) => MyBookPostScreen(
+              bookId: bookId, 
+              userId: widget.userId,
+              userBookId: userBookId,
+            ),
           ),
         );
       },

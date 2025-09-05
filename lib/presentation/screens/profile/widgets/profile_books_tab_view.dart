@@ -30,6 +30,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   late ScrollController _booksScrollController;
   int currentIndex = 0;
   final _client = Supabase.instance.client;
+  bool _showBubble = true; // 말풍선 표시 상태
   
 
   
@@ -222,62 +223,73 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Column(
-          children: [
-            _buildTabs(),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const ClampingScrollPhysics(), // 슬라이드 전환 유지, 바운스 효과 제거
-                onPageChanged: (index) {
-                  setState(() {
-                    currentIndex = index;
-                  });
-                },
-                children: [
-                  _buildRepresentativeTab(),
-                  _buildAllBooksTab(),
-                ],
-              ),
-            ),
-          ],
-        ),
-        // 말풍선을 탭바 바로 아래에 위치
-        Positioned(
-          top: 26, // 탭바 높이만큼 아래
-          right: 28,
-          child: Stack(
+    return GestureDetector(
+      onTap: () {
+        // 화면 어디든 탭하면 말풍선 숨기기
+        if (_showBubble) {
+          setState(() {
+            _showBubble = false;
+          });
+        }
+      },
+      child: Stack(
+        children: [
+          Column(
             children: [
-              // 말풍선 배경
-              SvgPicture.asset(
-                'assets/bubble.svg',
-                width: 240,
-                height: 50,
-              ),
-              // 텍스트 오버레이
-              Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.only(top:10),
-                  child: Center(
-                    child: Text(
-                      '프로필 편집에서 비활성화 할 수 있어요',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w500,
-                        height: 1.2,
-                      ),
-                    ),
-                  ),
+              _buildTabs(),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const ClampingScrollPhysics(), // 슬라이드 전환 유지, 바운스 효과 제거
+                  onPageChanged: (index) {
+                    setState(() {
+                      currentIndex = index;
+                    });
+                  },
+                  children: [
+                    _buildRepresentativeTab(),
+                    _buildAllBooksTab(),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          // 말풍선을 탭바 바로 아래에 위치 (내 프로필이고 표시 상태일 때만)
+          if (!widget.isOtherUser && _showBubble)
+            Positioned(
+              top: 26, // 탭바 높이만큼 아래
+              right: 28,
+              child: Stack(
+                children: [
+                  // 말풍선 배경
+                  SvgPicture.asset(
+                    'assets/bubble.svg',
+                    width: 240,
+                    height: 50,
+                  ),
+                  // 텍스트 오버레이
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top:10),
+                      child: Center(
+                        child: Text(
+                          '프로필 편집에서 비활성화 할 수 있어요',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -547,6 +559,8 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     final bookId = book['book_id'] as String? ?? book['id'] as String?;
     final userBookId = book['id'] as String? ?? book['user_book_id'] as String?;
     
+    debugPrint('🔍 ProfileBooksTabView - 책 탭됨: bookId=$bookId, userBookId=$userBookId, userId=${widget.userId}');
+    
     if (bookId == null || userBookId == null) {
       debugPrint('❌ 책 정보가 누락되었습니다: book=$book, bookId=$bookId, userBookId=$userBookId');
       return;
@@ -557,6 +571,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         builder: (_) => MyBookPostScreen(
           bookId: bookId,
           userBookId: userBookId,
+          userId: widget.userId, // userId도 전달
         ),
       ),
     );

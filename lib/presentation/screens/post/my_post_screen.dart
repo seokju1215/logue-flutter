@@ -35,19 +35,39 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
   Future<void> _fetchPosts() async {
     final userId = widget.userId ?? client.auth.currentUser?.id;
-    if (userId == null || !mounted) return;
+    debugPrint('🔍 MyBookPostScreen - userId: $userId, bookId: ${widget.bookId}, userBookId: ${widget.userBookId}');
+    
+    if (userId == null || !mounted) {
+      debugPrint('❌ userId가 null이거나 mounted가 false입니다.');
+      return;
+    }
 
     try {
+      debugPrint('🔍 get_visible_user_books 호출 중...');
       final response = await client
           .rpc('get_visible_user_books', params: {'target_user_id': userId});
 
       if (!mounted) return;
 
+      debugPrint('🔍 응답 데이터: ${response.length}개 항목');
+      
       // response 자체가 List<dynamic>
-      if (response.isEmpty) throw Exception('데이터를 불러올 수 없습니다.');
+      if (response.isEmpty) {
+        debugPrint('❌ 응답이 비어있습니다.');
+        throw Exception('데이터를 불러올 수 없습니다.');
+      }
 
       final fetched = List<Map<String, dynamic>>.from(response);
+      debugPrint('🔍 변환된 데이터: ${fetched.length}개 항목');
+      
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
+      debugPrint('🔍 해당 사용자 포스트: ${userPosts.length}개');
+      
+      if (userPosts.isEmpty) {
+        debugPrint('❌ 해당 사용자의 포스트가 없습니다.');
+        throw Exception('해당 사용자의 게시글이 없습니다.');
+      }
+      
       final mappedPosts = userPosts.map((e) {
         final post = BookPostModel.fromMap(e);
         return post;
@@ -55,15 +75,29 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
       int index = 0;
       if (widget.userBookId != null) {
+        debugPrint('🔍 userBookId로 검색: ${widget.userBookId}');
         final foundIndex = mappedPosts.indexWhere((post) => post.id == widget.userBookId);
-        if (foundIndex != -1) index = foundIndex;
+        if (foundIndex != -1) {
+          index = foundIndex;
+          debugPrint('✅ userBookId로 찾은 인덱스: $index');
+        } else {
+          debugPrint('❌ userBookId로 찾을 수 없음');
+        }
       } else if (widget.bookId != null) {
+        debugPrint('🔍 bookId로 검색: ${widget.bookId}');
         final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
-        if (foundIndex != -1) index = foundIndex;
+        if (foundIndex != -1) {
+          index = foundIndex;
+          debugPrint('✅ bookId로 찾은 인덱스: $index');
+        } else {
+          debugPrint('❌ bookId로 찾을 수 없음');
+        }
       }
 
       if (!mounted) return;
 
+      debugPrint('🔍 최종 설정 - posts: ${mappedPosts.length}개, initialIndex: $index');
+      
       setState(() {
         posts = mappedPosts;
         initialIndex = index >= 0 ? index : 0;
