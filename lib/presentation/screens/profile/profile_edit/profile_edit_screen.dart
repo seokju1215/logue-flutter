@@ -243,18 +243,30 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     final profileLink = 'https://www.logue.it.kr/${username}';
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('프로필 편집', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
-        centerTitle: true,
-        actions: [SaveButton(enabled: isEdited && !_isSaving, onPressed: _isSaving ? null : onSave)],
-        leading: IconButton(
-          icon: SvgPicture.asset('assets/back_arrow.svg'),
-          onPressed: () => Navigator.pop(context),
+    return WillPopScope(
+      onWillPop: () async {
+        // 저장 중이면 뒤로가기 비활성화
+        if (_isSaving) {
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: const Text('프로필 편집', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
+          centerTitle: true,
+          actions: [SaveButton(enabled: isEdited && !_isSaving, onPressed: _isSaving ? null : onSave)],
+          leading: IconButton(
+            icon: SvgPicture.asset('assets/back_arrow.svg'),
+            onPressed: _isSaving ? null : () => Navigator.pop(context),
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
+        body: AbsorbPointer(
+          absorbing: _isSaving, // 저장 중이면 모든 터치 이벤트 차단
+          child: Stack(
+            children: [
+              SingleChildScrollView(
         child: Column(
           children: [
             Padding(
@@ -416,6 +428,20 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               ),
             ),
           ],
+        ),
+              ),
+              // 저장 중일 때 로딩 오버레이
+              if (_isSaving)
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
