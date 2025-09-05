@@ -102,6 +102,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
   List<Map<String, dynamic>> books = [];
   bool _hasUnreadNotifications = false;
   bool _hasShownProfileAnnouncement = false; // 프로필 안내 표시 여부
+  final GlobalKey<ProfileBooksTabViewState> _profileBooksTabViewKey = GlobalKey<ProfileBooksTabViewState>();
 
   @override
   void initState() {
@@ -440,16 +441,21 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         elevation: 0,
       ),
       body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+        child: GestureDetector(
+          onTap: () {
+            // ProfileBooksTabView의 말풍선 숨기기
+            _profileBooksTabViewKey.currentState?.hideBubble();
+          },
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                         Padding(
                           padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
                           child: _buildProfileHeader(),
@@ -460,13 +466,20 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                           child: _buildActionButtons(),
                         ),
                         if ((profile?['show_archived_books'] as bool?) ?? false) ...[
-                          SizedBox(
-                            height: _calculateProfileBooksTabHeight(),
-                            child: ProfileBooksTabView(
-                              nonArchivedBooks: books,
-                              userId: profile?['id'] as String,
-                              parentScrollController: _scrollController,
-                              isOtherUser: false,
+                          GestureDetector(
+                            onTap: () {
+                              // ProfileBooksTabView의 말풍선 숨기기
+                              _profileBooksTabViewKey.currentState?.hideBubble();
+                            },
+                            child: SizedBox(
+                              height: _calculateProfileBooksTabHeight(),
+                              child: ProfileBooksTabView(
+                                key: _profileBooksTabViewKey,
+                                nonArchivedBooks: books,
+                                userId: profile?['id'] as String,
+                                parentScrollController: _scrollController,
+                                isOtherUser: false,
+                              ),
                             ),
                           ),
                         ] else ...[
@@ -520,6 +533,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
           ],
         ),
       ),
+    ),
     );
   }
 

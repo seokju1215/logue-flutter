@@ -7,11 +7,14 @@ import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
 import 'package:my_logue/presentation/screens/post/my_post_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ProfileBooksTabViewState를 외부에서 접근 가능하게 함
+
 class ProfileBooksTabView extends StatefulWidget {
   final List<Map<String, dynamic>> nonArchivedBooks;
   final String userId;
   final ScrollController? parentScrollController;
   final bool isOtherUser;
+  final VoidCallback? onBubbleHide;
 
   const ProfileBooksTabView({
     super.key,
@@ -19,15 +22,16 @@ class ProfileBooksTabView extends StatefulWidget {
     required this.userId,
     this.parentScrollController,
     this.isOtherUser = false,
+    this.onBubbleHide,
   });
 
   @override
-  State<ProfileBooksTabView> createState() => _ProfileBooksTabViewState();
+  State<ProfileBooksTabView> createState() => ProfileBooksTabViewState();
 }
 
-class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
-  late PageController _pageController;
-  late ScrollController _booksScrollController;
+class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
+  late PageController pageController;
+  late ScrollController booksScrollController;
   int currentIndex = 0;
   final _client = Supabase.instance.client;
   bool _showBubble = true; // 말풍선 표시 상태
@@ -51,8 +55,8 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 0);
-    _booksScrollController = ScrollController();
+    pageController = PageController(initialPage: 0);
+    booksScrollController = ScrollController();
     _fetchTotalCount();
     _loadNextPage();
     _subscribeToBookUpdates();
@@ -209,10 +213,19 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _booksScrollController.dispose();
+    pageController.dispose();
+    booksScrollController.dispose();
     _bookChannel?.unsubscribe();
     super.dispose();
+  }
+
+  // 말풍선을 숨기는 메서드
+  void hideBubble() {
+    if (_showBubble) {
+      setState(() {
+        _showBubble = false;
+      });
+    }
   }
 
 
@@ -230,6 +243,8 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
           setState(() {
             _showBubble = false;
           });
+          // 외부 콜백 호출
+          widget.onBubbleHide?.call();
         }
       },
       child: Stack(
@@ -239,7 +254,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
               _buildTabs(),
               Expanded(
                 child: PageView(
-                  controller: _pageController,
+                  controller: pageController,
                   physics: const ClampingScrollPhysics(), // 슬라이드 전환 유지, 바운스 효과 제거
                   onPageChanged: (index) {
                     setState(() {
@@ -310,7 +325,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          _pageController.animateToPage(
+          pageController.animateToPage(
             index,
             duration: const Duration(milliseconds: 150),
             curve: Curves.easeInOut,
@@ -448,7 +463,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         return false;
       },
       child: SingleChildScrollView(
-        controller: _booksScrollController,
+        controller: booksScrollController,
         physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
