@@ -340,7 +340,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     final isSelected = currentIndex == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () {
+        onTap: _showBubble ? null : () {
           pageController.animateToPage(
             index,
             duration: const Duration(milliseconds: 150),
