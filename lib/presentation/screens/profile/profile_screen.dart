@@ -454,7 +454,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 if (books.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: 0, horizontal: 26),
+                        vertical: 20, horizontal: 26),
                     child: SizedBox(
                       height: null,
                       child: _buildBookGrid(),
@@ -827,7 +827,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         content: Center(child: Text(message, style: const TextStyle(fontSize: 16, height: 1.1))),
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 90, vertical: 100),
+        margin: const EdgeInsets.symmetric(horizontal: 90, vertical: 44 ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         backgroundColor: AppColors.black500,
       ),

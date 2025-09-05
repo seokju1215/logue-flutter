@@ -925,7 +925,7 @@ class _HeaderText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StrokeTextStyle.createStrokeText(
-      text: "읽었던 책들을 책장에 정리해보세요.",
+      text: "읽었던 책들을 책장에 모아보세요.",
       fontSize: 16,
       fontWeight: FontWeight.w400,
       color: AppColors.black900,

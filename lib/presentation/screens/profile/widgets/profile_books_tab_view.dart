@@ -310,7 +310,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   Widget _buildRepresentativeTab() {
     final books = widget.nonArchivedBooks;
     if (books.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(isRepresentativeTab: true);
     }
     
     // 6권 이하면 스크롤 없이 고정 높이, 7권 이상이면 스크롤 가능
@@ -370,7 +370,7 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     final combined = _localArchivedBooks;
     
     if (combined.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(isRepresentativeTab: false);
     }
     
     return NotificationListener<ScrollNotification>(
@@ -528,16 +528,16 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     }
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState({required bool isRepresentativeTab}) {
     if (widget.isOtherUser) {
       // 다른 사용자의 프로필일 때
       return Column(
         children: [
           const SizedBox(height: 76),
-          const Text(
-            '인생책이 없어요.',
+          Text(
+            isRepresentativeTab ? '인생 책이 없어요.' : '책장이 비어 있어요.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: AppColors.black500),
+            style: const TextStyle(fontSize: 13, color: AppColors.black500),
           ),
           const SizedBox(height: 90),
         ],
@@ -554,9 +554,9 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                 mainNavigationState.navigateToAddBookProfileTab();
               }
             },
-            child: const Text(
-              '책 추가 +',
-              style: TextStyle(
+            child: Text(
+             '책 추가 +',
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.black900,
                 fontWeight: FontWeight.w400,
