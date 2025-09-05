@@ -103,6 +103,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
   bool _hasUnreadNotifications = false;
   bool _hasShownProfileAnnouncement = false; // 프로필 안내 표시 여부
   final GlobalKey<ProfileBooksTabViewState> _profileBooksTabViewKey = GlobalKey<ProfileBooksTabViewState>();
+  bool _isBubbleVisible = false; // 말풍선 표시 상태
 
   @override
   void initState() {
@@ -405,7 +406,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                   ? 'assets/noticed_alarm_icon.svg'
                   : 'assets/bell_icon.svg'),
             ),
-            onPressed: () async {
+            onPressed: _isBubbleVisible ? null : () async {
               final result = await Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const NotificationScreen()),
               );
@@ -421,7 +422,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
               scale: 1,
               child: IconButton(
                 icon: SvgPicture.asset('assets/edit_icon.svg'),
-                onPressed: () async {
+                onPressed: _isBubbleVisible ? null : () async {
                   setState(() => _showFullBio = false);
                   final result =
                       await Navigator.of(context, rootNavigator: true).push(
@@ -442,10 +443,10 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
       ),
       body: SafeArea(
         child: GestureDetector(
-          onTap: () {
+          onTap: _isBubbleVisible ? () {
             // ProfileBooksTabView의 말풍선 숨기기
             _profileBooksTabViewKey.currentState?.hideBubble();
-          },
+          } : null,
           child: Stack(
             children: [
               Column(
@@ -467,10 +468,10 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                         ),
                         if ((profile?['show_archived_books'] as bool?) ?? false) ...[
                           GestureDetector(
-                            onTap: () {
+                            onTap: _isBubbleVisible ? () {
                               // ProfileBooksTabView의 말풍선 숨기기
                               _profileBooksTabViewKey.currentState?.hideBubble();
-                            },
+                            } : null,
                             child: SizedBox(
                               height: _calculateProfileBooksTabHeight(),
                               child: ProfileBooksTabView(
@@ -479,6 +480,11 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                                 userId: profile?['id'] as String,
                                 parentScrollController: _scrollController,
                                 isOtherUser: false,
+                                onBubbleStateChanged: (isVisible) {
+                                  setState(() {
+                                    _isBubbleVisible = isVisible;
+                                  });
+                                },
                               ),
                             ),
                           ),
@@ -501,7 +507,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                                   Builder(
                                     builder: (context) {
                                       return TextButton(
-                                        onPressed: () async {
+                                        onPressed: _isBubbleVisible ? null : () async {
                                           // MainNavigationScreen의 AddBookView로 이동
                                           final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
                                           if (mainNavigationState != null) {
@@ -571,7 +577,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
               ),
             ),
             GestureDetector(
-              onTap: () => _showZoomedAvatar(avatarUrl),
+              onTap: _isBubbleVisible ? null : () => _showZoomedAvatar(avatarUrl),
               child: Hero(
                 tag: 'profile-avatar',
                 child: Container(
@@ -604,7 +610,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
             return Row(
               children: [
                 GestureDetector(
-                  onTap: () {
+                  onTap: _isBubbleVisible ? null : () {
                     final userId = profile?['id'];
                     final username = profile?['username'];
                     final currentUserId =
@@ -633,7 +639,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 ),
                 const SizedBox(width: 27),
                 GestureDetector(
-                  onTap: () {
+                  onTap: _isBubbleVisible ? null : () {
                     final userId = profile?['id'];
                     final username = profile?['username'];
                     final currentUserId =
@@ -674,7 +680,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         Expanded(
           child: OutlinedButton(
             style: _outlinedStyle(context),
-            onPressed: () async {
+            onPressed: _isBubbleVisible ? null : () async {
               setState(() => _showFullBio = false);
               final result =
                   await Navigator.of(context, rootNavigator: true).push(
@@ -694,7 +700,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         Expanded(
           child: OutlinedButton(
             style: _outlinedStyle(context),
-            onPressed: () async {
+            onPressed: _isBubbleVisible ? null : () async {
               final profileLink =
                   'https://www.logue.it.kr/${profile?['username']}';
               final userId = profile?['id'];
@@ -731,7 +737,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
   Widget _buildBookGrid() {
     return UserBookGrid(
       books: books,
-      onTap: (book) async {
+      onTap: _isBubbleVisible ? null : (book) async {
         print("bookId : ${book['id']}");
         final result = await Navigator.of(context).push(
           MaterialPageRoute(

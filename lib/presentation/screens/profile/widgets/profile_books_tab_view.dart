@@ -15,6 +15,7 @@ class ProfileBooksTabView extends StatefulWidget {
   final ScrollController? parentScrollController;
   final bool isOtherUser;
   final VoidCallback? onBubbleHide;
+  final ValueChanged<bool>? onBubbleStateChanged;
 
   const ProfileBooksTabView({
     super.key,
@@ -23,6 +24,7 @@ class ProfileBooksTabView extends StatefulWidget {
     this.parentScrollController,
     this.isOtherUser = false,
     this.onBubbleHide,
+    this.onBubbleStateChanged,
   });
 
   @override
@@ -60,6 +62,13 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     _fetchTotalCount();
     _loadNextPage();
     _subscribeToBookUpdates();
+    
+    // 말풍선이 처음 표시될 때 외부에 알림
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_showBubble && !widget.isOtherUser) {
+        widget.onBubbleStateChanged?.call(true);
+      }
+    });
   }
 
   Future<void> _fetchTotalCount() async {
@@ -225,8 +234,13 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       setState(() {
         _showBubble = false;
       });
+      // 외부에 말풍선 상태 변경 알림
+      widget.onBubbleStateChanged?.call(false);
     }
   }
+
+  // 말풍선 상태를 외부에서 확인할 수 있는 getter
+  bool get isBubbleVisible => _showBubble;
 
 
 
@@ -243,6 +257,8 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
           setState(() {
             _showBubble = false;
           });
+          // 외부에 말풍선 상태 변경 알림
+          widget.onBubbleStateChanged?.call(false);
           // 외부 콜백 호출
           widget.onBubbleHide?.call();
         }
