@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/widgets/dialogs/update_required_dialog.dart';
 
 
@@ -17,6 +18,35 @@ class UpdateCheckUtil {
 
     final currentVersion = packageInfo.version;
     final platform = Theme.of(context).platform == TargetPlatform.iOS ? 'ios' : 'android';
+
+    // 사용자별 업데이트 팝업 표시 제한 체크
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final updateCountKey = 'update_popup_count_$userId';
+    final lastShownKey = 'update_popup_last_shown_$userId';
+    
+    final updateCount = prefs.getInt(updateCountKey) ?? 0;
+    final lastShownStr = prefs.getString(lastShownKey);
+    final now = DateTime.now();
+    
+    // 평생 2회 제한 체크
+    if (updateCount >= 2) {
+      debugPrint('📢 업데이트 팝업 제한 도달: $updateCount/2');
+      return;
+    }
+    
+    // 하루에 한 번만 표시 체크
+    if (lastShownStr != null) {
+      final lastShown = DateTime.tryParse(lastShownStr);
+      if (lastShown != null && 
+          now.difference(lastShown).inHours < 24 && 
+          now.day == lastShown.day) {
+        debugPrint('📢 업데이트 팝업 오늘 이미 표시됨');
+        return;
+      }
+    }
 
     final result = await client
         .from('app_updates')
@@ -48,6 +78,11 @@ class UpdateCheckUtil {
             forceUpdate: forceUpdate,
           ),
         );
+        
+        // 팝업 표시 후 카운트 및 날짜 업데이트
+        await prefs.setInt(updateCountKey, updateCount + 1);
+        await prefs.setString(lastShownKey, now.toIso8601String());
+        debugPrint('📢 업데이트 팝업 표시: ${updateCount + 1}/2');
       }
     }
   }
