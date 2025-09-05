@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:my_logue/core/widgets/book/user_book_grid.dart';
@@ -221,21 +222,58 @@ class _ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
-        _buildTabs(),
-        Expanded(
-          child: PageView(
-            controller: _pageController,
-            physics: const ClampingScrollPhysics(), // 슬라이드 전환 유지, 바운스 효과 제거
-            onPageChanged: (index) {
-              setState(() {
-                currentIndex = index;
-              });
-            },
+        Column(
+          children: [
+            _buildTabs(),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const ClampingScrollPhysics(), // 슬라이드 전환 유지, 바운스 효과 제거
+                onPageChanged: (index) {
+                  setState(() {
+                    currentIndex = index;
+                  });
+                },
+                children: [
+                  _buildRepresentativeTab(),
+                  _buildAllBooksTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // 말풍선을 탭바 바로 아래에 위치
+        Positioned(
+          top: 26, // 탭바 높이만큼 아래
+          right: 28,
+          child: Stack(
             children: [
-              _buildRepresentativeTab(),
-              _buildAllBooksTab(),
+              // 말풍선 배경
+              SvgPicture.asset(
+                'assets/bubble.svg',
+                width: 240,
+                height: 50,
+              ),
+              // 텍스트 오버레이
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.only(top:10),
+                  child: Center(
+                    child: Text(
+                      '프로필 편집에서 비활성화 할 수 있어요',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w500,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
