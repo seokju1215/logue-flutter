@@ -6,6 +6,7 @@ import 'package:my_logue/core/widgets/book/user_book_grid.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
 import 'package:my_logue/presentation/screens/post/my_post_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ProfileBooksTabViewState를 외부에서 접근 가능하게 함
 
@@ -16,6 +17,7 @@ class ProfileBooksTabView extends StatefulWidget {
   final bool isOtherUser;
   final VoidCallback? onBubbleHide;
   final ValueChanged<bool>? onBubbleStateChanged;
+  final Map<String, dynamic>? profile;
 
   const ProfileBooksTabView({
     super.key,
@@ -25,6 +27,7 @@ class ProfileBooksTabView extends StatefulWidget {
     this.isOtherUser = false,
     this.onBubbleHide,
     this.onBubbleStateChanged,
+    this.profile,
   });
 
   @override
@@ -36,7 +39,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   late ScrollController booksScrollController;
   int currentIndex = 0;
   final _client = Supabase.instance.client;
-  bool _showBubble = true; // 말풍선 표시 상태
+  bool _showBubble = false; // 말풍선 표시 상태
   
 
   
@@ -63,10 +66,10 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     _loadNextPage();
     _subscribeToBookUpdates();
     
-    // 말풍선이 처음 표시될 때 외부에 알림
+    // 말풍선 표시 로직 체크
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_showBubble && !widget.isOtherUser) {
-        widget.onBubbleStateChanged?.call(true);
+      if (!widget.isOtherUser) {
+        _checkAndShowBubble();
       }
     });
   }
@@ -241,6 +244,62 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   // 말풍선 상태를 외부에서 확인할 수 있는 getter
   bool get isBubbleVisible => _showBubble;
+
+  // 말풍선 표시 로직 체크
+  Future<void> _checkAndShowBubble() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 1. show_archived_books를 한번이라도 변경했는지 체크
+      final hasChangedShowArchivedBooks = prefs.getBool('has_changed_show_archived_books') ?? false;
+      if (hasChangedShowArchivedBooks) {
+        debugPrint('🚫 말풍선 표시 안함: show_archived_books를 변경한 적이 있음');
+        return;
+      }
+      
+      // 2. 현재 show_archived_books 상태를 SharedPreferences에 저장
+      final currentShowArchivedBooks = (widget.profile?['show_archived_books'] as bool?) ?? false;
+      await prefs.setBool('show_archived_books', currentShowArchivedBooks);
+      
+      if (!currentShowArchivedBooks) {
+        debugPrint('🚫 말풍선 표시 안함: show_archived_books가 false');
+        return;
+      }
+      
+      // 3. 말풍선 표시 횟수 체크 (최대 2번)
+      final bubbleShowCount = prefs.getInt('bubble_show_count') ?? 0;
+      if (bubbleShowCount >= 2) {
+        debugPrint('🚫 말풍선 표시 안함: 최대 표시 횟수(2번) 초과');
+        return;
+      }
+      
+      // 4. 마지막 표시 시간 체크 (하루 간격)
+      final lastShowTime = prefs.getInt('bubble_last_show_time') ?? 0;
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      const oneDayInMillis = 24 * 60 * 60 * 1000; // 24시간을 밀리초로
+      
+      if (bubbleShowCount > 0 && (currentTime - lastShowTime) < oneDayInMillis) {
+        debugPrint('🚫 말풍선 표시 안함: 하루가 지나지 않음 (${(currentTime - lastShowTime) / (60 * 60 * 1000)}시간 경과)');
+        return;
+      }
+      
+      // 5. 말풍선 표시
+      debugPrint('✅ 말풍선 표시: ${bubbleShowCount + 1}번째');
+      setState(() {
+        _showBubble = true;
+      });
+      
+      // 6. 상태 저장
+      await prefs.setInt('bubble_show_count', bubbleShowCount + 1);
+      await prefs.setInt('bubble_last_show_time', currentTime);
+      
+      // 7. 외부에 알림
+      widget.onBubbleStateChanged?.call(true);
+      
+    } catch (e) {
+      debugPrint('❌ 말풍선 표시 로직 오류: $e');
+    }
+  }
 
 
 

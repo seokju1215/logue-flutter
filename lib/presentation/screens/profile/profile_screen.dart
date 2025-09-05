@@ -349,9 +349,20 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
           column: 'id',
           value: user.id,
         ),
-        callback: (payload) {
+        callback: (payload) async {
           final newProfile = payload.newRecord;
           if (mounted && newProfile != null) {
+            final oldShowArchivedBooks = profile?['show_archived_books'] as bool?;
+            final newShowArchivedBooks = newProfile['show_archived_books'] as bool?;
+            
+            // show_archived_books 값이 변경되었는지 체크
+            if (oldShowArchivedBooks != null && 
+                newShowArchivedBooks != null && 
+                oldShowArchivedBooks != newShowArchivedBooks) {
+              debugPrint('🔄 show_archived_books 변경 감지: $oldShowArchivedBooks -> $newShowArchivedBooks');
+              await _markShowArchivedBooksChanged();
+            }
+            
             setState(() => profile = newProfile as Map<String, dynamic>);
           }
         },
@@ -378,6 +389,17 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         },
       )
       ..subscribe();
+  }
+
+  // show_archived_books 변경을 SharedPreferences에 기록
+  Future<void> _markShowArchivedBooksChanged() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('has_changed_show_archived_books', true);
+      debugPrint('✅ show_archived_books 변경 기록됨 - 말풍선 더 이상 표시 안함');
+    } catch (e) {
+      debugPrint('❌ show_archived_books 변경 기록 실패: $e');
+    }
   }
 
   @override
@@ -480,6 +502,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                                 userId: profile?['id'] as String,
                                 parentScrollController: _scrollController,
                                 isOtherUser: false,
+                                profile: profile,
                                 onBubbleStateChanged: (isVisible) {
                                   setState(() {
                                     _isBubbleVisible = isVisible;
