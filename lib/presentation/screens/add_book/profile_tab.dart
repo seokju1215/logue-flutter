@@ -469,7 +469,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     const crossAxisCount = 3;
-                    const crossAxisSpacing = 23.0;
+                    const crossAxisSpacing = 21.0;
                     const mainAxisSpacing = 30.0;
                     const itemAspectRatio = 98 / 145;
 
