@@ -697,16 +697,60 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     // 기본 높이 (화면 높이에서 상단/하단 패딩과 앱바 높이 제외)
     final baseHeight = screenHeight - paddingTop - appBarHeight - paddingBottom;
     
-    // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 200px)
-    final headerHeight = 227;
-    
-    // 책이 6권 이하면 모든 높이 사용, 6권 초과면 화면의 80% 사용
+    // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 275px)
+    const headerHeight = 275.0;
+    // 6권 이하면 고정 높이, 6권 초과일 때만 동적 계산
     if (books.length <= 6) {
-      // 6권 이하: 헤더 높이를 제외한 나머지 높이 사용
+       // 6권 이하: 헤더 높이를 제외한 나머지 높이 사용
       return (baseHeight - headerHeight).clamp(200.0, baseHeight * 0.8);
     } else {
-      // 6권 초과: 화면의 대부분을 사용 (기본 높이의 80%)
-      return (baseHeight * 0.8).clamp(300.0, baseHeight * 0.9) + 20;
+      // 6권 초과: ProfileBooksTabView의 _calculateRepresentativeTabHeight와 동일한 계산
+      final representativeTabHeight = _calculateRepresentativeTabActualHeight();
+      
+      // 탭바 높이 (약 50px)
+      const tabBarHeight = 50.0;
+      
+      // 실제 필요한 높이 = 대표탭 높이 + 탭바 높이 + 여유공간
+      final requiredHeight = representativeTabHeight + tabBarHeight + 50.0;
+      
+      debugPrint('🔍 OtherProfileScreen - ProfileBooksTabView 높이 계산 (6권 초과):');
+      debugPrint('  - 대표탭 높이: $representativeTabHeight');
+      debugPrint('  - 탭바 높이: $tabBarHeight');
+      debugPrint('  - 필요한 높이: $requiredHeight');
+      
+      return requiredHeight -30;
     }
+  }
+
+  double _calculateRepresentativeTabActualHeight() {
+    if (books.isEmpty) return 200.0; // 빈 상태
+    
+    const crossAxisCount = 3;
+    const crossAxisSpacing = 23.0;
+    const mainAxisSpacing = 30.0;
+    const childAspectRatio = 98 / 145;
+    const horizontalPadding = 52.0; // 26 * 2
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - horizontalPadding;
+    
+    final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
+    final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
+    final itemHeight = itemWidth / childAspectRatio;
+    
+    final rowCount = (books.length / crossAxisCount).ceil();
+    
+    final totalHeight = (itemHeight * rowCount) + (mainAxisSpacing * (rowCount - 1));
+    
+    final finalHeight = totalHeight + 32.0; // 상하 패딩 추가 (16 * 2 = 32)
+    
+    debugPrint('🔍 OtherProfileScreen - 대표탭 높이 계산:');
+    debugPrint('  - 화면 너비: $screenWidth');
+    debugPrint('  - 사용 가능 너비: $availableWidth');
+    debugPrint('  - 아이템 너비: $itemWidth, 높이: $itemHeight');
+    debugPrint('  - 행 수: $rowCount');
+    debugPrint('  - 총 높이: $totalHeight + 32 = $finalHeight');
+    
+    return finalHeight;
   }
 }

@@ -218,6 +218,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
   }
 
   double _calculateProfileBooksTabHeight() {
+    // 6권 이하면 고정 높이, 6권 초과일 때만 동적 계산
     final screenHeight = MediaQuery.of(context).size.height;
     final paddingTop = MediaQuery.of(context).padding.top;
     final paddingBottom = MediaQuery.of(context).padding.bottom;
@@ -228,21 +229,58 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     
     // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 275px)
     const headerHeight = 275.0;
-    
-    // 책이 6권 이하면 고정 높이, 7권 이상이면 충분한 높이 확보
     if (books.length <= 6) {
       // 6권 이하: 헤더 높이를 제외한 나머지 높이 사용
       return (baseHeight - headerHeight).clamp(200.0, baseHeight * 0.8);
     } else {
-      // 7권 이상: 3줄을 모두 표시할 수 있는 충분한 높이 확보
-      // 책 1개 높이(약 145px) + 행간격(30px) * 2 + 여유공간(50px)
-      const bookHeight = 145.0;
-      const rowSpacing = 30.0;
-      const extraSpace = 50.0;
-      const minHeightFor3Rows = (bookHeight * 3) + (rowSpacing * 2) + extraSpace;
+      // 6권 초과: ProfileBooksTabView의 _calculateRepresentativeTabHeight와 동일한 계산
+      final representativeTabHeight = _calculateRepresentativeTabActualHeight();
       
-      return (baseHeight - headerHeight).clamp(minHeightFor3Rows, baseHeight) +50;
+      // 탭바 높이 (약 50px)
+      const tabBarHeight = 50.0;
+      
+      // 실제 필요한 높이 = 대표탭 높이 + 탭바 높이 + 여유공간
+      final requiredHeight = representativeTabHeight + tabBarHeight + 50.0;
+      
+      debugPrint('🔍 ProfileBooksTabView 높이 계산 (6권 초과):');
+      debugPrint('  - 대표탭 높이: $representativeTabHeight');
+      debugPrint('  - 탭바 높이: $tabBarHeight');
+      debugPrint('  - 필요한 높이: $requiredHeight');
+      
+      return requiredHeight;
     }
+  }
+
+  double _calculateRepresentativeTabActualHeight() {
+    if (books.isEmpty) return 200.0; // 빈 상태
+    
+    const crossAxisCount = 3;
+    const crossAxisSpacing = 23.0;
+    const mainAxisSpacing = 30.0;
+    const childAspectRatio = 98 / 145;
+    const horizontalPadding = 52.0; // 26 * 2
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - horizontalPadding;
+    
+    final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
+    final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
+    final itemHeight = itemWidth / childAspectRatio;
+    
+    final rowCount = (books.length / crossAxisCount).ceil();
+    
+    final totalHeight = (itemHeight * rowCount) + (mainAxisSpacing * (rowCount - 1));
+    
+    final finalHeight = totalHeight + 32.0; // 상하 패딩 추가 (16 * 2 = 32)
+    
+    debugPrint('🔍 대표탭 높이 계산:');
+    debugPrint('  - 화면 너비: $screenWidth');
+    debugPrint('  - 사용 가능 너비: $availableWidth');
+    debugPrint('  - 아이템 너비: $itemWidth, 높이: $itemHeight');
+    debugPrint('  - 행 수: $rowCount');
+    debugPrint('  - 총 높이: $totalHeight + 32 = $finalHeight');
+    
+    return finalHeight -40;
   }
 
   Future<void> _fetchProfile() async {
