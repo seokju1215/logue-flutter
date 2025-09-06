@@ -618,12 +618,12 @@ class _ArchiveTabState extends State<ArchiveTab> {
 
   // ========== 유틸/선반 ==========
 
-  List<Widget> _buildShelves(int bookCount, double itemHeight) {
+  List<Widget> _buildShelves(int bookCount, double itemHeight, double bookShelfSpacing, double firstShelfY) {
     const booksPerRow = 5;
     final shelfCount = (bookCount / booksPerRow).ceil();
 
     return List.generate(shelfCount, (i) {
-      final shelfY = 90 + (itemHeight + 35) * i;
+      final shelfY = firstShelfY + (itemHeight + bookShelfSpacing) * i;
       return Positioned(
         top: shelfY,
         left: 0,
@@ -806,6 +806,14 @@ class _ArchiveTabState extends State<ArchiveTab> {
                     final itemWidth =
                         (availableWidth - totalSpacing) / crossAxisCount;
                     final itemHeight = itemWidth / itemAspectRatio;
+                    
+                    // 책과 선반 사이의 간격을 유동적으로 계산
+                    // 책 높이의 40% 정도를 선반과의 간격으로 설정 (더 넓게)
+                    final bookShelfSpacing = (itemHeight * 0.4).clamp(25.0, 60.0);
+                    
+                    // 첫 번째 선반의 위치도 책 크기에 맞게 유동적으로 계산
+                    // 책 높이의 60% 정도를 첫 번째 선반 위치로 설정
+                    final firstShelfY = itemHeight.clamp(50.0, 120.0);
 
                     return Stack(
                       children: [
@@ -828,7 +836,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                               onPointerCancel: (_) => _stopAutoScroll(),
                               child: ReorderableWrap(
                                 spacing: crossAxisSpacing,
-                                runSpacing: 35,
+                                runSpacing: bookShelfSpacing,
                                 needsLongPressDraggable: true,
                                 onReorder: _onReorder,
                                 buildDraggableFeedback:
@@ -882,7 +890,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                         ),
 
                         // 선반
-                        ..._buildShelves(_localBooks.length, itemHeight),
+                        ..._buildShelves(_localBooks.length, itemHeight, bookShelfSpacing, firstShelfY),
                       ],
                     );
                   },
