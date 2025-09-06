@@ -698,7 +698,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final baseHeight = screenHeight - paddingTop - appBarHeight - paddingBottom;
     
     // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 275px)
-    const headerHeight = 275.0;
+    const headerHeight = 200.0;
     // 6권 이하면 고정 높이, 6권 초과일 때만 동적 계산
     if (books.length <= 6) {
        // 6권 이하: 헤더 높이를 제외한 나머지 높이 사용
@@ -751,6 +751,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     debugPrint('  - 행 수: $rowCount');
     debugPrint('  - 총 높이: $totalHeight + 32 = $finalHeight');
     
-    return finalHeight;
+    return finalHeight ;
   }
 }

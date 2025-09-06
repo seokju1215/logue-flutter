@@ -231,7 +231,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     const headerHeight = 275.0;
     if (books.length <= 6) {
       // 6권 이하: 헤더 높이를 제외한 나머지 높이 사용
-      return (baseHeight - headerHeight).clamp(200.0, baseHeight * 0.8);
+      return (baseHeight - headerHeight).clamp(200.0, baseHeight * 0.8) ;
     } else {
       // 6권 초과: ProfileBooksTabView의 _calculateRepresentativeTabHeight와 동일한 계산
       final representativeTabHeight = _calculateRepresentativeTabActualHeight();
@@ -280,7 +280,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     debugPrint('  - 행 수: $rowCount');
     debugPrint('  - 총 높이: $totalHeight + 32 = $finalHeight');
     
-    return finalHeight -40;
+    return finalHeight-40;
   }
 
   Future<void> _fetchProfile() async {
