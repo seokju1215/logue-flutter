@@ -524,6 +524,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     }
   }
 
+
   double _calculateRepresentativeTabHeight(int bookCount) {
     const crossAxisCount = 3;
     const crossAxisSpacing = 23.0;
@@ -616,7 +617,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   Widget _buildBookshelfLayout(List<Map<String, dynamic>> books) {
     const crossAxisCount = 5;
     const crossAxisSpacing = 11.7;
-    const itemAspectRatio = 98 / 145;
+    const itemAspectRatio = 98 / 138; // archive_tab과 동일한 비율
     const bookPadding = 22.0;
 
     return LayoutBuilder(
@@ -625,6 +626,14 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
         final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
         final itemHeight = itemWidth / itemAspectRatio;
+
+        // 책과 선반 사이의 간격을 유동적으로 계산
+        // 책 높이의 40% 정도를 선반과의 간격으로 설정 (더 넓게)
+        final bookShelfSpacing = (itemHeight * 0.4).clamp(25.0, 60.0);
+
+        // 첫 번째 선반의 위치도 책 크기에 맞게 유동적으로 계산
+        // 책 높이의 60% 정도를 첫 번째 선반 위치로 설정
+        final firstShelfY = itemHeight.clamp(50.0, 120.0);
 
 
 
@@ -639,7 +648,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
                   crossAxisSpacing: crossAxisSpacing,
-                  mainAxisSpacing: 35,
+                  mainAxisSpacing: bookShelfSpacing, // 동적 간격 사용
                   childAspectRatio: itemAspectRatio,
                 ),
                 itemCount: books.length,
@@ -648,29 +657,36 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                   final booksData = book['books'] as Map<String, dynamic>?;
                   final imageUrl = booksData?['image'] as String? ?? '';
                   
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(0),
-                    child: BookFrame(
-                      imageUrl: imageUrl,
+                  return GestureDetector(
+                    onTap: () => _onBookTap(book),
+                    child: SizedBox(
+                      width: itemWidth,
+                      height: itemHeight,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(0),
+                        child: BookFrame(
+                          imageUrl: imageUrl,
+                        ),
+                      ),
                     ),
                   );
                 },
               ),
             ),
             // 선반들
-            ..._buildShelves(books.length, itemHeight),
+            ..._buildShelves(books.length, itemHeight, bookShelfSpacing, firstShelfY),
           ],
         );
       },
     );
   }
 
-  List<Widget> _buildShelves(int bookCount, double itemHeight) {
+  List<Widget> _buildShelves(int bookCount, double itemHeight, double bookShelfSpacing, double firstShelfY) {
     const booksPerRow = 5;
     final shelfCount = (bookCount / booksPerRow).ceil();
 
     return List.generate(shelfCount, (i) {
-      final shelfY = 90 + (itemHeight + 35) * i;
+      final shelfY = firstShelfY + (itemHeight + bookShelfSpacing) * i;
       return Positioned(
         top: shelfY,
         left: 0,
