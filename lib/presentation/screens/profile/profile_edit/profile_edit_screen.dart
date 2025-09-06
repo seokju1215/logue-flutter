@@ -252,14 +252,27 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         return true;
       },
       child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: const Text('프로필 편집', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
-          centerTitle: true,
-          actions: [SaveButton(enabled: isEdited && !_isSaving, onPressed: _isSaving ? null : onSave)],
-          leading: IconButton(
-            icon: SvgPicture.asset('assets/back_arrow.svg'),
-            onPressed: _isSaving ? null : () => Navigator.pop(context),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: Stack(
+            children: [
+              AppBar(
+                automaticallyImplyLeading: false,
+                title: const Text('프로필 편집', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,),),
+                centerTitle: true,
+                actions: [SaveButton(enabled: isEdited && !_isSaving, onPressed: _isSaving ? null : onSave)],
+                leading: IconButton(
+                  icon: SvgPicture.asset('assets/back_arrow.svg'),
+                  onPressed: _isSaving ? null : () => Navigator.pop(context),
+                ),
+                backgroundColor: Colors.white,
+              ),
+              if (_isSaving)
+                Container(
+                  height: kToolbarHeight + MediaQuery.of(context).padding.top,
+                  color: Colors.black.withOpacity(0.3),
+                ),
+            ],
           ),
         ),
         body: AbsorbPointer(

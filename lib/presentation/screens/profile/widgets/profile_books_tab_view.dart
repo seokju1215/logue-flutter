@@ -363,7 +363,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                       padding: const EdgeInsets.only(top:10),
                       child: Center(
                         child: Text(
-                          '프로필 편집에서 비활성화 할 수 있어요',
+                          '프로필 편집에서 숨길 수 있어요',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,

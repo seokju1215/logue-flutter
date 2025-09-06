@@ -226,16 +226,22 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     // 기본 높이 (화면 높이에서 상단/하단 패딩과 앱바 높이 제외)
     final baseHeight = screenHeight - paddingTop - appBarHeight - paddingBottom;
     
-    // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 200px)
-    final headerHeight = 275.0;
+    // 프로필 헤더와 액션 버튼의 대략적인 높이 (약 275px)
+    const headerHeight = 275.0;
     
-    // 책이 6권 이하면 모든 높이 사용, 6권 초과면 화면의 80% 사용
+    // 책이 6권 이하면 고정 높이, 7권 이상이면 충분한 높이 확보
     if (books.length <= 6) {
       // 6권 이하: 헤더 높이를 제외한 나머지 높이 사용
       return (baseHeight - headerHeight).clamp(200.0, baseHeight * 0.8);
     } else {
-      // 6권 초과: 화면의 대부분을 사용 (기본 높이의 80%)
-      return (baseHeight * 0.8).clamp(300.0, baseHeight * 0.9);
+      // 7권 이상: 3줄을 모두 표시할 수 있는 충분한 높이 확보
+      // 책 1개 높이(약 145px) + 행간격(30px) * 2 + 여유공간(50px)
+      const bookHeight = 145.0;
+      const rowSpacing = 30.0;
+      const extraSpace = 50.0;
+      const minHeightFor3Rows = (bookHeight * 3) + (rowSpacing * 2) + extraSpace;
+      
+      return (baseHeight - headerHeight).clamp(minHeightFor3Rows, baseHeight * 0.9);
     }
   }
 
