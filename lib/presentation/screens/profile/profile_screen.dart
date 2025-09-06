@@ -241,7 +241,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
       const extraSpace = 50.0;
       const minHeightFor3Rows = (bookHeight * 3) + (rowSpacing * 2) + extraSpace;
       
-      return (baseHeight - headerHeight).clamp(minHeightFor3Rows, baseHeight) +15;
+      return (baseHeight - headerHeight).clamp(minHeightFor3Rows, baseHeight) +45;
     }
   }
 
