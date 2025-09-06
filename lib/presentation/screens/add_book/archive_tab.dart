@@ -796,7 +796,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
                   builder: (context, constraints) {
                     const crossAxisCount = 5;
                     const crossAxisSpacing = 11.7;
-                    const itemAspectRatio = 98 / 145;
+                    const itemAspectRatio = 98 / 145.5;
                     const bookPadding = 22.0;
 
                     final availableWidth =

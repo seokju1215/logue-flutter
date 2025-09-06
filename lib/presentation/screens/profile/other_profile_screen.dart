@@ -706,7 +706,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       return (baseHeight - headerHeight).clamp(200.0, baseHeight * 0.8);
     } else {
       // 6권 초과: 화면의 대부분을 사용 (기본 높이의 80%)
-      return (baseHeight * 0.8).clamp(300.0, baseHeight * 0.9);
+      return (baseHeight * 0.8).clamp(300.0, baseHeight * 0.9) + 20;
     }
   }
 }
