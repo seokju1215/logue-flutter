@@ -590,7 +590,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         controller: booksScrollController,
         physics: const ClampingScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 16, 0, 90),
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 220),
           child: Column(
             children: [
               _buildBookshelfLayout(combined),
