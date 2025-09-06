@@ -41,7 +41,8 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   final _client = Supabase.instance.client;
   bool _showBubble = false; // 말풍선 표시 상태
   
-
+  // 앱 시작 시점의 세션 키 (한 번만 생성)
+  static String? _sessionKey;
   
   // ===== 페이지네이션 상태 =====
   static const int _pageSize = 200;
@@ -60,6 +61,16 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🔍 ProfileBooksTabView initState 시작');
+    
+    // 세션 키가 없으면 생성 (앱 시작 시점에 한 번만)
+    if (_sessionKey == null) {
+      _sessionKey = 'bubble_shown_session_${DateTime.now().millisecondsSinceEpoch}';
+      debugPrint('🔍 새 세션 키 생성: $_sessionKey');
+    } else {
+      debugPrint('🔍 기존 세션 키 사용: $_sessionKey');
+    }
+    
     pageController = PageController(initialPage: 0);
     booksScrollController = ScrollController();
     _fetchTotalCount();
@@ -67,9 +78,15 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     _subscribeToBookUpdates();
     
     // 말풍선 표시 로직 체크
+    debugPrint('🔍 PostFrameCallback 등록됨');
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('🔍 PostFrameCallback 실행됨 - isOtherUser: ${widget.isOtherUser}');
       if (!widget.isOtherUser) {
+        debugPrint('🔍 내 프로필이므로 말풍선 체크 시작');
+        _debugBubbleState(); // 디버그 정보 출력
         _checkAndShowBubble();
+      } else {
+        debugPrint('🔍 다른 사용자 프로필이므로 말풍선 체크 안함');
       }
     });
   }
@@ -245,59 +262,88 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   // 말풍선 상태를 외부에서 확인할 수 있는 getter
   bool get isBubbleVisible => _showBubble;
 
-  // 말풍선 표시 로직 체크
+  // 말풍선 표시 로직 체크 (접속마다 한번씩 평생 2회)
   Future<void> _checkAndShowBubble() async {
     try {
+      debugPrint('🔍 말풍선 체크 시작');
+      
+      // 내 프로필이 아니면 표시하지 않음
+      if (widget.isOtherUser) {
+        debugPrint('🔍 다른 사용자 프로필 - 말풍선 표시 안함');
+        return;
+      }
+      
+      // show_archived_books가 false면 표시하지 않음
+      final showArchivedBooks = (widget.profile?['show_archived_books'] as bool?) ?? false;
+      if (!showArchivedBooks) {
+        debugPrint('🔍 show_archived_books가 false - 말풍선 표시 안함');
+        return;
+      }
+      
       final prefs = await SharedPreferences.getInstance();
       
-      // 1. show_archived_books를 한번이라도 변경했는지 체크
-      final hasChangedShowArchivedBooks = prefs.getBool('has_changed_show_archived_books') ?? false;
-      if (hasChangedShowArchivedBooks) {
-        debugPrint('🚫 말풍선 표시 안함: show_archived_books를 변경한 적이 있음');
-        return;
-      }
-      
-      // 2. 현재 show_archived_books 상태를 SharedPreferences에 저장
-      final currentShowArchivedBooks = (widget.profile?['show_archived_books'] as bool?) ?? false;
-      await prefs.setBool('show_archived_books', currentShowArchivedBooks);
-      
-      if (!currentShowArchivedBooks) {
-        debugPrint('🚫 말풍선 표시 안함: show_archived_books가 false');
-        return;
-      }
-      
-      // 3. 말풍선 표시 횟수 체크 (최대 2번)
+      // 평생 표시 횟수 확인 (최대 2회)
       final bubbleShowCount = prefs.getInt('bubble_show_count') ?? 0;
+      debugPrint('🔍 평생 표시 횟수: $bubbleShowCount');
+      
       if (bubbleShowCount >= 2) {
-        debugPrint('🚫 말풍선 표시 안함: 최대 표시 횟수(2번) 초과');
+        debugPrint('🔍 평생 2회 초과 - 말풍선 표시 안함');
         return;
       }
       
-      // 4. 마지막 표시 시간 체크 (하루 간격)
-      final lastShowTime = prefs.getInt('bubble_last_show_time') ?? 0;
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      const oneDayInMillis = 24 * 60 * 60 * 1000; // 24시간을 밀리초로
+      // 현재 세션에서 이미 표시했는지 확인
+      final currentSessionKey = _sessionKey!;
+      final hasShownInCurrentSession = prefs.getBool(currentSessionKey) ?? false;
+      debugPrint('🔍 현재 세션 키: $currentSessionKey');
+      debugPrint('🔍 현재 세션에서 표시됨: $hasShownInCurrentSession');
       
-      if (bubbleShowCount > 0 && (currentTime - lastShowTime) < oneDayInMillis) {
-        debugPrint('🚫 말풍선 표시 안함: 하루가 지나지 않음 (${(currentTime - lastShowTime) / (60 * 60 * 1000)}시간 경과)');
+      if (hasShownInCurrentSession) {
+        debugPrint('🔍 현재 세션에서 이미 표시됨 - 말풍선 표시 안함');
         return;
       }
       
-      // 5. 말풍선 표시
-      debugPrint('✅ 말풍선 표시: ${bubbleShowCount + 1}번째');
+      // 모든 조건을 만족하면 말풍선 표시
+      debugPrint('🔍 모든 조건 만족 - 말풍선 표시');
+      
+      // 세션 키 저장 (현재 세션에서 표시했음을 기록)
+      await prefs.setBool(currentSessionKey, true);
+      
+      // 평생 표시 횟수 증가
+      await prefs.setInt('bubble_show_count', bubbleShowCount + 1);
+      
       setState(() {
         _showBubble = true;
       });
       
-      // 6. 상태 저장
-      await prefs.setInt('bubble_show_count', bubbleShowCount + 1);
-      await prefs.setInt('bubble_last_show_time', currentTime);
-      
-      // 7. 외부에 알림
+      // 외부에 알림
       widget.onBubbleStateChanged?.call(true);
+      
+      debugPrint('✅ 말풍선 표시 완료 - 평생 횟수: ${bubbleShowCount + 1}');
       
     } catch (e) {
       debugPrint('❌ 말풍선 표시 로직 오류: $e');
+    }
+  }
+
+  // 디버깅용: 현재 말풍선 상태 확인
+  Future<void> _debugBubbleState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final bubbleShowCount = prefs.getInt('bubble_show_count') ?? 0;
+      final currentSessionKey = _sessionKey!;
+      final hasShownInCurrentSession = prefs.getBool(currentSessionKey) ?? false;
+      final showArchivedBooks = (widget.profile?['show_archived_books'] as bool?) ?? false;
+      
+      debugPrint('🔍 === 말풍선 디버그 정보 ===');
+      debugPrint('🔍 show_archived_books: $showArchivedBooks');
+      debugPrint('🔍 bubble_show_count: $bubbleShowCount');
+      debugPrint('🔍 current_session_key: $currentSessionKey');
+      debugPrint('🔍 has_shown_in_current_session: $hasShownInCurrentSession');
+      debugPrint('🔍 _showBubble: $_showBubble');
+      debugPrint('🔍 isOtherUser: ${widget.isOtherUser}');
+      debugPrint('🔍 ========================');
+    } catch (e) {
+      debugPrint('❌ 말풍선 디버그 오류: $e');
     }
   }
 
@@ -309,6 +355,8 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔍 ProfileBooksTabView build - _showBubble: $_showBubble, isOtherUser: ${widget.isOtherUser}');
+    
     return GestureDetector(
       onTap: () {
         // 화면 어디든 탭하면 말풍선 숨기기
