@@ -657,16 +657,13 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                   final booksData = book['books'] as Map<String, dynamic>?;
                   final imageUrl = booksData?['image'] as String? ?? '';
                   
-                  return GestureDetector(
-                    onTap: () => _onBookTap(book),
-                    child: SizedBox(
-                      width: itemWidth,
-                      height: itemHeight,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(0),
-                        child: BookFrame(
-                          imageUrl: imageUrl,
-                        ),
+                  return SizedBox(
+                    width: itemWidth,
+                    height: itemHeight,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(0),
+                      child: BookFrame(
+                        imageUrl: imageUrl,
                       ),
                     ),
                   );
