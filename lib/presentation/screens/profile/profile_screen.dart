@@ -472,7 +472,12 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                   ? 'assets/noticed_alarm_icon.svg'
                   : 'assets/bell_icon.svg'),
             ),
-            onPressed: _isBubbleVisible ? null : () async {
+            onPressed: () async {
+              if (_isBubbleVisible) {
+                // 말풍선이 보이는 상태면 말풍선만 숨기기
+                _profileBooksTabViewKey.currentState?.hideBubble();
+                return;
+              }
               final result = await Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const NotificationScreen()),
               );
@@ -488,7 +493,12 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
               scale: 1,
               child: IconButton(
                 icon: SvgPicture.asset('assets/edit_icon.svg'),
-                onPressed: _isBubbleVisible ? null : () async {
+                onPressed: () async {
+                  if (_isBubbleVisible) {
+                    // 말풍선이 보이는 상태면 말풍선만 숨기기
+                    _profileBooksTabViewKey.currentState?.hideBubble();
+                    return;
+                  }
                   setState(() => _showFullBio = false);
                   final result =
                       await Navigator.of(context, rootNavigator: true).push(
