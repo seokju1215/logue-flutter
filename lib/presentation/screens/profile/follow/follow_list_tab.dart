@@ -34,6 +34,7 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
   List<Map<String, dynamic>> users = [];
   String? currentUserId;
   bool _shouldRefresh = false; // 언팔로우 발생 시 새로고침 플래그
+  bool _isLoading = false; // 로딩 상태
 
   bool get isMyProfile => currentUserId == widget.userId;
 
@@ -73,6 +74,10 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
 
   Future<void> _fetchFollowList() async {
     if (currentUserId == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
 
     final userId = currentUserId!; // non-null로 promotion
 
@@ -184,6 +189,7 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
 
     setState(() {
       users = sortedList;
+      _isLoading = false;
     });
   }
 
@@ -283,6 +289,15 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
+        // 로딩 중일 때 로딩 인디케이터 표시
+        if (_isLoading) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
+            ),
+          );
+        }
+
         // 실시간으로 팔로우 상태 업데이트 (정렬은 하지 않음)
         List<Map<String, dynamic>> displayUsers = users.map((user) {
           final userId = user['id'] as String;

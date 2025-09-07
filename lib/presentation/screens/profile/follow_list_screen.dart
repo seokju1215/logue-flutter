@@ -30,6 +30,7 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
   late final IsFollowing _isFollowing;
   List<Map<String, dynamic>> users = [];
   String? currentUserId;
+  bool _isLoading = false; // 로딩 상태
 
   @override
   void initState() {
@@ -50,6 +51,10 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
 
   Future<void> _fetchFollowList() async {
     if (currentUserId == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
 
     final table = widget.type == FollowListType.followers
         ? 'followers_with_profiles'
@@ -80,9 +85,13 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
             'isFollowing': followingIds.contains(user['id']),
           };
         }).toList();
+        _isLoading = false;
       });
     } else {
-      setState(() => users = List<Map<String, dynamic>>.from(res));
+      setState(() {
+        users = List<Map<String, dynamic>>.from(res);
+        _isLoading = false;
+      });
     }
   }
 
@@ -188,6 +197,15 @@ class _FollowListTabState extends ConsumerState<FollowListTab> {
 
   @override
   Widget build(BuildContext context) {
+    // 로딩 중일 때 로딩 인디케이터 표시
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
+        ),
+      );
+    }
+
     if (users.isEmpty) {
       return const Center(child: Text('사용자가 없습니다.'));
     }
