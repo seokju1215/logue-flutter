@@ -50,22 +50,26 @@ class _UserNameEdit extends State<UserNameEdit> {
   }
 
   void _onChanged() {
-    final text = _controller.text.trim();
+    final originalText = _controller.text;
+    final text = originalText.trim();
     final changed = text.toLowerCase() != widget.currentUsername.toLowerCase();
 
+    // 공백 검사 (원본 텍스트로 검사)
+    final hasSpace = originalText.contains(' ');
+    
     // 3~20자 + 허용문자 + 영어 또는 숫자 하나 이상
     final validFormat = RegExp(r'^(?=[a-zA-Z0-9._]{3,20}$)(?=.*[a-zA-Z0-9]).*$').hasMatch(text);
 
     setState(() {
       hasChanged = changed;
-      isValidFormat = validFormat;
+      isValidFormat = validFormat && !hasSpace;
       errorText = null;
       isDuplicate = false;
     });
 
     _debounce?.cancel();
 
-    if (changed && validFormat) {
+    if (changed && validFormat && !hasSpace) {
       _debounce = Timer(const Duration(milliseconds: 500), () async {
         final taken = await _isUsernameTaken(text);
         if (!mounted) return;
@@ -77,7 +81,7 @@ class _UserNameEdit extends State<UserNameEdit> {
           });
         }
       });
-    } else if (changed && !validFormat) {
+    } else if (changed && (!validFormat || hasSpace)) {
       setState(() {
         errorText = '사용자 이름 $text은(는) 사용할 수 없습니다.';
       });
