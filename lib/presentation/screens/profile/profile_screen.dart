@@ -534,7 +534,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
+                          padding: const EdgeInsets.fromLTRB(25, 0, 25, 7),
                           child: _buildProfileHeader(),
                         ),
                         Padding(

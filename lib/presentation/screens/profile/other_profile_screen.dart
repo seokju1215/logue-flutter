@@ -254,7 +254,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(25, 9, 25, 7),
+                      padding: const EdgeInsets.fromLTRB(25, 0, 25, 7),
                       child: _buildProfileHeader(),
                     ),
                     profile?['show_archived_books'] ? SizedBox(height: 0,) :isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
