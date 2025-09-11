@@ -28,6 +28,30 @@ import 'profile_view.dart';
 import 'package:flutter/gestures.dart';
 import 'widgets/profile_books_tab_view.dart';
 
+// SliverPersistentHeaderDelegate 클래스 추가
+class _ProfileBooksTabViewDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _ProfileBooksTabViewDelegate({required this.child, required this.height});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return oldDelegate is _ProfileBooksTabViewDelegate && oldDelegate.height != height;
+  }
+}
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
@@ -164,8 +188,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
       debugPrint('📢 프로필 안내 표시 (디자인 모드)');
     }
   }
-
-
 
   String _truncateTextToFit(
     String text,
@@ -338,8 +360,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
       return {'followers': 0, 'following': 0};
     }
   }
-
-
 
   Future<void> loadBooks() async {
     final user = client.auth.currentUser;
@@ -523,100 +543,102 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
             // ProfileBooksTabView의 말풍선 숨기기
             _profileBooksTabViewKey.currentState?.hideBubble();
           } : null,
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(25, 0, 25, 7),
-                          child: _buildProfileHeader(),
+          child: NestedScrollView(
+            controller: _scrollController,
+            headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+              return <Widget>[
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(25, 0, 25, 7),
+                        child: _buildProfileHeader(),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 0, horizontal: 16),
+                        child: _buildActionButtons(),
+                      ),
+                    ],
+                  ),
+                ),
+                if ((profile?['show_archived_books'] as bool?) ?? false)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _ProfileBooksTabViewDelegate(
+                      height: MediaQuery.of(context).size.height, // 화면 높이의 70% 사용
+                      child: GestureDetector(
+                        onTap: _isBubbleVisible ? () {
+                          // ProfileBooksTabView의 말풍선 숨기기
+                          _profileBooksTabViewKey.currentState?.hideBubble();
+                        } : null,
+                        child: ProfileBooksTabView(
+                          key: _profileBooksTabViewKey,
+                          nonArchivedBooks: books,
+                          userId: profile?['id'] as String,
+                          parentScrollController: _scrollController,
+                          isOtherUser: false,
+                          profile: profile,
+                          onBubbleStateChanged: (isVisible) {
+                            setState(() {
+                              _isBubbleVisible = isVisible;
+                            });
+                          },
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 0, horizontal: 16),
-                          child: _buildActionButtons(),
-                        ),
-                        if ((profile?['show_archived_books'] as bool?) ?? false) ...[
-                          GestureDetector(
-                            onTap: _isBubbleVisible ? () {
-                              // ProfileBooksTabView의 말풍선 숨기기
-                              _profileBooksTabViewKey.currentState?.hideBubble();
-                            } : null,
-                            child: SizedBox(
-                              height: _calculateProfileBooksTabHeight(),
-                              child: ProfileBooksTabView(
-                                key: _profileBooksTabViewKey,
-                                nonArchivedBooks: books,
-                                userId: profile?['id'] as String,
-                                parentScrollController: _scrollController,
-                                isOtherUser: false,
-                                profile: profile,
-                                onBubbleStateChanged: (isVisible) {
-                                  setState(() {
-                                    _isBubbleVisible = isVisible;
-                                  });
-                                },
-                              ),
+                      ),
+                    ),
+                  ),
+              ];
+            },
+            body: (profile?['show_archived_books'] as bool?) ?? false
+                ? const SizedBox.shrink() // ProfileBooksTabView가 body를 처리
+                : SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        if (books.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 20, horizontal: 26),
+                            child: _buildBookGrid(),
+                          ),
+                          const SizedBox(height: 20),
+                        ] else ...[
+                          const SizedBox(height: 76),
+                          Center(
+                            child: Column(
+                              children: [
+                                Builder(
+                                  builder: (context) {
+                                    return TextButton(
+                                      onPressed: _isBubbleVisible ? null : () async {
+                                        // MainNavigationScreen의 AddBookView로 이동
+                                        final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
+                                        if (mainNavigationState != null) {
+                                          mainNavigationState.navigateToAddBookProfileTab();
+                                        }
+                                      },
+                                      child: const Text(
+                                        "책 추가 +",
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.black900,
+                                            fontWeight: FontWeight.w400),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ),
-                        ] else ...[
-                          if (books.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 20, horizontal: 26),
-                              child: SizedBox(
-                                height: null,
-                                child: _buildBookGrid(),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                          ] else ...[
-                            const SizedBox(height: 76),
-                            Center(
-                              child: Column(
-                                children: [
-                                  Builder(
-                                    builder: (context) {
-                                      return TextButton(
-                                        onPressed: _isBubbleVisible ? null : () async {
-                                          // MainNavigationScreen의 AddBookView로 이동
-                                          final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
-                                          if (mainNavigationState != null) {
-                                            mainNavigationState.navigateToAddBookProfileTab();
-                                          }
-                                        },
-                                        child: const Text(
-                                          "책 추가 +",
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              color: AppColors.black900,
-                                              fontWeight: FontWeight.w400),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                          ],
+                          const SizedBox(height: 20),
                         ],
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 

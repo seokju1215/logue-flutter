@@ -501,54 +501,62 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       return _buildEmptyState(isRepresentativeTab: true);
     }
     
-    // 6권 이하면 스크롤 없이 고정 높이, 7권 이상이면 스크롤 가능
-    if (books.length <= 6) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
-        child: SizedBox(
-          height: _calculateRepresentativeTabHeight(books.length),
-          child: UserBookGrid(
-            books: books,
-            onTap: _onBookTap,
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 23,
+              mainAxisSpacing: 30,
+              childAspectRatio: 98 / 145,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final book = books[index];
+                final imageUrl = book['books']?['image'] ?? '';
+
+                return GestureDetector(
+                  onTap: () {
+                    if (_onBookTap != null) {
+                      _onBookTap(book);
+                    }
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.black300, width: 0.5),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(0),
+                      child: imageUrl.isNotEmpty
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: AppColors.black100,
+                                  child: const Icon(Icons.book, color: AppColors.black300),
+                                );
+                              },
+                            )
+                          : Container(
+                              color: AppColors.black100,
+                              child: const Icon(Icons.book, color: AppColors.black300),
+                            ),
+                    ),
+                  ),
+                );
+              },
+              childCount: books.length,
+            ),
           ),
         ),
-      );
-    } else {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
-        child: UserBookGrid(
-          books: books,
-          onTap: _onBookTap,
-        ),
-      );
-    }
+      ],
+    );
   }
 
 
-  double _calculateRepresentativeTabHeight(int bookCount) {
-    const crossAxisCount = 3;
-    const crossAxisSpacing = 23.0;
-    const mainAxisSpacing = 30.0;
-    const childAspectRatio = 98 / 145;
-    const horizontalPadding = 52.0; // 26 * 2
-    
-    // 화면 너비에서 패딩 제외
-    final screenWidth = MediaQuery.of(context).size.width;
-    final availableWidth = screenWidth - horizontalPadding;
-    
-    // 아이템 너비 계산
-    final totalSpacing = crossAxisSpacing * (crossAxisCount - 1);
-    final itemWidth = (availableWidth - totalSpacing) / crossAxisCount;
-    final itemHeight = itemWidth / childAspectRatio;
-    
-    // 행 수 계산
-    final rowCount = (bookCount / crossAxisCount).ceil();
-    
-    // 총 높이 계산 (아이템 높이 + 행 간격)
-    final totalHeight = (itemHeight * rowCount) + (mainAxisSpacing * (rowCount - 1));
-    
-    return totalHeight;
-  }
 
   Widget _buildAllBooksTab() {
     if (_isInitialLoading) {
@@ -568,42 +576,26 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
           _onScrollReachBottom();
         }
         
-        // 책 부분에서 맨 위로 올린 후 더 올리면 탭바 윗부분도 같이 스크롤
-        if (notification is ScrollUpdateNotification) {
-          if (notification.metrics.pixels <= 0 && 
-              notification.scrollDelta! < 0 && 
-              widget.parentScrollController != null) {
-            // 책 부분이 맨 위에 있고, 더 위로 스크롤하려고 할 때
-            final parentOffset = widget.parentScrollController!.offset;
-            if (parentOffset > 0) {
-              // 부모가 스크롤 가능한 상태면 부모로 스크롤 전달
-              widget.parentScrollController!.jumpTo(
-                parentOffset + notification.scrollDelta!,
-              );
-            }
-          }
-        }
-        
         return false;
       },
-      child: SingleChildScrollView(
+      child: CustomScrollView(
         controller: booksScrollController,
         physics: const ClampingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 16, 0, 220),
-          child: Column(
-            children: [
-              _buildBookshelfLayout(combined),
-              if (_isPageLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: CircularProgressIndicator(color: AppColors.black900),
-                  ),
-                ),
-            ],
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 220),
+            sliver: _buildBookshelfLayoutSliver(combined),
           ),
-        ),
+          if (_isPageLoading)
+            const SliverPadding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              sliver: SliverToBoxAdapter(
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.black900),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -612,6 +604,12 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     if (_hasMore && !_isPageLoading) {
       _loadNextPage();
     }
+  }
+
+  Widget _buildBookshelfLayoutSliver(List<Map<String, dynamic>> books) {
+    return SliverToBoxAdapter(
+      child: _buildBookshelfLayout(books),
+    );
   }
 
   Widget _buildBookshelfLayout(List<Map<String, dynamic>> books) {
@@ -735,40 +733,46 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   Widget _buildEmptyState({required bool isRepresentativeTab}) {
     if (widget.isOtherUser) {
       // 다른 사용자의 프로필일 때
-      return Column(
-        children: [
-          const SizedBox(height: 76),
-          Text(
-            isRepresentativeTab ? '인생 책이 없어요.' : '책장이 비어 있어요.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: AppColors.black500),
+      return SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                isRepresentativeTab ? '인생 책이 없어요.' : '책장이 비어 있어요.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: AppColors.black500),
+              ),
+            ],
           ),
-          const SizedBox(height: 90),
-        ],
+        ),
       );
     } else {
       // 내 프로필일 때
-      return Column(
-        children: [
-          const SizedBox(height: 76),
-          TextButton(
-            onPressed: () async {
-              final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
-              if (mainNavigationState != null) {
-                mainNavigationState.navigateToAddBookProfileTab();
-              }
-            },
-            child: Text(
-             '책 추가 +',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.black900,
-                fontWeight: FontWeight.w400,
+      return SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
+                  if (mainNavigationState != null) {
+                    mainNavigationState.navigateToAddBookProfileTab();
+                  }
+                },
+                child: Text(
+                 '책 추가 +',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.black900,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 90),
-        ],
+        ),
       );
     }
   }
