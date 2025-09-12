@@ -276,7 +276,15 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: NestedScrollView(
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (ScrollNotification notification) {
+            // 스크롤 이벤트가 발생하면 말풍선 숨기기
+            if (notification is ScrollUpdateNotification) {
+              _profileBooksTabViewKey.currentState?.hideBubble();
+            }
+            return false;
+          },
+          child: NestedScrollView(
             controller: _scrollController,
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               // 탭바 고정 상태를 ProfileBooksTabView에 전달
@@ -337,6 +345,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                     ],
                   ),
                 ),
+          ),
         ),
       ),
     );

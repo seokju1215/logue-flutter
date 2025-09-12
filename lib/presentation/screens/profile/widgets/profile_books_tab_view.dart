@@ -41,7 +41,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   late ScrollController booksScrollController;
   int currentIndex = 0;
   final _client = Supabase.instance.client;
-  bool _showBubble = true; // 말풍선 표시 상태 (임시로 항상 표시)
+  bool _showBubble = false; // 말풍선 표시 상태
   bool _isTabBarPinned = false; // 탭바 고정 상태
   
   // 앱 시작 시점의 세션 키 (한 번만 생성)
@@ -76,6 +76,10 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     
     pageController = PageController(initialPage: 0);
     booksScrollController = ScrollController();
+    
+    // 스크롤 이벤트 리스너 추가
+    booksScrollController.addListener(_onScroll);
+    
     _fetchTotalCount();
     _loadNextPage();
     _subscribeToBookUpdates();
@@ -245,21 +249,22 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   @override
   void dispose() {
+    booksScrollController.removeListener(_onScroll);
     pageController.dispose();
     booksScrollController.dispose();
     _bookChannel?.unsubscribe();
     super.dispose();
   }
 
-  // 말풍선을 숨기는 메서드 (임시로 비활성화)
+  // 말풍선을 숨기는 메서드
   void hideBubble() {
-    // if (_showBubble) {
-    //   setState(() {
-    //     _showBubble = false;
-    //   });
-    //   // 외부에 말풍선 상태 변경 알림
-    //   widget.onBubbleStateChanged?.call(false);
-    // }
+    if (_showBubble) {
+      setState(() {
+        _showBubble = false;
+      });
+      // 외부에 말풍선 상태 변경 알림
+      widget.onBubbleStateChanged?.call(false);
+    }
   }
 
   // 말풍선 상태를 외부에서 확인할 수 있는 getter
@@ -271,6 +276,20 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       setState(() {
         _isTabBarPinned = isPinned;
       });
+    }
+  }
+
+  // 스크롤 이벤트 핸들러
+  void _onScroll() {
+    if (_showBubble && booksScrollController.hasClients) {
+      // 스크롤이 시작되면 말풍선 숨기기
+      setState(() {
+        _showBubble = false;
+      });
+      // 외부에 말풍선 상태 변경 알림
+      widget.onBubbleStateChanged?.call(false);
+      // 외부 콜백 호출
+      widget.onBubbleHide?.call();
     }
   }
 
@@ -329,13 +348,11 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       
       // 외부에 알림
       widget.onBubbleStateChanged?.call(true);
-      
-      debugPrint('✅ 말풍선 표시 완료 - 평생 횟수: ${bubbleShowCount + 1}');
-      
     } catch (e) {
-      debugPrint('❌ 말풍선 표시 로직 오류: $e');
+      debugPrint('❌ 말풍선 체크 실패: $e');
     }
   }
+
 
   // 디버깅용: 현재 말풍선 상태 확인
   Future<void> _debugBubbleState() async {
@@ -371,25 +388,45 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     
     return GestureDetector(
       onTap: () {
-        // 화면 어디든 탭하면 말풍선 숨기기 (임시로 비활성화)
-        // if (_showBubble) {
-        //   setState(() {
-        //     _showBubble = false;
-        //   });
-        //   // 외부에 말풍선 상태 변경 알림
-        //   widget.onBubbleStateChanged?.call(false);
-        //   // 외부 콜백 호출
-        //   widget.onBubbleHide?.call();
-        // }
+        // 화면 어디든 탭하면 말풍선 숨기기
+        if (_showBubble) {
+          setState(() {
+            _showBubble = false;
+          });
+          // 외부에 말풍선 상태 변경 알림
+          widget.onBubbleStateChanged?.call(false);
+          // 외부 콜백 호출
+          widget.onBubbleHide?.call();
+        }
       },
       child: Stack(
         children: [
           SizedBox(
             height: MediaQuery.of(context).size.height, // 바텀 네비를 고려한 높이 (약 100px 여유)
-            child: PageView(
+            child: GestureDetector(
+              onPanStart: (details) {
+                // 스와이프 시작 시 말풍선 숨기기
+                if (_showBubble) {
+                  setState(() {
+                    _showBubble = false;
+                  });
+                  widget.onBubbleStateChanged?.call(false);
+                  widget.onBubbleHide?.call();
+                }
+              },
+              child: PageView(
               controller: pageController,
               physics: const ClampingScrollPhysics(),
               onPageChanged: (index) {
+                // 스와이프로 페이지가 변경되면 말풍선 숨기기
+                if (_showBubble) {
+                  setState(() {
+                    _showBubble = false;
+                  });
+                  widget.onBubbleStateChanged?.call(false);
+                  widget.onBubbleHide?.call();
+                }
+                
                 setState(() {
                   currentIndex = index;
                 });
@@ -415,6 +452,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                   child: _buildAllBooksTabContent(),
                 ),
               ],
+              ),
             ),
           ),
           // 말풍선을 탭바 바로 아래에 위치 (내 프로필이고 표시 상태일 때만)

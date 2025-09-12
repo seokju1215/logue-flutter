@@ -484,7 +484,15 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
             // ProfileBooksTabView의 말풍선 숨기기
             _profileBooksTabViewKey.currentState?.hideBubble();
           } : null,
-          child: NestedScrollView(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification notification) {
+              // 스크롤 이벤트가 발생하면 말풍선 숨기기
+              if (_isBubbleVisible && notification is ScrollUpdateNotification) {
+                _profileBooksTabViewKey.currentState?.hideBubble();
+              }
+              return false;
+            },
+            child: NestedScrollView(
               controller: _scrollController,
               headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
               // 탭바 고정 상태를 ProfileBooksTabView에 전달
@@ -585,6 +593,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                       ],
                     ),
                   ),
+            ),
           ),
         ),
       ),

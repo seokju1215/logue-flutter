@@ -643,7 +643,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
             _buildExpandableText(
               "책 정보",
               cleanDescription(book?['description']),
-              6,
+              5,
               showFullDescription,
                   () {
                 setState(() => showFullDescription = true);
