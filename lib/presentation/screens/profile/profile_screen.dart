@@ -161,7 +161,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     super.didChangeAppLifecycleState(state);
     
     // 앱이 포그라운드로 돌아올 때 UI 새로고침
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed && mounted) {
       debugPrint('🔄 앱 포그라운드 복귀 - UI 새로고침');
       setState(() {}); // UI 새로고침으로 _getFollowCounts() 재호출
     }
@@ -178,9 +178,11 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         .eq('is_read', false)
         .limit(1);
 
-    setState(() {
-      _hasUnreadNotifications = res.isNotEmpty;
-    });
+    if (mounted) {
+      setState(() {
+        _hasUnreadNotifications = res.isNotEmpty;
+      });
+    }
   }
 
   /// 프로필 안내 표시 체크 및 표시
@@ -310,9 +312,11 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     result.sort(
         (a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
 
-    setState(() {
-      books = result;
-    });
+    if (mounted) {
+      setState(() {
+        books = result;
+      });
+    }
   }
 
   void _subscribeToBookUpdates() {
@@ -368,7 +372,9 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
               await _markShowArchivedBooksChanged();
             }
             
-            setState(() => profile = newProfile as Map<String, dynamic>);
+            if (mounted) {
+              setState(() => profile = newProfile as Map<String, dynamic>);
+            }
           }
         },
       )
@@ -443,7 +449,9 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 MaterialPageRoute(builder: (_) => const NotificationScreen()),
               );
               _checkUnreadNotifications(); // 읽지 않은 알림 다시 체크
-              setState(() => _showFullBio = false);
+              if (mounted) {
+                setState(() => _showFullBio = false);
+              }
             },
           ),
         ),
@@ -460,7 +468,9 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                     _profileBooksTabViewKey.currentState?.hideBubble();
                     return;
                   }
-                  setState(() => _showFullBio = false);
+                  if (mounted) {
+                    setState(() => _showFullBio = false);
+                  }
                   final result =
                       await Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(
@@ -489,18 +499,20 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
               // 스크롤 이벤트가 발생하면 말풍선 숨기기
               if (_isBubbleVisible && notification is ScrollUpdateNotification) {
                 _profileBooksTabViewKey.currentState?.hideBubble();
-                // 스크롤을 막기 위해 위치를 원래대로 되돌림
-                _scrollController.jumpTo(0);
+                // 스크롤을 막기 위해 위치를 원래대로 되돌림 (다음 프레임에서 실행)
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _scrollController.jumpTo(0);
+                  }
+                });
               }
               return _isBubbleVisible; // 말풍선이 표시된 상태에서는 스크롤 이벤트를 막음
             },
             child: NestedScrollView(
               controller: _scrollController,
               headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-              // 탭바 고정 상태를 ProfileBooksTabView에 전달
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _profileBooksTabViewKey.currentState?.updateTabBarPinnedState(innerBoxIsScrolled);
-              });
+              // 탭바 고정 상태를 ProfileBooksTabView에 전달 (즉시 호출)
+              _profileBooksTabViewKey.currentState?.updateTabBarPinnedState(innerBoxIsScrolled);
               
               return <Widget>[
                 SliverToBoxAdapter(

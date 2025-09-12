@@ -84,7 +84,9 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     // 말풍선 표시 로직 체크
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !widget.isOtherUser) {
-        _checkAndShowBubble();
+        _checkAndShowBubble().catchError((e) {
+          // 오류 발생 시 무시 (위젯이 dispose된 경우 등)
+        });
       }
     });
   }
@@ -121,7 +123,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     if (_isPageLoading || !_hasMore) return;
 
     // 초기 로딩 중일 때는 _isPageLoading을 설정하지 않음
-    if (!_isInitialLoading) {
+    if (!_isInitialLoading && mounted) {
       setState(() {
         _isPageLoading = true;
       });
@@ -231,9 +233,13 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
             });
           }
           
-          // 데이터 다시 로드
-          await _fetchTotalCount();
-          await _loadNextPage();
+          // 데이터 다시 로드 (mounted 체크 후)
+          if (mounted) {
+            await _fetchTotalCount();
+          }
+          if (mounted) {
+            await _loadNextPage();
+          }
         },
       )
       ..subscribe();
@@ -283,8 +289,12 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       // 외부 콜백 호출
       widget.onBubbleHide?.call();
       
-      // 스크롤을 막기 위해 위치를 원래대로 되돌림
-      booksScrollController.jumpTo(0);
+      // 스크롤을 막기 위해 위치를 원래대로 되돌림 (다음 프레임에서 실행)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && booksScrollController.hasClients) {
+          booksScrollController.jumpTo(0);
+        }
+      });
     }
   }
 
@@ -379,8 +389,12 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                   widget.onBubbleStateChanged?.call(false);
                   widget.onBubbleHide?.call();
                   
-                  // 스와이프를 막기 위해 페이지를 원래대로 되돌림
-                  pageController.jumpToPage(currentIndex);
+                  // 스와이프를 막기 위해 페이지를 원래대로 되돌림 (다음 프레임에서 실행)
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && pageController.hasClients) {
+                      pageController.jumpToPage(currentIndex);
+                    }
+                  });
                 }
               },
               child: PageView(
@@ -629,7 +643,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   }
 
   void _onScrollReachBottom() {
-    if (_hasMore && !_isPageLoading) {
+    if (_hasMore && !_isPageLoading && mounted) {
       _loadNextPage();
     }
   }
@@ -665,33 +679,38 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
         return Stack(
           children: [
-            // 책들 - 드래그 앤 드롭 완전 비활성화
-            SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
-                child: Wrap(
-                  spacing: crossAxisSpacing,
-                  runSpacing: bookShelfSpacing,
-                  children: books.map((book) {
-                    final booksData = book['books'] as Map<String, dynamic>?;
-                    final imageUrl = booksData?['image'] as String? ?? '';
-                    
-                    return GestureDetector(
-                      onTap: () => _onBookTap(book),
-                      child: SizedBox(
-                        width: itemWidth,
-                        height: itemHeight,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(0),
-                          child: BookFrame(
-                            imageUrl: imageUrl,
-                          ),
+            // 책들 - archive_bottom_sheet와 동일한 방식
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: books.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: crossAxisSpacing,
+                  mainAxisSpacing: bookShelfSpacing,
+                  childAspectRatio: itemAspectRatio,
+                ),
+                itemBuilder: (context, index) {
+                  final book = books[index];
+                  final booksData = book['books'] as Map<String, dynamic>?;
+                  final imageUrl = booksData?['image'] as String? ?? '';
+                  
+                  return GestureDetector(
+                    onTap: () => _onBookTap(book),
+                    child: SizedBox(
+                      width: itemWidth,
+                      height: itemHeight,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(0),
+                        child: BookFrame(
+                          imageUrl: imageUrl,
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
+                    ),
+                  );
+                },
               ),
             ),
             // 선반들
