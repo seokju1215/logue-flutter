@@ -375,7 +375,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       child: Stack(
         children: [
           SizedBox(
-            height: MediaQuery.of(context).size.height - 200, // 바텀 네비를 고려한 높이
+            height: MediaQuery.of(context).size.height, // 바텀 네비를 고려한 높이 (약 100px 여유)
             child: PageView(
               controller: pageController,
               physics: const ClampingScrollPhysics(),
@@ -603,7 +603,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 16, 0, 220),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 220),
         child: _buildBookshelfLayout(combined),
       ),
     );
