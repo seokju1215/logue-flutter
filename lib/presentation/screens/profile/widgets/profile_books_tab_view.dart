@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
@@ -257,11 +258,15 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   // 말풍선을 숨기는 메서드
   void hideBubble() {
     if (_showBubble && mounted) {
-      setState(() {
-        _showBubble = false;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _showBubble = false;
+          });
+          // 외부에 말풍선 상태 변경 알림
+          widget.onBubbleStateChanged?.call(false);
+        }
       });
-      // 외부에 말풍선 상태 변경 알림
-      widget.onBubbleStateChanged?.call(false);
     }
   }
 
@@ -271,8 +276,12 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   // 탭바 고정 상태 업데이트 메서드
   void updateTabBarPinnedState(bool isPinned) {
     if (_isTabBarPinned != isPinned && mounted) {
-      setState(() {
-        _isTabBarPinned = isPinned;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isTabBarPinned = isPinned;
+          });
+        }
       });
     }
   }
@@ -281,18 +290,15 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   void _onScroll() {
     if (_showBubble && booksScrollController.hasClients && mounted) {
       // 스크롤이 시작되면 말풍선만 숨기기 (스크롤은 막음)
-      setState(() {
-        _showBubble = false;
-      });
-      // 외부에 말풍선 상태 변경 알림
-      widget.onBubbleStateChanged?.call(false);
-      // 외부 콜백 호출
-      widget.onBubbleHide?.call();
-      
-      // 스크롤을 막기 위해 위치를 원래대로 되돌림 (다음 프레임에서 실행)
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && booksScrollController.hasClients) {
-          booksScrollController.jumpTo(0);
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _showBubble = false;
+          });
+          // 외부에 말풍선 상태 변경 알림
+          widget.onBubbleStateChanged?.call(false);
+          // 외부 콜백 호출
+          widget.onBubbleHide?.call();
         }
       });
     }
@@ -378,26 +384,8 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       child: Stack(
         children: [
           SizedBox(
-            height: MediaQuery.of(context).size.height, // 바텀 네비를 고려한 높이 (약 100px 여유)
-            child: GestureDetector(
-              onPanStart: (details) {
-                // 스와이프 시작 시 말풍선만 숨기기 (스와이프는 막음)
-                if (_showBubble && mounted) {
-                  setState(() {
-                    _showBubble = false;
-                  });
-                  widget.onBubbleStateChanged?.call(false);
-                  widget.onBubbleHide?.call();
-                  
-                  // 스와이프를 막기 위해 페이지를 원래대로 되돌림 (다음 프레임에서 실행)
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && pageController.hasClients) {
-                      pageController.jumpToPage(currentIndex);
-                    }
-                  });
-                }
-              },
-              child: PageView(
+            height: MediaQuery.of(context).size.height,
+            child: PageView(
               controller: pageController,
               physics: _showBubble ? const NeverScrollableScrollPhysics() : const ClampingScrollPhysics(),
               onPageChanged: (index) {
@@ -437,13 +425,26 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                   child: _buildAllBooksTabContent(),
                 ),
               ],
-              ),
             ),
           ),
+          // 버블이 떠있을 때만 투명 오버레이 (스크롤과 충돌 방지)
+          if (!widget.isOtherUser && _showBubble)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  if (mounted) {
+                    setState(() => _showBubble = false);
+                    widget.onBubbleStateChanged?.call(false);
+                    widget.onBubbleHide?.call();
+                  }
+                },
+              ),
+            ),
           // 말풍선을 탭바 바로 아래에 위치 (내 프로필이고 표시 상태일 때만)
           if (!widget.isOtherUser && _showBubble)
             Positioned(
-              top: _isTabBarPinned ? 30 : 0, // 탭바가 고정되면 30px 아래, 아니면 0
+              top: _isTabBarPinned ? 30 : 0,
               right: 28,
               child: Stack(
                 children: [
@@ -456,7 +457,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                   // 텍스트 오버레이
                   Positioned.fill(
                     child: Padding(
-                      padding: const EdgeInsets.only(top:10),
+                      padding: const EdgeInsets.only(top: 10),
                       child: Center(
                         child: Text(
                           '프로필 편집에서 숨길 수 있어요',

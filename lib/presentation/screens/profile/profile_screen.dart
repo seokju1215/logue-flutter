@@ -499,14 +499,9 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
               // 스크롤 이벤트가 발생하면 말풍선 숨기기
               if (_isBubbleVisible && notification is ScrollUpdateNotification) {
                 _profileBooksTabViewKey.currentState?.hideBubble();
-                // 스크롤을 막기 위해 위치를 원래대로 되돌림 (다음 프레임에서 실행)
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    _scrollController.jumpTo(0);
-                  }
-                });
+                return true; // 스크롤 이벤트를 막음 (말풍선이 보일 때만)
               }
-              return _isBubbleVisible; // 말풍선이 표시된 상태에서는 스크롤 이벤트를 막음
+              return false; // 정상적으로 스크롤 허용
             },
             child: NestedScrollView(
               controller: _scrollController,
