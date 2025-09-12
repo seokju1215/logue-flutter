@@ -508,7 +508,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _ProfileBooksTabViewDelegate(
-                      height: 50.0, // 탭바 높이만
+                      height: 30.0, // 탭바 높이만
                       child: _buildTabsOnly(),
                     ),
                   ),

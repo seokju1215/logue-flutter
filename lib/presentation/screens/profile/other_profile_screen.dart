@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
@@ -18,9 +19,36 @@ import '../../../data/utils/firebase_analytics_util.dart';
 
 import '../../../core/widgets/profile/bio_content.dart';
 import 'widgets/profile_books_tab_view.dart';
+import 'follow/follow_tab_screen.dart';
 
 // import 'package:logue/data/utils/amplitude_util.dart';
-import 'follow/follow_tab_screen.dart';
+
+// SliverPersistentHeaderDelegate 클래스 추가
+class _ProfileBooksTabViewDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _ProfileBooksTabViewDelegate({required this.child, required this.height});
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox(
+      height: height,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return oldDelegate is _ProfileBooksTabViewDelegate && oldDelegate.height != height;
+  }
+}
 
 class OtherProfileScreen extends ConsumerStatefulWidget {
   final String userId;
@@ -42,6 +70,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   Map<String, dynamic>? profile;
   late final GetUserBooks _getUserBooks;
   List<Map<String, dynamic>> books = [];
+  final GlobalKey<ProfileBooksTabViewState> _profileBooksTabViewKey = GlobalKey<ProfileBooksTabViewState>();
+  final ValueNotifier<int> _currentTabIndexNotifier = ValueNotifier<int>(0);
 
 
   @override
@@ -171,6 +201,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   void dispose() {
     debugPrint('🔍 OtherProfileScreen dispose: ${widget.userId}');
     _scrollController.dispose();
+    _currentTabIndexNotifier.dispose();
 
     // 화면이 dispose될 때도 상태 변경 여부를 반환
     if (_hasFollowStateChanged && mounted) {
@@ -245,31 +276,42 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(25, 0, 25, 7),
-                      child: _buildProfileHeader(),
-                    ),
-                    profile?['show_archived_books'] ? SizedBox(height: 0,) :isMyProfile? const SizedBox(height: 20) :const SizedBox(height: 11),
-
-                    if ((profile?['show_archived_books'] as bool?) ?? false) ...[
-                      SizedBox(
-                        height: _calculateProfileBooksTabHeight(),
-                        child: ProfileBooksTabView(
-                          nonArchivedBooks: books,
-                          userId: profile?['id'] as String,
-                          parentScrollController: _scrollController,
-                          isOtherUser: true,
-                        ),
-                      ),
-                    ] else ...[
+        child: NestedScrollView(
+          controller: _scrollController,
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(25, 0, 25, 7),
+                  child: _buildProfileHeader(),
+                ),
+              ),
+              if ((profile?['show_archived_books'] as bool?) ?? false)
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _ProfileBooksTabViewDelegate(
+                    height: 30.0, // 탭바 높이만
+                    child: _buildTabsOnly(),
+                  ),
+                ),
+            ];
+          },
+          body: (profile?['show_archived_books'] as bool?) ?? false
+              ? GestureDetector(
+                  child: ProfileBooksTabView(
+                    key: _profileBooksTabViewKey,
+                    nonArchivedBooks: books,
+                    userId: profile?['id'] as String,
+                    parentScrollController: _scrollController,
+                    isOtherUser: true,
+                    onTabChanged: (index) {
+                      _currentTabIndexNotifier.value = index;
+                    },
+                  ),
+                )
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
                       if (books.isNotEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 26),
@@ -288,11 +330,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                         const SizedBox(height: 90),
                       ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -752,5 +791,74 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     debugPrint('  - 총 높이: $totalHeight + 32 = $finalHeight');
     
     return finalHeight ;
+  }
+
+  Widget _buildTabsOnly() {
+    return Material(
+      color: Colors.white,
+      child: SizedBox(
+        height: 30.0,
+        child: Row(
+          children: [
+            _buildTab('대표', 0),
+            _buildTab('책장', 1),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTab(String label, int index) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          _profileBooksTabViewKey.currentState?.pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+          );
+        },
+        child: ValueListenableBuilder<int>(
+          valueListenable: _currentTabIndexNotifier,
+          builder: (context, currentIndex, child) {
+            final isSelected = currentIndex == index;
+            
+            return Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Container(
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.black500, width: 1),
+                    ),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? AppColors.black900 : AppColors.black500,
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Divider(
+                      thickness: 2,
+                      height: 0,
+                      color: AppColors.black900,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 }

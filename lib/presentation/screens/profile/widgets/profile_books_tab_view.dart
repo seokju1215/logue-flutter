@@ -603,7 +603,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 220),
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 20),
         child: _buildBookshelfLayout(combined),
       ),
     );
