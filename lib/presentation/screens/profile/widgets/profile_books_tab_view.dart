@@ -18,6 +18,7 @@ class ProfileBooksTabView extends StatefulWidget {
   final VoidCallback? onBubbleHide;
   final ValueChanged<bool>? onBubbleStateChanged;
   final Map<String, dynamic>? profile;
+  final ValueChanged<int>? onTabChanged;
 
   const ProfileBooksTabView({
     super.key,
@@ -28,6 +29,7 @@ class ProfileBooksTabView extends StatefulWidget {
     this.onBubbleHide,
     this.onBubbleStateChanged,
     this.profile,
+    this.onTabChanged,
   });
 
   @override
@@ -372,25 +374,38 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       },
       child: Stack(
         children: [
-          Column(
-            children: [
-              _buildTabs(),
-              Expanded(
-                child: PageView(
-                  controller: pageController,
-                  physics: const ClampingScrollPhysics(), // 슬라이드 전환 유지, 바운스 효과 제거
-                  onPageChanged: (index) {
-                    setState(() {
-                      currentIndex = index;
-                    });
+          SizedBox(
+            height: MediaQuery.of(context).size.height - 200, // 바텀 네비를 고려한 높이
+            child: PageView(
+              controller: pageController,
+              physics: const ClampingScrollPhysics(),
+              onPageChanged: (index) {
+                setState(() {
+                  currentIndex = index;
+                });
+                widget.onTabChanged?.call(index);
+              },
+              children: [
+                NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollEndNotification) {
+                      _onScrollReachBottom();
+                    }
+                    return false;
                   },
-                  children: [
-                    _buildRepresentativeTab(),
-                    _buildAllBooksTab(),
-                  ],
+                  child: _buildRepresentativeTabContent(),
                 ),
-              ),
-            ],
+                NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollEndNotification) {
+                      _onScrollReachBottom();
+                    }
+                    return false;
+                  },
+                  child: _buildAllBooksTabContent(),
+                ),
+              ],
+            ),
           ),
           // 말풍선을 탭바 바로 아래에 위치 (내 프로필이고 표시 상태일 때만)
           if (!widget.isOtherUser && _showBubble)
@@ -431,65 +446,6 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     );
   }
 
-  Widget _buildTabs() {
-    return Material(
-      color: Colors.white,
-      child: Row(
-        children: [
-          _buildTab('대표', 0),
-          _buildTab('책장', 1),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTab(String label, int index) {
-    final isSelected = currentIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: _showBubble ? null : () {
-          pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeInOut,
-          );
-        },
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            Container(
-              height: 30,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: AppColors.black500, width: 1),
-                ),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? AppColors.black900 : AppColors.black500,
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ),
-            if (isSelected)
-              const Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Divider(
-                  thickness: 2,
-                  height: 0,
-                  color: AppColors.black900,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
 
 
@@ -501,58 +457,113 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       return _buildEmptyState(isRepresentativeTab: true);
     }
     
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 23,
-              mainAxisSpacing: 30,
-              childAspectRatio: 98 / 145,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final book = books[index];
-                final imageUrl = book['books']?['image'] ?? '';
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 23,
+          mainAxisSpacing: 30,
+          childAspectRatio: 98 / 145,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final book = books[index];
+            final imageUrl = book['books']?['image'] ?? '';
 
-                return GestureDetector(
-                  onTap: () {
-                    if (_onBookTap != null) {
-                      _onBookTap(book);
-                    }
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.black300, width: 0.5),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(0),
-                      child: imageUrl.isNotEmpty
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: AppColors.black100,
-                                  child: const Icon(Icons.book, color: AppColors.black300),
-                                );
-                              },
-                            )
-                          : Container(
+            return GestureDetector(
+              onTap: () {
+                if (_onBookTap != null) {
+                  _onBookTap(book);
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.black300, width: 0.5),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(0),
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
                               color: AppColors.black100,
                               child: const Icon(Icons.book, color: AppColors.black300),
-                            ),
-                    ),
-                  ),
-                );
-              },
-              childCount: books.length,
-            ),
-          ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: AppColors.black100,
+                          child: const Icon(Icons.book, color: AppColors.black300),
+                        ),
+                ),
+              ),
+            );
+          },
+          childCount: books.length,
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildRepresentativeTabContent() {
+    final books = widget.nonArchivedBooks;
+    if (books.isEmpty) {
+      return _buildEmptyStateContent(isRepresentativeTab: true);
+    }
+    
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 23,
+            mainAxisSpacing: 30,
+            childAspectRatio: 98 / 145,
+          ),
+          itemCount: books.length,
+          itemBuilder: (context, index) {
+            final book = books[index];
+            final imageUrl = book['books']?['image'] ?? '';
+
+            return GestureDetector(
+              onTap: () {
+                if (_onBookTap != null) {
+                  _onBookTap(book);
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.black300, width: 0.5),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(0),
+                  child: imageUrl.isNotEmpty
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: AppColors.black100,
+                              child: const Icon(Icons.book, color: AppColors.black300),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: AppColors.black100,
+                          child: const Icon(Icons.book, color: AppColors.black300),
+                        ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -560,7 +571,9 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   Widget _buildAllBooksTab() {
     if (_isInitialLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const SliverToBoxAdapter(
+        child: Center(child: CircularProgressIndicator()),
+      );
     }
     
     // get_archived_books_page에서 가져온 데이터만 사용 (이미 archived_order_index 기준으로 정렬됨)
@@ -570,32 +583,28 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       return _buildEmptyState(isRepresentativeTab: false);
     }
     
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollEndNotification) {
-          _onScrollReachBottom();
-        }
-        
-        return false;
-      },
-      child: CustomScrollView(
-        controller: booksScrollController,
-        physics: const ClampingScrollPhysics(),
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(0, 16, 0, 220),
-            sliver: _buildBookshelfLayoutSliver(combined),
-          ),
-          if (_isPageLoading)
-            const SliverPadding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              sliver: SliverToBoxAdapter(
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.black900),
-                ),
-              ),
-            ),
-        ],
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 220),
+      sliver: _buildBookshelfLayoutSliver(combined),
+    );
+  }
+
+  Widget _buildAllBooksTabContent() {
+    if (_isInitialLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    // get_archived_books_page에서 가져온 데이터만 사용 (이미 archived_order_index 기준으로 정렬됨)
+    final combined = _localArchivedBooks;
+    
+    if (combined.isEmpty) {
+      return _buildEmptyStateContent(isRepresentativeTab: false);
+    }
+    
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 220),
+        child: _buildBookshelfLayout(combined),
       ),
     );
   }
@@ -733,7 +742,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   Widget _buildEmptyState({required bool isRepresentativeTab}) {
     if (widget.isOtherUser) {
       // 다른 사용자의 프로필일 때
-      return SingleChildScrollView(
+      return SliverToBoxAdapter(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -749,7 +758,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       );
     } else {
       // 내 프로필일 때
-      return SingleChildScrollView(
+      return SliverToBoxAdapter(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -772,6 +781,49 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
               ),
             ],
           ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildEmptyStateContent({required bool isRepresentativeTab}) {
+    if (widget.isOtherUser) {
+      // 다른 사용자의 프로필일 때
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              isRepresentativeTab ? '인생 책이 없어요.' : '책장이 비어 있어요.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: AppColors.black500),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // 내 프로필일 때
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () async {
+                final mainNavigationState = context.findAncestorStateOfType<MainNavigationScreenState>();
+                if (mainNavigationState != null) {
+                  mainNavigationState.navigateToAddBookProfileTab();
+                }
+              },
+              child: Text(
+               '책 추가 +',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.black900,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/presentation/screens/add_book/add_book_screen.dart';
@@ -43,7 +44,10 @@ class _ProfileBooksTabViewDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
+    return SizedBox(
+      height: height,
+      child: child,
+    );
   }
 
   @override
@@ -127,7 +131,8 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
   bool _hasUnreadNotifications = false;
   bool _hasShownProfileAnnouncement = false; // 프로필 안내 표시 여부
   final GlobalKey<ProfileBooksTabViewState> _profileBooksTabViewKey = GlobalKey<ProfileBooksTabViewState>();
-  bool _isBubbleVisible = false; // 말풍선 표시 상태
+  bool _isBubbleVisible = false;
+  final ValueNotifier<int> _currentTabIndexNotifier = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -236,6 +241,7 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     _scrollController.dispose();
     _profileChannel.unsubscribe();
     _bookChannel.unsubscribe();
+    _currentTabIndexNotifier.dispose();
     super.dispose();
   }
 
@@ -567,32 +573,35 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _ProfileBooksTabViewDelegate(
-                      height: MediaQuery.of(context).size.height, // 화면 높이의 70% 사용
-                      child: GestureDetector(
-                        onTap: _isBubbleVisible ? () {
-                          // ProfileBooksTabView의 말풍선 숨기기
-                          _profileBooksTabViewKey.currentState?.hideBubble();
-                        } : null,
-                        child: ProfileBooksTabView(
-                          key: _profileBooksTabViewKey,
-                          nonArchivedBooks: books,
-                          userId: profile?['id'] as String,
-                          parentScrollController: _scrollController,
-                          isOtherUser: false,
-                          profile: profile,
-                          onBubbleStateChanged: (isVisible) {
-                            setState(() {
-                              _isBubbleVisible = isVisible;
-                            });
-                          },
-                        ),
-                      ),
+                      height: 50.0, // 탭바 높이만
+                      child: _buildTabsOnly(),
                     ),
                   ),
               ];
             },
             body: (profile?['show_archived_books'] as bool?) ?? false
-                ? const SizedBox.shrink() // ProfileBooksTabView가 body를 처리
+                ? GestureDetector(
+                    onTap: _isBubbleVisible ? () {
+                      // ProfileBooksTabView의 말풍선 숨기기
+                      _profileBooksTabViewKey.currentState?.hideBubble();
+                    } : null,
+                    child: ProfileBooksTabView(
+                      key: _profileBooksTabViewKey,
+                      nonArchivedBooks: books,
+                      userId: profile?['id'] as String,
+                      parentScrollController: _scrollController,
+                      isOtherUser: false,
+                      profile: profile,
+                      onBubbleStateChanged: (isVisible) {
+                        setState(() {
+                          _isBubbleVisible = isVisible;
+                        });
+                      },
+                      onTabChanged: (index) {
+                        _currentTabIndexNotifier.value = index;
+                      },
+                    ),
+                  )
                 : SingleChildScrollView(
                     child: Column(
                       children: [
@@ -970,6 +979,75 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         margin: const EdgeInsets.symmetric(horizontal: 90, vertical: 44 ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         backgroundColor: AppColors.black500,
+      ),
+    );
+  }
+
+  Widget _buildTabsOnly() {
+    return Material(
+      color: Colors.white,
+      child: SizedBox(
+        height: 50.0,
+        child: Row(
+          children: [
+            _buildTab('대표', 0),
+            _buildTab('책장', 1),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTab(String label, int index) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          _profileBooksTabViewKey.currentState?.pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+          );
+        },
+        child: ValueListenableBuilder<int>(
+          valueListenable: _currentTabIndexNotifier,
+          builder: (context, currentIndex, child) {
+            final isSelected = currentIndex == index;
+            
+            return Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Container(
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.black500, width: 1),
+                    ),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? AppColors.black900 : AppColors.black500,
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Divider(
+                      thickness: 2,
+                      height: 0,
+                      color: AppColors.black900,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
