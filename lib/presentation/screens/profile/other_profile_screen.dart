@@ -281,8 +281,10 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
             // 스크롤 이벤트가 발생하면 말풍선 숨기기
             if (notification is ScrollUpdateNotification) {
               _profileBooksTabViewKey.currentState?.hideBubble();
+              // 스크롤을 막기 위해 위치를 원래대로 되돌림
+              _scrollController.jumpTo(0);
             }
-            return false;
+            return true; // 스크롤 이벤트를 막음
           },
           child: NestedScrollView(
             controller: _scrollController,

@@ -282,7 +282,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   // 스크롤 이벤트 핸들러
   void _onScroll() {
     if (_showBubble && booksScrollController.hasClients) {
-      // 스크롤이 시작되면 말풍선 숨기기
+      // 스크롤이 시작되면 말풍선만 숨기기 (스크롤은 막음)
       setState(() {
         _showBubble = false;
       });
@@ -290,6 +290,9 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       widget.onBubbleStateChanged?.call(false);
       // 외부 콜백 호출
       widget.onBubbleHide?.call();
+      
+      // 스크롤을 막기 위해 위치를 원래대로 되돌림
+      booksScrollController.jumpTo(0);
     }
   }
 
@@ -405,18 +408,21 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
             height: MediaQuery.of(context).size.height, // 바텀 네비를 고려한 높이 (약 100px 여유)
             child: GestureDetector(
               onPanStart: (details) {
-                // 스와이프 시작 시 말풍선 숨기기
+                // 스와이프 시작 시 말풍선만 숨기기 (스와이프는 막음)
                 if (_showBubble) {
                   setState(() {
                     _showBubble = false;
                   });
                   widget.onBubbleStateChanged?.call(false);
                   widget.onBubbleHide?.call();
+                  
+                  // 스와이프를 막기 위해 페이지를 원래대로 되돌림
+                  pageController.jumpToPage(currentIndex);
                 }
               },
               child: PageView(
               controller: pageController,
-              physics: const ClampingScrollPhysics(),
+              physics: _showBubble ? const NeverScrollableScrollPhysics() : const ClampingScrollPhysics(),
               onPageChanged: (index) {
                 // 스와이프로 페이지가 변경되면 말풍선 숨기기
                 if (_showBubble) {
@@ -761,6 +767,16 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   }
 
   void _onBookTap(Map<String, dynamic> book) async {
+    // 말풍선이 표시된 상태에서는 책 탭을 막고 말풍선만 숨기기
+    if (_showBubble) {
+      setState(() {
+        _showBubble = false;
+      });
+      widget.onBubbleStateChanged?.call(false);
+      widget.onBubbleHide?.call();
+      return; // 책 상세 화면으로 이동하지 않음
+    }
+    
     // nonArchivedBooks와 _localArchivedBooks의 구조가 다를 수 있음
     final bookId = book['book_id'] as String? ?? book['id'] as String?;
     final userBookId = book['id'] as String? ?? book['user_book_id'] as String?;
