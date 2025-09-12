@@ -64,14 +64,11 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🔍 ProfileBooksTabView initState 시작');
     
     // 세션 키가 없으면 생성 (앱 시작 시점에 한 번만)
     if (_sessionKey == null) {
       _sessionKey = 'bubble_shown_session_${DateTime.now().millisecondsSinceEpoch}';
-      debugPrint('🔍 새 세션 키 생성: $_sessionKey');
     } else {
-      debugPrint('🔍 기존 세션 키 사용: $_sessionKey');
     }
     
     pageController = PageController(initialPage: 0);
@@ -85,15 +82,9 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     _subscribeToBookUpdates();
     
     // 말풍선 표시 로직 체크
-    debugPrint('🔍 PostFrameCallback 등록됨');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('🔍 PostFrameCallback 실행됨 - isOtherUser: ${widget.isOtherUser}');
-      if (!widget.isOtherUser) {
-        debugPrint('🔍 내 프로필이므로 말풍선 체크 시작');
-        _debugBubbleState(); // 디버그 정보 출력
+      if (mounted && !widget.isOtherUser) {
         _checkAndShowBubble();
-      } else {
-        debugPrint('🔍 다른 사용자 프로필이므로 말풍선 체크 안함');
       }
     });
   }
@@ -230,7 +221,6 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
           if (!mounted) return;
           
           // archive_tab에서 순서 변경 시 ProfileBooksTabView도 새로고침
-          debugPrint('🔄 ProfileBooksTabView - user_books 변경 감지: ${payload.eventType}');
           
           // 로컬 데이터 초기화 후 다시 로드
           if (mounted) {
@@ -301,18 +291,14 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   // 말풍선 표시 로직 체크 (접속마다 한번씩 평생 2회)
   Future<void> _checkAndShowBubble() async {
     try {
-      debugPrint('🔍 말풍선 체크 시작');
-      
       // 내 프로필이 아니면 표시하지 않음
       if (widget.isOtherUser) {
-        debugPrint('🔍 다른 사용자 프로필 - 말풍선 표시 안함');
         return;
       }
       
       // show_archived_books가 false면 표시하지 않음
       final showArchivedBooks = (widget.profile?['show_archived_books'] as bool?) ?? false;
       if (!showArchivedBooks) {
-        debugPrint('🔍 show_archived_books가 false - 말풍선 표시 안함');
         return;
       }
       
@@ -320,26 +306,20 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       
       // 평생 표시 횟수 확인 (최대 2회)
       final bubbleShowCount = prefs.getInt('bubble_show_count') ?? 0;
-      debugPrint('🔍 평생 표시 횟수: $bubbleShowCount');
       
       if (bubbleShowCount >= 2) {
-        debugPrint('🔍 평생 2회 초과 - 말풍선 표시 안함');
         return;
       }
       
       // 현재 세션에서 이미 표시했는지 확인
       final currentSessionKey = _sessionKey!;
       final hasShownInCurrentSession = prefs.getBool(currentSessionKey) ?? false;
-      debugPrint('🔍 현재 세션 키: $currentSessionKey');
-      debugPrint('🔍 현재 세션에서 표시됨: $hasShownInCurrentSession');
       
       if (hasShownInCurrentSession) {
-        debugPrint('🔍 현재 세션에서 이미 표시됨 - 말풍선 표시 안함');
         return;
       }
       
       // 모든 조건을 만족하면 말풍선 표시
-      debugPrint('🔍 모든 조건 만족 - 말풍선 표시');
       
       // 세션 키 저장 (현재 세션에서 표시했음을 기록)
       await prefs.setBool(currentSessionKey, true);
@@ -356,32 +336,12 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       // 외부에 알림
       widget.onBubbleStateChanged?.call(true);
     } catch (e) {
-      debugPrint('❌ 말풍선 체크 실패: $e');
+      // 말풍선 체크 실패 시 무시
     }
   }
 
 
   // 디버깅용: 현재 말풍선 상태 확인
-  Future<void> _debugBubbleState() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final bubbleShowCount = prefs.getInt('bubble_show_count') ?? 0;
-      final currentSessionKey = _sessionKey!;
-      final hasShownInCurrentSession = prefs.getBool(currentSessionKey) ?? false;
-      final showArchivedBooks = (widget.profile?['show_archived_books'] as bool?) ?? false;
-      
-      debugPrint('🔍 === 말풍선 디버그 정보 ===');
-      debugPrint('🔍 show_archived_books: $showArchivedBooks');
-      debugPrint('🔍 bubble_show_count: $bubbleShowCount');
-      debugPrint('🔍 current_session_key: $currentSessionKey');
-      debugPrint('🔍 has_shown_in_current_session: $hasShownInCurrentSession');
-      debugPrint('🔍 _showBubble: $_showBubble');
-      debugPrint('🔍 isOtherUser: ${widget.isOtherUser}');
-      debugPrint('🔍 ========================');
-    } catch (e) {
-      debugPrint('❌ 말풍선 디버그 오류: $e');
-    }
-  }
 
 
 
@@ -391,7 +351,6 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🔍 ProfileBooksTabView build - _showBubble: $_showBubble, isOtherUser: ${widget.isOtherUser}');
     
     return GestureDetector(
       onTap: () {
@@ -785,10 +744,9 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     final bookId = book['book_id'] as String? ?? book['id'] as String?;
     final userBookId = book['id'] as String? ?? book['user_book_id'] as String?;
     
-    debugPrint('🔍 ProfileBooksTabView - 책 탭됨: bookId=$bookId, userBookId=$userBookId, userId=${widget.userId}');
     
     if (bookId == null || userBookId == null) {
-      debugPrint('❌ 책 정보가 누락되었습니다: book=$book, bookId=$bookId, userBookId=$userBookId');
+      // 책 정보가 누락됨
       return;
     }
     
