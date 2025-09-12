@@ -233,11 +233,13 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
           debugPrint('🔄 ProfileBooksTabView - user_books 변경 감지: ${payload.eventType}');
           
           // 로컬 데이터 초기화 후 다시 로드
-          setState(() {
-            _localArchivedBooks.clear();
-            _offset = 0;
-            _hasMore = true;
-          });
+          if (mounted) {
+            setState(() {
+              _localArchivedBooks.clear();
+              _offset = 0;
+              _hasMore = true;
+            });
+          }
           
           // 데이터 다시 로드
           await _fetchTotalCount();
@@ -258,7 +260,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   // 말풍선을 숨기는 메서드
   void hideBubble() {
-    if (_showBubble) {
+    if (_showBubble && mounted) {
       setState(() {
         _showBubble = false;
       });
@@ -272,7 +274,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   // 탭바 고정 상태 업데이트 메서드
   void updateTabBarPinnedState(bool isPinned) {
-    if (_isTabBarPinned != isPinned) {
+    if (_isTabBarPinned != isPinned && mounted) {
       setState(() {
         _isTabBarPinned = isPinned;
       });
@@ -281,7 +283,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   // 스크롤 이벤트 핸들러
   void _onScroll() {
-    if (_showBubble && booksScrollController.hasClients) {
+    if (_showBubble && booksScrollController.hasClients && mounted) {
       // 스크롤이 시작되면 말풍선만 숨기기 (스크롤은 막음)
       setState(() {
         _showBubble = false;
@@ -345,9 +347,11 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       // 평생 표시 횟수 증가
       await prefs.setInt('bubble_show_count', bubbleShowCount + 1);
       
-      setState(() {
-        _showBubble = true;
-      });
+      if (mounted) {
+        setState(() {
+          _showBubble = true;
+        });
+      }
       
       // 외부에 알림
       widget.onBubbleStateChanged?.call(true);
@@ -392,7 +396,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     return GestureDetector(
       onTap: () {
         // 화면 어디든 탭하면 말풍선 숨기기
-        if (_showBubble) {
+        if (_showBubble && mounted) {
           setState(() {
             _showBubble = false;
           });
@@ -409,7 +413,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
             child: GestureDetector(
               onPanStart: (details) {
                 // 스와이프 시작 시 말풍선만 숨기기 (스와이프는 막음)
-                if (_showBubble) {
+                if (_showBubble && mounted) {
                   setState(() {
                     _showBubble = false;
                   });
@@ -425,7 +429,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
               physics: _showBubble ? const NeverScrollableScrollPhysics() : const ClampingScrollPhysics(),
               onPageChanged: (index) {
                 // 스와이프로 페이지가 변경되면 말풍선 숨기기
-                if (_showBubble) {
+                if (_showBubble && mounted) {
                   setState(() {
                     _showBubble = false;
                   });
@@ -433,9 +437,11 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                   widget.onBubbleHide?.call();
                 }
                 
-                setState(() {
-                  currentIndex = index;
-                });
+                if (mounted) {
+                  setState(() {
+                    currentIndex = index;
+                  });
+                }
                 widget.onTabChanged?.call(index);
               },
               children: [
@@ -700,35 +706,33 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
         return Stack(
           children: [
-            // 책들
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: crossAxisSpacing,
-                  mainAxisSpacing: bookShelfSpacing, // 동적 간격 사용
-                  childAspectRatio: itemAspectRatio,
-                ),
-                itemCount: books.length,
-                itemBuilder: (context, index) {
-                  final book = books[index];
-                  final booksData = book['books'] as Map<String, dynamic>?;
-                  final imageUrl = booksData?['image'] as String? ?? '';
-                  
-                  return SizedBox(
-                    width: itemWidth,
-                    height: itemHeight,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(0),
-                      child: BookFrame(
-                        imageUrl: imageUrl,
+            // 책들 - 드래그 앤 드롭 완전 비활성화
+            SizedBox(
+              width: double.infinity,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
+                child: Wrap(
+                  spacing: crossAxisSpacing,
+                  runSpacing: bookShelfSpacing,
+                  children: books.map((book) {
+                    final booksData = book['books'] as Map<String, dynamic>?;
+                    final imageUrl = booksData?['image'] as String? ?? '';
+                    
+                    return GestureDetector(
+                      onTap: () => _onBookTap(book),
+                      child: SizedBox(
+                        width: itemWidth,
+                        height: itemHeight,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(0),
+                          child: BookFrame(
+                            imageUrl: imageUrl,
+                          ),
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  }).toList(),
+                ),
               ),
             ),
             // 선반들
@@ -768,7 +772,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   void _onBookTap(Map<String, dynamic> book) async {
     // 말풍선이 표시된 상태에서는 책 탭을 막고 말풍선만 숨기기
-    if (_showBubble) {
+    if (_showBubble && mounted) {
       setState(() {
         _showBubble = false;
       });
