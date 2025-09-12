@@ -329,7 +329,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                     children: [
                       if (books.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 26),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 26),
                           child: _buildBookGrid(),
                         ),
                         const SizedBox(height: 20),
