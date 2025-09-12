@@ -276,23 +276,11 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (ScrollNotification notification) {
-            // 스크롤 이벤트가 발생하면 말풍선 숨기기
-            if (notification is ScrollUpdateNotification) {
-              _profileBooksTabViewKey.currentState?.hideBubble();
-              // 스크롤을 막기 위해 위치를 원래대로 되돌림
-              _scrollController.jumpTo(0);
-            }
-            return true; // 스크롤 이벤트를 막음
-          },
-          child: NestedScrollView(
-            controller: _scrollController,
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              // 탭바 고정 상태를 ProfileBooksTabView에 전달
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _profileBooksTabViewKey.currentState?.updateTabBarPinnedState(innerBoxIsScrolled);
-              });
+        child: NestedScrollView(
+          controller: _scrollController,
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            // 탭바 고정 상태를 ProfileBooksTabView에 전달 (즉시 호출)
+            _profileBooksTabViewKey.currentState?.updateTabBarPinnedState(innerBoxIsScrolled);
               
               return [
               SliverToBoxAdapter(
@@ -349,7 +337,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                 ),
           ),
         ),
-      ),
     );
   }
 
