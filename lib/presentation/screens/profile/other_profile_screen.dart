@@ -277,9 +277,14 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       ),
       body: SafeArea(
         child: NestedScrollView(
-          controller: _scrollController,
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
+            controller: _scrollController,
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              // 탭바 고정 상태를 ProfileBooksTabView에 전달
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _profileBooksTabViewKey.currentState?.updateTabBarPinnedState(innerBoxIsScrolled);
+              });
+              
+              return [
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(25, 0, 25, 7),

@@ -485,8 +485,13 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
             _profileBooksTabViewKey.currentState?.hideBubble();
           } : null,
           child: NestedScrollView(
-            controller: _scrollController,
-            headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+              controller: _scrollController,
+              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+              // 탭바 고정 상태를 ProfileBooksTabView에 전달
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _profileBooksTabViewKey.currentState?.updateTabBarPinnedState(innerBoxIsScrolled);
+              });
+              
               return <Widget>[
                 SliverToBoxAdapter(
                   child: Column(

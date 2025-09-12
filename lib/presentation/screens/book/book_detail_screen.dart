@@ -35,8 +35,6 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
   bool showAllAuthors = false;
   Map<String, List<Map<String, dynamic>>> authorBooks = {};
   final HtmlUnescape _unescape = HtmlUnescape();
-  String truncatedText = '';
-  bool shouldShowMoreButton = false;
 
   @override
   void initState() {
@@ -414,8 +412,21 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     if (content == null || content.trim().isEmpty)
       return const SizedBox.shrink();
 
-    final lines = content.trim().split(RegExp(r'\r?\n'));
-    final showMore = lines.length > maxLines;
+    // 실제 화면에서의 줄 수를 정확히 계산
+    final textStyle = const TextStyle(fontSize: 14, color: AppColors.black500, height: 2);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - 44; // 좌우 패딩 22 * 2
+
+    final textSpan = TextSpan(text: content, style: textStyle);
+    final textPainter = TextPainter(
+      text: textSpan,
+      textDirection: TextDirection.ltr,
+      maxLines: null,
+    );
+    textPainter.layout(maxWidth: availableWidth);
+    
+    final actualLineCount = textPainter.computeLineMetrics().length;
+    final showMore = actualLineCount > maxLines;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,14 +443,12 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                   style:
                       const TextStyle(color: AppColors.black900, fontSize: 15)),
               const SizedBox(height: 12),
-              ...lines
-                  .take(expanded ? lines.length : maxLines)
-                  .map((line) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(line,
-                            style: const TextStyle(
-                                fontSize: 14, color: AppColors.black500, height : 2)),
-                      )),
+              Text(
+                content,
+                style: textStyle,
+                maxLines: expanded ? null : maxLines,
+                overflow: expanded ? null : TextOverflow.ellipsis,
+              ),
               const SizedBox(height: 30),
               if (showMore && !expanded)
                 Center(
@@ -590,52 +599,6 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     return _unescape.convert(rawDescription).trim();
   }
 
-  void _truncateToFitWithButton() {
-    final fullText = book?['reviewContent'] ?? '';
-    final textStyle = const TextStyle(fontSize: 14, color: AppColors.black500, height: 2, letterSpacing: -0.32);
-
-    // "더보기"가 붙은 텍스트로 줄 수 계산
-    final testText = fullText + '... 더보기';
-    final testSpan = TextSpan(text: testText, style: textStyle);
-    final testTp = TextPainter(
-      text: testSpan,
-      textDirection: TextDirection.ltr,
-      maxLines: null, // 줄 수 제한 없이 전체 줄 수 계산
-    );
-    testTp.layout(maxWidth: MediaQuery.of(context).size.width - 56);
-
-    // 실제 줄 수 계산
-    final lineCount = testTp.computeLineMetrics().length;
-
-    if (lineCount <= 6) {
-      setState(() {
-        truncatedText = fullText;
-        shouldShowMoreButton = false;
-      });
-      return;
-    }
-
-    // 6줄에 맞게 자르기
-    int endIndex = fullText.length;
-    while (endIndex > 0) {
-      final cutText = fullText.substring(0, endIndex) + '... 더보기';
-      final cutSpan = TextSpan(text: cutText, style: textStyle);
-      final cutTp = TextPainter(
-        text: cutSpan,
-        textDirection: TextDirection.ltr,
-        maxLines: null,
-      );
-      cutTp.layout(maxWidth: MediaQuery.of(context).size.width - 56);
-
-      if (cutTp.computeLineMetrics().length <= 6) break;
-      endIndex--;
-    }
-
-    setState(() {
-      truncatedText = fullText.substring(0, endIndex) + '... ';
-      shouldShowMoreButton = true;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -680,7 +643,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
             _buildExpandableText(
               "책 정보",
               cleanDescription(book?['description']),
-              5,
+              6,
               showFullDescription,
                   () {
                 setState(() => showFullDescription = true);

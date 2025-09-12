@@ -41,7 +41,8 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   late ScrollController booksScrollController;
   int currentIndex = 0;
   final _client = Supabase.instance.client;
-  bool _showBubble = false; // 말풍선 표시 상태
+  bool _showBubble = true; // 말풍선 표시 상태 (임시로 항상 표시)
+  bool _isTabBarPinned = false; // 탭바 고정 상태
   
   // 앱 시작 시점의 세션 키 (한 번만 생성)
   static String? _sessionKey;
@@ -250,19 +251,28 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     super.dispose();
   }
 
-  // 말풍선을 숨기는 메서드
+  // 말풍선을 숨기는 메서드 (임시로 비활성화)
   void hideBubble() {
-    if (_showBubble) {
-      setState(() {
-        _showBubble = false;
-      });
-      // 외부에 말풍선 상태 변경 알림
-      widget.onBubbleStateChanged?.call(false);
-    }
+    // if (_showBubble) {
+    //   setState(() {
+    //     _showBubble = false;
+    //   });
+    //   // 외부에 말풍선 상태 변경 알림
+    //   widget.onBubbleStateChanged?.call(false);
+    // }
   }
 
   // 말풍선 상태를 외부에서 확인할 수 있는 getter
   bool get isBubbleVisible => _showBubble;
+
+  // 탭바 고정 상태 업데이트 메서드
+  void updateTabBarPinnedState(bool isPinned) {
+    if (_isTabBarPinned != isPinned) {
+      setState(() {
+        _isTabBarPinned = isPinned;
+      });
+    }
+  }
 
   // 말풍선 표시 로직 체크 (접속마다 한번씩 평생 2회)
   Future<void> _checkAndShowBubble() async {
@@ -361,16 +371,16 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     
     return GestureDetector(
       onTap: () {
-        // 화면 어디든 탭하면 말풍선 숨기기
-        if (_showBubble) {
-          setState(() {
-            _showBubble = false;
-          });
-          // 외부에 말풍선 상태 변경 알림
-          widget.onBubbleStateChanged?.call(false);
-          // 외부 콜백 호출
-          widget.onBubbleHide?.call();
-        }
+        // 화면 어디든 탭하면 말풍선 숨기기 (임시로 비활성화)
+        // if (_showBubble) {
+        //   setState(() {
+        //     _showBubble = false;
+        //   });
+        //   // 외부에 말풍선 상태 변경 알림
+        //   widget.onBubbleStateChanged?.call(false);
+        //   // 외부 콜백 호출
+        //   widget.onBubbleHide?.call();
+        // }
       },
       child: Stack(
         children: [
@@ -410,7 +420,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
           // 말풍선을 탭바 바로 아래에 위치 (내 프로필이고 표시 상태일 때만)
           if (!widget.isOtherUser && _showBubble)
             Positioned(
-              top: 26, // 탭바 높이만큼 아래
+              top: _isTabBarPinned ? 30 : 0, // 탭바가 고정되면 30px 아래, 아니면 0
               right: 28,
               child: Stack(
                 children: [
