@@ -449,21 +449,32 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                 maxLines: expanded ? null : maxLines,
                 overflow: expanded ? null : TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 50,
+          child: Column(
+            children: [
               if (showMore && !expanded)
                 Center(
                   child: TextButton(
                     onPressed: onToggle,
                     child: const Text("더보기",
                         style:
-                            TextStyle(color: AppColors.black900, fontSize: 12, fontWeight: FontWeight.w400)),
+                        TextStyle(color: AppColors.black900, fontSize: 12, fontWeight: FontWeight.w400)),
                   ),
                 ),
-              const SizedBox(height: 10),
+              showMore && !expanded ?
+              SizedBox(
+                height: 0,
+              ):SizedBox(
+                height: 30,
+              ),
+              const Divider(height: 1, color: AppColors.black300),
             ],
           ),
         ),
-        const Divider(height: 1, color: AppColors.black300),
       ],
     );
   }
