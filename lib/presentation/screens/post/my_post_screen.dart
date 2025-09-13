@@ -45,30 +45,20 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
     }
 
     try {
-      // ✅ 전달받은 booksData가 있으면 사용 (빠른 로딩)
+      // ✅ 전달된 booksData가 있으면 빠르게 사용
       if (widget.booksData != null && widget.booksData!.isNotEmpty) {
         debugPrint('🚀 전달받은 booksData 사용 - ${widget.booksData!.length}개 항목');
         
-        final mappedPosts = widget.booksData!.map((e) {
-          final post = BookPostModel.fromMap(e);
-          return post;
-        }).toList();
+        final mappedPosts = widget.booksData!.map((e) => BookPostModel.fromMap(e)).toList();
 
         int index = 0;
+        bool needsScroll = false;
         if (widget.userBookId != null) {
-          debugPrint('🔍 userBookId로 검색: ${widget.userBookId}');
           final foundIndex = mappedPosts.indexWhere((post) => post.id == widget.userBookId);
-          if (foundIndex != -1) {
-            index = foundIndex;
-            debugPrint('✅ userBookId로 찾은 인덱스: $index');
-          }
+          if (foundIndex != -1) { index = foundIndex; needsScroll = true; }
         } else if (widget.bookId != null) {
-          debugPrint('🔍 bookId로 검색: ${widget.bookId}');
           final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
-          if (foundIndex != -1) {
-            index = foundIndex;
-            debugPrint('✅ bookId로 찾은 인덱스: $index');
-          }
+          if (foundIndex != -1) { index = foundIndex; needsScroll = true; }
         }
 
         if (!mounted) return;
@@ -77,22 +67,22 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
           posts = mappedPosts;
           initialIndex = index >= 0 ? index : 0;
           _itemKeys = List.generate(mappedPosts.length, (_) => GlobalKey());
-          isLoading = false;
+          _isScrollingToTarget = needsScroll; // ✅ 스크롤 필요 시 오버레이 켬
+          isLoading = false;                   // ✅ 리스트는 즉시 렌더(오버레이로 가림)
         });
 
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialIndex());
+        if (needsScroll) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialIndex());
+        }
         return;
       }
 
-      // ✅ 전달받은 데이터가 없으면 기존 방식으로 서버에서 가져오기
+      // ✅ 서버에서 가져오기
       debugPrint('🔍 get_visible_user_books 호출 중...');
-      final response = await client
-          .rpc('get_visible_user_books', params: {'target_user_id': userId});
-
+      final response = await client.rpc('get_visible_user_books', params: {'target_user_id': userId});
       if (!mounted) return;
 
       debugPrint('🔍 응답 데이터: ${response.length}개 항목');
-      
       if (response.isEmpty) {
         debugPrint('❌ 응답이 비어있습니다.');
         throw Exception('데이터를 불러올 수 없습니다.');
@@ -100,42 +90,31 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
       final fetched = List<Map<String, dynamic>>.from(response);
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
-      
       if (userPosts.isEmpty) {
         debugPrint('❌ 해당 사용자의 포스트가 없습니다.');
         throw Exception('해당 사용자의 게시글이 없습니다.');
       }
-      
-      final mappedPosts = userPosts.map((e) {
-        final post = BookPostModel.fromMap(e);
-        return post;
-      }).toList();
+
+      final mappedPosts = userPosts.map((e) => BookPostModel.fromMap(e)).toList();
 
       int index = 0;
       bool needsScroll = false;
-      
       if (widget.userBookId != null) {
         final foundIndex = mappedPosts.indexWhere((post) => post.id == widget.userBookId);
-        if (foundIndex != -1) {
-          index = foundIndex;
-          needsScroll = true; // ✅ 특정 책으로 스크롤 필요
-        }
+        if (foundIndex != -1) { index = foundIndex; needsScroll = true; }
       } else if (widget.bookId != null) {
         final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
-        if (foundIndex != -1) {
-          index = foundIndex;
-          needsScroll = true; // ✅ 특정 책으로 스크롤 필요
-        }
+        if (foundIndex != -1) { index = foundIndex; needsScroll = true; }
       }
 
       if (!mounted) return;
-      
+
       setState(() {
         posts = mappedPosts;
         initialIndex = index >= 0 ? index : 0;
         _itemKeys = List.generate(mappedPosts.length, (_) => GlobalKey());
-        _isScrollingToTarget = needsScroll;
-        isLoading = !needsScroll; // ✅ 스크롤이 필요하면 로딩 유지
+        _isScrollingToTarget = needsScroll; // ✅ 여기서도 오버레이 켬
+        isLoading = false;                   // ✅ 리스트 즉시 렌더
       });
 
       if (needsScroll) {
@@ -185,93 +164,110 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
     final String appBarTitle = (posts.isNotEmpty && posts[initialIndex.clamp(0, posts.length - 1)].userName != null)
         ? posts[initialIndex.clamp(0, posts.length - 1)].userName!
         : '사용자';
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.white,
-        title: Text(appBarTitle, style: const TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,)),
+        title: Text(
+          appBarTitle,
+          style: const TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500),
+        ),
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () => Navigator.pop(context, _hasDeleted),
         ),
       ),
-      body: (isLoading || _isScrollingToTarget)
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-              ),
-            )
-          : ListView(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        cacheExtent: 5000,
-        children: List.generate(posts.length, (index) {
-          final post = posts[index];
-          final currentUserId = client.auth.currentUser?.id;
-          final isMyPost = currentUserId != null && currentUserId == post.userId;
+      body: Stack(
+        children: [
+          // ✅ 리스트는 항상 렌더 (키 컨텍스트 확보)
+          ListView(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            cacheExtent: 5000,
+            children: List.generate(posts.length, (index) {
+              final post = posts[index];
+              final currentUserId = client.auth.currentUser?.id;
+              final isMyPost = currentUserId != null && currentUserId == post.userId;
 
-          return KeyedSubtree(
-            key: _itemKeys[index],
-            child: Padding(
-              padding: const EdgeInsets.only(
-                left: 22,
-                right: 22,
-                top: 51,
-                bottom: 27,
-              ),
-                                      child: PostItem(
-                          isMyPost: false,
-                          post: post,
-                          onDeleteSuccess: () {
-                            setState(() {
-                              posts.removeAt(index);
-                              _itemKeys.removeAt(index);
-                              _hasDeleted = true;
-                            });
-                            Navigator.pop(context, true);
-                          },
-                          onArchiveSuccess: () {
-                            setState(() {
-                              posts.removeAt(index);
-                              _itemKeys.removeAt(index);
-                              _hasDeleted = true;
-                            });
-                            // 보관함으로 이동한 경우에는 Navigator.pop을 호출하지 않음
-                          },
-                          onEditSuccess: () async {
-                            // my_post_screen에서 직접 편집 화면 호출
-                            final result = await Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => EditReviewScreen(
-                                  post: post,
-                                  fromScreen: 'my_post_screen',
-                                ),
-                              ),
-                            );
-                            if (result == true) {
-                              await _fetchPosts();
-                              setState(() => _hasDeleted = true);
-                            }
-                          },
-                onTap: () async {
-                  final result = await Navigator.pushNamed(
-                    context,
-                    '/post_detail',
-                    arguments: post,
-                  );
+              return KeyedSubtree(
+                key: _itemKeys.length > index ? _itemKeys[index] : GlobalKey(),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 22, right: 22, top: 51, bottom: 27),
+                  child: PostItem(
+                    isMyPost: false,
+                    post: post,
+                    onDeleteSuccess: () {
+                      setState(() {
+                        posts.removeAt(index);
+                        if (_itemKeys.length > index) _itemKeys.removeAt(index);
+                        _hasDeleted = true;
+                      });
+                      Navigator.pop(context, true);
+                    },
+                    onArchiveSuccess: () {
+                      setState(() {
+                        posts.removeAt(index);
+                        if (_itemKeys.length > index) _itemKeys.removeAt(index);
+                        _hasDeleted = true;
+                      });
+                    },
+                    onEditSuccess: () async {
+                      final result = await Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditReviewScreen(
+                            post: post,
+                            fromScreen: 'my_post_screen',
+                          ),
+                        ),
+                      );
+                      if (result == true) {
+                        await _fetchPosts();
+                        setState(() => _hasDeleted = true);
+                      }
+                    },
+                    onTap: () async {
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/post_detail',
+                        arguments: post,
+                      );
+                      if (result == true) {
+                        await _fetchPosts();
+                        setState(() => _hasDeleted = true);
+                      }
+                    },
+                  ),
+                ),
+              );
+            }),
+          ),
 
-                  if (result == true) {
-                    await _fetchPosts();
-                    setState(() => _hasDeleted = true);
-                  }
-                },
+          // ✅ 초기 데이터 로딩 오버레이 (posts 비어있을 때 등)
+          if (isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white,
+                child: const Center(
+                  child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.black)),
+                ),
               ),
             ),
-          );
-        }),
+
+          // ✅ 타겟 스크롤 완료 전까지 화면을 가리는 오버레이 (깜빡임 방지)
+          if (_isScrollingToTarget)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white,
+                child: const Center(
+                  child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.black)),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
