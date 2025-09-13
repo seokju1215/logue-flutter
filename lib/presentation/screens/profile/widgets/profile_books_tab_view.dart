@@ -752,6 +752,11 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   }
 
   void _onBookTap(Map<String, dynamic> book) async {
+    // 책장탭(currentIndex == 1)에서는 책 탭 비활성화
+    if (currentIndex == 1) {
+      return; // 책장탭에서는 클릭 무시
+    }
+    
     // 말풍선이 표시된 상태에서는 책 탭을 막고 말풍선만 숨기기
     if (_showBubble && mounted) {
       setState(() {
@@ -778,6 +783,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
           bookId: bookId,
           userBookId: userBookId,
           userId: widget.userId, // userId도 전달
+          booksData: widget.nonArchivedBooks, // ✅ 기존 책 데이터 전달
         ),
       ),
     );

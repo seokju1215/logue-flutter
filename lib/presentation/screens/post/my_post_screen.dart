@@ -10,7 +10,8 @@ class MyBookPostScreen extends StatefulWidget {
   final String? bookId;
   final String? userId;
   final String? userBookId;
-  const MyBookPostScreen({Key? key, this.bookId, this.userBookId, this.userId}) : super(key: key);
+  final List<Map<String, dynamic>>? booksData; // ✅ 기존 책 데이터 전달
+  const MyBookPostScreen({Key? key, this.bookId, this.userBookId, this.userId, this.booksData}) : super(key: key);
 
   @override
   State<MyBookPostScreen> createState() => _MyBookPostScreenState();
@@ -43,6 +44,46 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
     }
 
     try {
+      // ✅ 전달받은 booksData가 있으면 사용 (빠른 로딩)
+      if (widget.booksData != null && widget.booksData!.isNotEmpty) {
+        debugPrint('🚀 전달받은 booksData 사용 - ${widget.booksData!.length}개 항목');
+        
+        final mappedPosts = widget.booksData!.map((e) {
+          final post = BookPostModel.fromMap(e);
+          return post;
+        }).toList();
+
+        int index = 0;
+        if (widget.userBookId != null) {
+          debugPrint('🔍 userBookId로 검색: ${widget.userBookId}');
+          final foundIndex = mappedPosts.indexWhere((post) => post.id == widget.userBookId);
+          if (foundIndex != -1) {
+            index = foundIndex;
+            debugPrint('✅ userBookId로 찾은 인덱스: $index');
+          }
+        } else if (widget.bookId != null) {
+          debugPrint('🔍 bookId로 검색: ${widget.bookId}');
+          final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
+          if (foundIndex != -1) {
+            index = foundIndex;
+            debugPrint('✅ bookId로 찾은 인덱스: $index');
+          }
+        }
+
+        if (!mounted) return;
+
+        setState(() {
+          posts = mappedPosts;
+          initialIndex = index >= 0 ? index : 0;
+          _itemKeys = List.generate(mappedPosts.length, (_) => GlobalKey());
+          isLoading = false;
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialIndex());
+        return;
+      }
+
+      // ✅ 전달받은 데이터가 없으면 기존 방식으로 서버에서 가져오기
       debugPrint('🔍 get_visible_user_books 호출 중...');
       final response = await client
           .rpc('get_visible_user_books', params: {'target_user_id': userId});
@@ -51,17 +92,13 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
       debugPrint('🔍 응답 데이터: ${response.length}개 항목');
       
-      // response 자체가 List<dynamic>
       if (response.isEmpty) {
         debugPrint('❌ 응답이 비어있습니다.');
         throw Exception('데이터를 불러올 수 없습니다.');
       }
 
       final fetched = List<Map<String, dynamic>>.from(response);
-      debugPrint('🔍 변환된 데이터: ${fetched.length}개 항목');
-      
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
-      debugPrint('🔍 해당 사용자 포스트: ${userPosts.length}개');
       
       if (userPosts.isEmpty) {
         debugPrint('❌ 해당 사용자의 포스트가 없습니다.');
@@ -75,28 +112,18 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
       int index = 0;
       if (widget.userBookId != null) {
-        debugPrint('🔍 userBookId로 검색: ${widget.userBookId}');
         final foundIndex = mappedPosts.indexWhere((post) => post.id == widget.userBookId);
         if (foundIndex != -1) {
           index = foundIndex;
-          debugPrint('✅ userBookId로 찾은 인덱스: $index');
-        } else {
-          debugPrint('❌ userBookId로 찾을 수 없음');
         }
       } else if (widget.bookId != null) {
-        debugPrint('🔍 bookId로 검색: ${widget.bookId}');
         final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
         if (foundIndex != -1) {
           index = foundIndex;
-          debugPrint('✅ bookId로 찾은 인덱스: $index');
-        } else {
-          debugPrint('❌ bookId로 찾을 수 없음');
         }
       }
 
       if (!mounted) return;
-
-      debugPrint('🔍 최종 설정 - posts: ${mappedPosts.length}개, initialIndex: $index');
       
       setState(() {
         posts = mappedPosts;
