@@ -59,11 +59,10 @@ class OtherProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<OtherProfileScreen> createState() => _OtherProfileScreenState();
 }
 
-class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
+class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with WidgetsBindingObserver {
   final client = Supabase.instance.client;
   final ScrollController _scrollController = ScrollController();
   late final FollowRepository _followRepo;
-  bool _isScrollable = false;
   bool _hasFollowStateChanged = false; // 팔로우 상태 변경 추적
   bool _isFollowActionInProgress = false; // 팔로우 액션 중복 방지
 
@@ -72,11 +71,17 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   List<Map<String, dynamic>> books = [];
   final GlobalKey<ProfileBooksTabViewState> _profileBooksTabViewKey = GlobalKey<ProfileBooksTabViewState>();
   final ValueNotifier<int> _currentTabIndexNotifier = ValueNotifier<int>(0);
+  
+  // 팔로워/팔로잉 카운트 캐시
+  int _followerCount = 0;
+  int _followingCount = 0;
 
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
     _followRepo = FollowRepository(
       client: client,
       functionBaseUrl: dotenv.env['FUNCTION_BASE_URL']!,
@@ -86,17 +91,18 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     _increaseVisitors();
     _fetchProfile();
     _loadBooks();
+    _loadFollowCounts();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkIfScrollable();
-    });
   }
 
-  void _checkIfScrollable() {
-    if (!_scrollController.hasClients) return;
-    final isNowScrollable = _scrollController.position.maxScrollExtent > 0;
-    if (mounted && isNowScrollable != _isScrollable) {
-      setState(() => _isScrollable = isNowScrollable);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // 앱이 포그라운드로 돌아올 때 UI 새로고침
+    if (state == AppLifecycleState.resumed && mounted) {
+      debugPrint('🔄 앱 포그라운드 복귀 - UI 새로고침');
+      setState(() {}); // UI 새로고침
     }
   }
 
@@ -152,10 +158,19 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final result = await _getUserBooks(widget.userId);
     result.sort(
         (a, b) => (a['order_index'] as int).compareTo(b['order_index'] as int));
-    setState(() => books = result);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkIfScrollable();
-    });
+    if (mounted) {
+      setState(() => books = result);
+    }
+  }
+
+  Future<void> _loadFollowCounts() async {
+    final counts = await _getFollowCounts();
+    if (mounted) {
+      setState(() {
+        _followerCount = counts['followers'] ?? 0;
+        _followingCount = counts['following'] ?? 0;
+      });
+    }
   }
 
   void _showZoomedAvatar(String avatarUrl) {
@@ -200,6 +215,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   @override
   void dispose() {
     debugPrint('🔍 OtherProfileScreen dispose: ${widget.userId}');
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     _currentTabIndexNotifier.dispose();
 
@@ -276,11 +292,16 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: NestedScrollView(
-          controller: _scrollController,
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            // 탭바 고정 상태를 ProfileBooksTabView에 전달 (즉시 호출)
-            _profileBooksTabViewKey.currentState?.updateTabBarPinnedState(innerBoxIsScrolled);
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (ScrollNotification notification) {
+            // other_profile_screen에서는 말풍선 로직이 없으므로 항상 false 반환
+            return false;
+          },
+          child: NestedScrollView(
+            controller: _scrollController,
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              // 탭바 고정 상태를 ProfileBooksTabView에 전달 (즉시 호출)
+              _profileBooksTabViewKey.currentState?.updateTabBarPinnedState(innerBoxIsScrolled);
               
               return [
               SliverToBoxAdapter(
@@ -335,6 +356,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                     ],
                   ),
                 ),
+            ),
           ),
         ),
     );
