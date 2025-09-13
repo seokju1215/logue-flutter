@@ -387,10 +387,10 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
             height: MediaQuery.of(context).size.height,
             child: PageView(
               controller: pageController,
-              physics: _showBubble ? const NeverScrollableScrollPhysics() : const ClampingScrollPhysics(),
+              physics: widget.isOtherUser ? const ClampingScrollPhysics() : (_showBubble ? const NeverScrollableScrollPhysics() : const ClampingScrollPhysics()),
               onPageChanged: (index) {
-                // 스와이프로 페이지가 변경되면 말풍선 숨기기
-                if (_showBubble && mounted) {
+                // 스와이프로 페이지가 변경되면 말풍선 숨기기 (내 프로필일 때만)
+                if (!widget.isOtherUser && _showBubble && mounted) {
                   setState(() {
                     _showBubble = false;
                   });

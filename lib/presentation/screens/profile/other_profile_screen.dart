@@ -516,10 +516,9 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                   child: _buildCount("팔로잉", followingCount),
                 ),
                 Spacer(),
-                if (!isMyProfile)
-                  SizedBox(
-                    height : 34,
-                    child: OutlinedButton(
+                SizedBox(
+                  height: 34,
+                  child: !isMyProfile ? OutlinedButton(
                       onPressed: () async {
                         if (_isFollowActionInProgress) {
                           debugPrint('🔴 팔로우 액션 중복 방지');
@@ -641,8 +640,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                           if (!isFollowing) const SizedBox(width: 1.8),
                         ],
                       ),
-                    ),
-                  )
+                    ) : SizedBox.shrink(),
+                )
               ],
             );
           },
@@ -817,8 +816,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         onTap: () {
           _profileBooksTabViewKey.currentState?.pageController.animateToPage(
             index,
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeInOut,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOutCubic,
           );
         },
         child: ValueListenableBuilder<int>(

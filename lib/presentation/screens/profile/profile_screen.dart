@@ -962,8 +962,8 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         onTap: () {
           _profileBooksTabViewKey.currentState?.pageController.animateToPage(
             index,
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeInOut,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOutCubic,
           );
         },
         child: ValueListenableBuilder<int>(
