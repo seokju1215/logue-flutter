@@ -173,40 +173,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   Future<void> _onTapBook(BookModel book) async {
     if (_openingBook) return;        // ✅ 연타 가드
     _openingBook = true;
-    final client = Supabase.instance.client;
 
     try {
-      final res = await client.functions.invoke(
-        'get-book-detail',
-        body: {
-          'isbn': book.isbn,
-          'title': book.title, // ✅ title도 함께 넘김
-        },
-      );
-      print('🔍 isbn: ${book.isbn}');
-      print('🔍 title: ${book.title}');
-
-      final data = res.data;
-
-      if (data == null || data['book'] == null || data['book']['id'] == null) {
-        print('📦 함수 결과: ${res.data}');
-        throw Exception('유효한 책 정보를 가져오지 못했어요.');
-      }
-
-      final bookId = data['book']['id'];
-
       MainNavigationScreen.lastSelectedIndex = 0;
+      // ✅ 즉시 BookDetailScreen으로 이동 (book 정보 전달)
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => BookDetailScreen(bookId: bookId),
+          builder: (_) => BookDetailScreen(
+            bookModel: book, // ✅ BookModel 전달
+          ),
         ),
       );
-    } catch (e) {
-      debugPrint('❌ 책 정보 가져오기 실패: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('책 정보를 불러오지 못했어요.')),
-      );
-    }finally {
+    } finally {
       _openingBook = false;          // ✅ 반드시 잠금 해제
     }
   }

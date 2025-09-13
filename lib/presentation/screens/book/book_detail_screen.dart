@@ -10,15 +10,17 @@ import '../../../core/widgets/book/book_frame.dart';
 import '../../../core/widgets/follow/follow_user_tile.dart';
 import 'package:my_logue/data/datasources/aladin_book_api.dart';
 import 'package:my_logue/data/datasources/user_book_api.dart';
+import '../../../data/models/book_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/follow_state_provider.dart';
 import '../profile/other_profile_screen.dart';
 import 'package:html_unescape/html_unescape.dart';
 
 class BookDetailScreen extends ConsumerStatefulWidget {
-  final String bookId;
+  final String? bookId;
+  final BookModel? bookModel; // ✅ BookModel 옵션 추가
 
-  const BookDetailScreen({super.key, required this.bookId});
+  const BookDetailScreen({super.key, this.bookId, this.bookModel});
 
   @override
   ConsumerState<BookDetailScreen> createState() => _BookDetailScreenState();
@@ -79,8 +81,8 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
   Future<void> _fetchLifebookUsersOnly() async {
     try {
       final body = {
-        if (widget.bookId.length == 36) 'book_id': widget.bookId,
-        if (widget.bookId.length != 36) 'isbn': widget.bookId,
+        if (widget.bookId != null && widget.bookId!.length == 36) 'book_id': widget.bookId,
+        if (widget.bookId != null && widget.bookId!.length != 36) 'isbn': widget.bookId,
       };
 
       // TODO: edge function에서 is_archived = false 조건 추가 필요
@@ -111,10 +113,27 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
   }
 
   Future<void> _fetchBookOnly() async {
+    // ✅ bookModel이 있으면 즉시 사용
+    if (widget.bookModel != null) {
+      final bookModel = widget.bookModel!;
+      final authors = _extractAuthors(bookModel.author);
+      
+      setState(() {
+        book = bookModel.toBookMap();
+        lifebookUsers = [];
+        errorMessage = null;
+        isLoading = false;
+      });
+      
+      await _fetchOtherBooks(authors);
+      return;
+    }
+    
+    // ✅ bookModel이 없으면 기존 방식으로 네트워크 요청
     try {
       final body = {
-        if (widget.bookId.length == 36) 'book_id': widget.bookId,
-        if (widget.bookId.length != 36) 'isbn': widget.bookId,
+        if (widget.bookId!.length == 36) 'book_id': widget.bookId,
+        if (widget.bookId!.length != 36) 'isbn': widget.bookId,
       };
 
       // TODO: edge function에서 is_archived = false 조건 추가 필요
