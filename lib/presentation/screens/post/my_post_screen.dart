@@ -27,6 +27,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
   bool isLoading = true;
   bool _hasDeleted = false;
   int initialIndex = 0;
+  bool _isScrollingToTarget = false; // ✅ 특정 책으로 스크롤 중인지 확인
 
   @override
   void initState() {
@@ -111,15 +112,19 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       }).toList();
 
       int index = 0;
+      bool needsScroll = false;
+      
       if (widget.userBookId != null) {
         final foundIndex = mappedPosts.indexWhere((post) => post.id == widget.userBookId);
         if (foundIndex != -1) {
           index = foundIndex;
+          needsScroll = true; // ✅ 특정 책으로 스크롤 필요
         }
       } else if (widget.bookId != null) {
         final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
         if (foundIndex != -1) {
           index = foundIndex;
+          needsScroll = true; // ✅ 특정 책으로 스크롤 필요
         }
       }
 
@@ -129,10 +134,13 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         posts = mappedPosts;
         initialIndex = index >= 0 ? index : 0;
         _itemKeys = List.generate(mappedPosts.length, (_) => GlobalKey());
-        isLoading = false;
+        _isScrollingToTarget = needsScroll;
+        isLoading = !needsScroll; // ✅ 스크롤이 필요하면 로딩 유지
       });
 
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialIndex());
+      if (needsScroll) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialIndex());
+      }
     } catch (e) {
       debugPrint('❌ 게시글 불러오기 실패: $e');
       if (mounted) setState(() => isLoading = false);
@@ -145,12 +153,24 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
     if (_scrollController.hasClients && initialIndex < _itemKeys.length) {
       final keyContext = _itemKeys[initialIndex].currentContext;
       if (keyContext != null) {
+        // ✅ 즉시 이동 (애니메이션 없음)
         Scrollable.ensureVisible(
           keyContext,
-          duration: Duration.zero,
+          duration: Duration.zero, // ✅ 애니메이션 제거
           alignment: 0.1, // 상단에 가깝게 붙이기
         );
+        
+        // ✅ 스크롤 완료 후 약간의 지연
+        await Future.delayed(const Duration(milliseconds: 50));
       }
+    }
+    
+    // ✅ 로딩 해제
+    if (mounted) {
+      setState(() {
+        _isScrollingToTarget = false;
+        isLoading = false;
+      });
     }
   }
 
@@ -177,8 +197,12 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
           onPressed: () => Navigator.pop(context, _hasDeleted),
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+      body: (isLoading || _isScrollingToTarget)
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              ),
+            )
           : ListView(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 16),

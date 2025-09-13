@@ -32,6 +32,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
   List<dynamic> lifebookUsers = [];
   String? errorMessage;
   bool isLoading = true;
+  bool isLoadingLifebookUsers = true; // ✅ 인생책 친구 목록 로딩 상태
   bool showFullDescription = false;
   bool showFullToc = false;
   bool showAllAuthors = false;
@@ -80,9 +81,20 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
 
   Future<void> _fetchLifebookUsersOnly() async {
     try {
+      String? bookIdOrIsbn;
+      
+      // ✅ bookModel이 있으면 ISBN 사용, 없으면 widget.bookId 사용
+      if (widget.bookModel != null) {
+        bookIdOrIsbn = widget.bookModel!.isbn;
+      } else if (widget.bookId != null) {
+        bookIdOrIsbn = widget.bookId;
+      } else {
+        return; // 둘 다 없으면 리턴
+      }
+      
       final body = {
-        if (widget.bookId != null && widget.bookId!.length == 36) 'book_id': widget.bookId,
-        if (widget.bookId != null && widget.bookId!.length != 36) 'isbn': widget.bookId,
+        if (bookIdOrIsbn!.length == 36) 'book_id': bookIdOrIsbn,
+        if (bookIdOrIsbn.length != 36) 'isbn': bookIdOrIsbn,
       };
 
       // TODO: edge function에서 is_archived = false 조건 추가 필요
@@ -105,10 +117,16 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
       if (!mounted) return;
 
       setState(() {
-        lifebookUsers = uniqueUsers;
+        lifebookUsers = _getSortedUsers(uniqueUsers);
+        isLoadingLifebookUsers = false; // ✅ 로딩 완료
       });
     } catch (e) {
       debugPrint('❌ 인생책 유저 조회 실패: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingLifebookUsers = false; // ✅ 에러 시에도 로딩 완료
+        });
+      }
     }
   }
 
@@ -120,11 +138,12 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
       
       setState(() {
         book = bookModel.toBookMap();
-        lifebookUsers = [];
         errorMessage = null;
         isLoading = false;
       });
       
+      // ✅ 인생책 친구 목록도 가져오기
+      await _fetchLifebookUsersOnly();
       await _fetchOtherBooks(authors);
       return;
     }
@@ -161,6 +180,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         lifebookUsers = _getSortedUsers(uniqueUsers);
         errorMessage = decoded['error'];
         isLoading = false;
+        isLoadingLifebookUsers = false; // ✅ 기존 방식에서도 로딩 완료
       });
 
       await _fetchOtherBooks(authors);
@@ -327,6 +347,30 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
   }
 
   Widget _buildLifeBookSection() {
+    // ✅ 로딩 중이면 로딩 인디케이터 표시
+    if (isLoadingLifebookUsers) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 22),
+            child: Text('이 책을 인생 책으로 설정한 친구',
+                style: TextStyle(color: AppColors.black900, fontSize: 15)),
+          ),
+          const SizedBox(height: 12),
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // ✅ 로딩 완료 후 친구가 없으면 빈 섹션
     if (lifebookUsers.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(horizontal: 0),

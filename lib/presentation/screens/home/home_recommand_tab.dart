@@ -557,7 +557,9 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
           if (isLoading)
             const Padding(
               padding: EdgeInsets.only(top: 15), // 원하는 만큼 내림
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child:  CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              ),),
             )
           else
             Column(
