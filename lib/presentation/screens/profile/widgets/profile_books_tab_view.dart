@@ -49,7 +49,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   static String? _sessionKey;
   
   // ===== 페이지네이션 상태 =====
-  static const int _pageSize = 200;
+  static const int _pageSize = 100;
   int _offset = 0;
   bool _isInitialLoading = true;   // 첫 로딩 스피너
   bool _isPageLoading = false;     // 다음 페이지 로딩 중
@@ -74,9 +74,6 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     
     pageController = PageController(initialPage: 0);
     booksScrollController = ScrollController();
-    
-    // 스크롤 이벤트 리스너 추가
-    booksScrollController.addListener(_onScroll);
     
     _fetchTotalCount();
     _loadNextPage();
@@ -248,7 +245,6 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
 
   @override
   void dispose() {
-    booksScrollController.removeListener(_onScroll);
     pageController.dispose();
     booksScrollController.dispose();
     _bookChannel?.unsubscribe();
@@ -286,21 +282,24 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     }
   }
 
-  // 스크롤 이벤트 핸들러
-  void _onScroll() {
-    if (_showBubble && booksScrollController.hasClients && mounted) {
-      // 스크롤이 시작되면 말풍선만 숨기기 (스크롤은 막음)
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _showBubble = false;
-          });
-          // 외부에 말풍선 상태 변경 알림
-          widget.onBubbleStateChanged?.call(false);
-          // 외부 콜백 호출
-          widget.onBubbleHide?.call();
-        }
-      });
+  // 스크롤 업데이트 이벤트 핸들러
+  void _onScrollUpdate(ScrollUpdateNotification notification) {
+    if (!mounted) return;
+
+    final pos = notification.metrics;
+    const threshold = 300.0; // 바닥 300px 전
+
+    // 말풍선 숨기기
+    if (_showBubble) {
+      setState(() => _showBubble = false);
+      widget.onBubbleStateChanged?.call(false);
+      widget.onBubbleHide?.call();
+    }
+
+    // 책장 탭(currentIndex == 1)에서만 무한 스크롤 적용
+    if (currentIndex == 1 && _hasMore && !_isPageLoading && 
+        pos.maxScrollExtent - pos.pixels <= threshold) {
+      _loadNextPage();
     }
   }
 
@@ -408,8 +407,8 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
               children: [
                 NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
-                    if (notification is ScrollEndNotification) {
-                      _onScrollReachBottom();
+                    if (notification is ScrollUpdateNotification) {
+                      _onScrollUpdate(notification);
                     }
                     return false;
                   },
@@ -417,8 +416,8 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                 ),
                 NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
-                    if (notification is ScrollEndNotification) {
-                      _onScrollReachBottom();
+                    if (notification is ScrollUpdateNotification) {
+                      _onScrollUpdate(notification);
                     }
                     return false;
                   },
@@ -644,9 +643,12 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   }
 
   void _onScrollReachBottom() {
-    if (_hasMore && !_isPageLoading && mounted) {
-      _loadNextPage();
-    }
+    if (!mounted || _isPageLoading || !_hasMore) return;
+
+    final pos = booksScrollController.hasClients ? booksScrollController.position : null;
+    if (pos != null && (pos.maxScrollExtent - pos.pixels) > 300) return; // 안전 체크
+
+    _loadNextPage();
   }
 
   Widget _buildBookshelfLayoutSliver(List<Map<String, dynamic>> books) {
