@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/data/models/book_post_model.dart';
@@ -29,16 +30,61 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
   int initialIndex = 0;
   bool _isScrollingToTarget = false; // ✅ 특정 책으로 스크롤 중인지 확인
 
+  // 🆕 탭 즉시 로딩 오버레이 상태
+  bool _isTapLoading = false;
+  static const Duration _minTapOverlay = Duration(milliseconds: 250);
+
   @override
   void initState() {
+    final initStartTime = DateTime.now();
+    debugPrint('🚀 MyBookPostScreen initState 시작');
+
+    final superInitStart = DateTime.now();
     super.initState();
+    final superInitEnd = DateTime.now();
+    final superInitDuration = superInitEnd.difference(superInitStart);
+    debugPrint('   🏗️ super.initState() 소요시간: ${superInitDuration.inMilliseconds}ms');
+
+    final widgetInfoStart = DateTime.now();
+    debugPrint('   📚 bookId: ${widget.bookId}');
+    debugPrint('   📚 userBookId: ${widget.userBookId}');
+    debugPrint('   👤 userId: ${widget.userId}');
+    debugPrint('   📊 booksData 개수: ${widget.booksData?.length ?? 0}');
+    final widgetInfoEnd = DateTime.now();
+    final widgetInfoDuration = widgetInfoEnd.difference(widgetInfoStart);
+    debugPrint('   📝 위젯 정보 출력 소요시간: ${widgetInfoDuration.inMilliseconds}ms');
+
+    final fetchStartTime = DateTime.now();
+    debugPrint('   🚀 _fetchPosts 호출 시작');
+
+    // ✅ 동기적으로 _fetchPosts 호출 (비동기 오버헤드 제거)
     _fetchPosts();
+
+    final fetchEndTime = DateTime.now();
+    final fetchDuration = fetchEndTime.difference(fetchStartTime);
+    final initEndTime = DateTime.now();
+    final initDuration = initEndTime.difference(initStartTime);
+
+    debugPrint('   ⚡ _fetchPosts 소요시간: ${fetchDuration.inMilliseconds}ms');
+    debugPrint('✅ MyBookPostScreen initState 완료 - 총 소요시간: ${initDuration.inMilliseconds}ms');
+
+    final overhead = initDuration.inMilliseconds - fetchDuration.inMilliseconds - superInitDuration.inMilliseconds - widgetInfoDuration.inMilliseconds;
+    debugPrint('   📊 initState 오버헤드: ${overhead}ms (super: ${superInitDuration.inMilliseconds}ms, info: ${widgetInfoDuration.inMilliseconds}ms, 기타: ${overhead}ms)');
   }
 
   Future<void> _fetchPosts() async {
+    final fetchStartTime = DateTime.now();
     final userId = widget.userId ?? client.auth.currentUser?.id;
-    debugPrint('🔍 MyBookPostScreen - userId: $userId, bookId: ${widget.bookId}, userBookId: ${widget.userBookId}');
-    
+
+    final debugStart = DateTime.now();
+    debugPrint('🔍 MyBookPostScreen _fetchPosts 시작');
+    debugPrint('   👤 userId: $userId');
+    debugPrint('   📚 bookId: ${widget.bookId}');
+    debugPrint('   📚 userBookId: ${widget.userBookId}');
+    final debugEnd = DateTime.now();
+    final debugDuration = debugEnd.difference(debugStart);
+    debugPrint('   📝 _fetchPosts 디버그 출력 소요시간: ${debugDuration.inMilliseconds}ms');
+
     if (userId == null || !mounted) {
       debugPrint('❌ userId가 null이거나 mounted가 false입니다.');
       return;
@@ -47,10 +93,16 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
     try {
       // ✅ 전달된 booksData가 있으면 빠르게 사용
       if (widget.booksData != null && widget.booksData!.isNotEmpty) {
+        final dataProcessingStart = DateTime.now();
         debugPrint('🚀 전달받은 booksData 사용 - ${widget.booksData!.length}개 항목');
-        
-        final mappedPosts = widget.booksData!.map((e) => BookPostModel.fromMap(e)).toList();
 
+        final mappingStart = DateTime.now();
+        final mappedPosts = widget.booksData!.map((e) => BookPostModel.fromMap(e)).toList();
+        final mappingEnd = DateTime.now();
+        final mappingDuration = mappingEnd.difference(mappingStart);
+        debugPrint('   🗺️ BookPostModel 매핑 소요시간: ${mappingDuration.inMilliseconds}ms');
+
+        final indexSearchStart = DateTime.now();
         int index = 0;
         bool needsScroll = false;
         if (widget.userBookId != null) {
@@ -60,9 +112,19 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
           final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
           if (foundIndex != -1) { index = foundIndex; needsScroll = true; }
         }
+        final indexSearchEnd = DateTime.now();
+        final indexSearchDuration = indexSearchEnd.difference(indexSearchStart);
+        debugPrint('   🔍 타겟 인덱스 검색 소요시간: ${indexSearchDuration.inMilliseconds}ms');
+
+        final dataProcessingEnd = DateTime.now();
+        final dataProcessingDuration = dataProcessingEnd.difference(dataProcessingStart);
+        debugPrint('   ⚡ 데이터 처리 완료 - 소요시간: ${dataProcessingDuration.inMilliseconds}ms');
+        debugPrint('   📊 매핑된 포스트 개수: ${mappedPosts.length}');
+        debugPrint('   🎯 타겟 인덱스: $index (스크롤 필요: $needsScroll)');
 
         if (!mounted) return;
 
+        final setStateStart = DateTime.now();
         setState(() {
           posts = mappedPosts;
           initialIndex = index >= 0 ? index : 0;
@@ -70,16 +132,29 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
           _isScrollingToTarget = needsScroll; // ✅ 스크롤 필요 시 오버레이 켬
           isLoading = false;                   // ✅ 리스트는 즉시 렌더(오버레이로 가림)
         });
+        final setStateEnd = DateTime.now();
+        final setStateDuration = setStateEnd.difference(setStateStart);
+        debugPrint('   🎨 setState 소요시간: ${setStateDuration.inMilliseconds}ms');
 
+        // 스크롤 필요하면 프레임 기준으로 예약
         if (needsScroll) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialIndex());
+          _scheduleTargetScrollIfNeeded();
         }
+
+        final fetchEndTime = DateTime.now();
+        final fetchDuration = fetchEndTime.difference(fetchStartTime);
+        debugPrint('✅ MyBookPostScreen _fetchPosts 완료 (booksData 사용) - 총 소요시간: ${fetchDuration.inMilliseconds}ms');
         return;
       }
 
       // ✅ 서버에서 가져오기
-      debugPrint('🔍 get_visible_user_books 호출 중...');
+      final serverCallStart = DateTime.now();
+      debugPrint('🌐 서버 호출 시작: get_visible_user_books');
       final response = await client.rpc('get_visible_user_books', params: {'target_user_id': userId});
+      final serverCallEnd = DateTime.now();
+      final serverCallDuration = serverCallEnd.difference(serverCallStart);
+      debugPrint('🌐 서버 호출 완료 - 소요시간: ${serverCallDuration.inMilliseconds}ms');
+
       if (!mounted) return;
 
       debugPrint('🔍 응답 데이터: ${response.length}개 항목');
@@ -88,6 +163,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         throw Exception('데이터를 불러올 수 없습니다.');
       }
 
+      final dataProcessingStart = DateTime.now();
       final fetched = List<Map<String, dynamic>>.from(response);
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
       if (userPosts.isEmpty) {
@@ -96,6 +172,10 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       }
 
       final mappedPosts = userPosts.map((e) => BookPostModel.fromMap(e)).toList();
+      final dataProcessingEnd = DateTime.now();
+      final dataProcessingDuration = dataProcessingEnd.difference(dataProcessingStart);
+      debugPrint('   ⚡ 서버 데이터 처리 완료 - 소요시간: ${dataProcessingDuration.inMilliseconds}ms');
+      debugPrint('   📊 매핑된 포스트 개수: ${mappedPosts.length}');
 
       int index = 0;
       bool needsScroll = false;
@@ -107,6 +187,8 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         if (foundIndex != -1) { index = foundIndex; needsScroll = true; }
       }
 
+      debugPrint('   🎯 타겟 인덱스: $index (스크롤 필요: $needsScroll)');
+
       if (!mounted) return;
 
       setState(() {
@@ -117,40 +199,111 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         isLoading = false;                   // ✅ 리스트 즉시 렌더
       });
 
+      // 스크롤 필요하면 프레임 기준으로 예약
       if (needsScroll) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialIndex());
+        _scheduleTargetScrollIfNeeded();
       }
+
+      final fetchEndTime = DateTime.now();
+      final fetchDuration = fetchEndTime.difference(fetchStartTime);
+      debugPrint('✅ MyBookPostScreen _fetchPosts 완료 (서버 호출) - 총 소요시간: ${fetchDuration.inMilliseconds}ms');
     } catch (e) {
       debugPrint('❌ 게시글 불러오기 실패: $e');
       if (mounted) setState(() => isLoading = false);
     }
   }
 
-  Future<void> _scrollToInitialIndex() async {
-    await Future.delayed(const Duration(milliseconds: 120));
-
-    if (_scrollController.hasClients && initialIndex < _itemKeys.length) {
-      final keyContext = _itemKeys[initialIndex].currentContext;
-      if (keyContext != null) {
-        // ✅ 즉시 이동 (애니메이션 없음)
-        Scrollable.ensureVisible(
-          keyContext,
-          duration: Duration.zero, // ✅ 애니메이션 제거
-          alignment: 0.1, // 상단에 가깝게 붙이기
-        );
-        
-        // ✅ 스크롤 완료 후 약간의 지연
-        await Future.delayed(const Duration(milliseconds: 50));
-      }
+  /// 프레임이 끝날 때까지 N번 대기 (레이아웃/빌드가 마무리되도록)
+  Future<void> _waitFrames(int count) async {
+    for (int i = 0; i < count; i++) {
+      await WidgetsBinding.instance.endOfFrame; // 현재 프레임 끝날 때까지
     }
-    
-    // ✅ 로딩 해제
+  }
+
+  /// 타겟 아이템이 빌드/레이아웃 된 뒤에 스크롤을 보장하는 안정형 함수
+  Future<void> _scrollToInitialIndexStable({int maxTries = 5}) async {
+    // 1) 최소 한 프레임은 반드시 보장 (첫 빌드 끝)
+    await _waitFrames(1);
+
+    for (int tryIdx = 0; tryIdx < maxTries; tryIdx++) {
+      if (!mounted) return;
+
+      // 키가 준비되었는지 확인
+      if (_scrollController.hasClients &&
+          initialIndex < _itemKeys.length &&
+          _itemKeys[initialIndex].currentContext != null) {
+        try {
+          final keyContext = _itemKeys[initialIndex].currentContext!;
+          Scrollable.ensureVisible(
+            keyContext,
+            duration: Duration.zero, // 애니메이션 없이 즉시
+            alignment: 0.1,
+          );
+
+          // 스크롤 직후 한 프레임 기다려서 화면 안정화
+          await _waitFrames(1);
+
+          if (mounted) {
+            setState(() {
+              _isScrollingToTarget = false; // 오버레이 해제
+              isLoading = false;
+            });
+          }
+          return;
+        } catch (_) {
+          // 스크롤 실패 시 다음 프레임에서 재시도
+        }
+      }
+
+      // 아직 준비가 덜 되었으면 다음 프레임까지 대기하고 재시도
+      await _waitFrames(1);
+    }
+
+    // 여기까지 왔으면 실패—그래도 오버레이는 걷어내자(UX 보장)
     if (mounted) {
       setState(() {
         _isScrollingToTarget = false;
         isLoading = false;
       });
     }
+  }
+
+  /// 프레임과 동기화해서 스크롤을 예약
+  void _scheduleTargetScrollIfNeeded() {
+    if (!_isScrollingToTarget) return;
+
+    // 첫 프레임 커밋 이후에 실행하도록 예약
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollToInitialIndexStable();
+    });
+  }
+
+  // 🆕 공통 헬퍼: 탭 오버레이를 최소 시간 보장하며 표시
+  // 🆕 공통 헬퍼: 탭 오버레이를 최소 시간 보장하며 표시
+  Future<T?> _runWithTapLoading<T>(Future<T?> Function() task) async {
+    if (!mounted) return await task();
+    final startedAt = DateTime.now();
+    setState(() => _isTapLoading = true);
+
+    T? result;
+    Object? error;
+    try {
+      result = await task();
+    } catch (e) {
+      error = e;
+    }
+
+    // 최소 노출 시간 보장
+    final elapsed = DateTime.now().difference(startedAt);
+    if (elapsed < _minTapOverlay) {
+      await Future.delayed(_minTapOverlay - elapsed);
+    }
+
+    if (mounted) setState(() => _isTapLoading = false);
+
+    if (error != null) throw error; // ✅ 여기서 rethrow 대신 throw 사용
+    return result;
   }
 
   @override
@@ -215,29 +368,35 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                       });
                     },
                     onEditSuccess: () async {
-                      final result = await Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EditReviewScreen(
-                            post: post,
-                            fromScreen: 'my_post_screen',
+                      // 🆕 편집 화면으로 이동할 때도 탭 로딩 오버레이 적용
+                      final result = await _runWithTapLoading(() {
+                        return Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EditReviewScreen(
+                              post: post,
+                              fromScreen: 'my_post_screen',
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      });
                       if (result == true) {
                         await _fetchPosts();
-                        setState(() => _hasDeleted = true);
+                        if (mounted) setState(() => _hasDeleted = true);
                       }
                     },
                     onTap: () async {
-                      final result = await Navigator.pushNamed(
-                        context,
-                        '/post_detail',
-                        arguments: post,
-                      );
+                      // 🆕 상세 화면으로 이동 시 즉시 로딩 오버레이 표시
+                      final result = await _runWithTapLoading(() {
+                        return Navigator.pushNamed(
+                          context,
+                          '/post_detail',
+                          arguments: post,
+                        );
+                      });
                       if (result == true) {
                         await _fetchPosts();
-                        setState(() => _hasDeleted = true);
+                        if (mounted) setState(() => _hasDeleted = true);
                       }
                     },
                   ),
@@ -264,6 +423,19 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
                 color: Colors.white,
                 child: const Center(
                   child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.black)),
+                ),
+              ),
+            ),
+
+          // 🆕 탭 직후 잠깐 보여주는 로딩 오버레이
+          if (_isTapLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white.withOpacity(0.85),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  ),
                 ),
               ),
             ),

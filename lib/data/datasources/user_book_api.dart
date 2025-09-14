@@ -162,7 +162,7 @@ class UserBookApi {
   }
 
   /// ✅ RPC: 여러 책의 is_archived / order_index를 "한 번에" 업데이트
-  /// Supabase SQL 함수: update_user_books_batch(_items jsonb)
+  /// Supabase SQL 함수: update_user_books_push_front(_items jsonb)
   Future<void> updateBooksBatchRPC(List<Map<String, dynamic>> books) async {
     final userId = client.auth.currentUser?.id;
     if (userId == null) throw Exception('로그인된 사용자가 없습니다.');
@@ -176,11 +176,11 @@ class UserBookApi {
     }).toList();
 
     try {
-      // v2: rpc는 에러 시 예외 throw, 정상이면 data(dynamic)만 반환
-      await client.rpc('update_user_books_batch', params: {'_items': payload});
-      debugPrint("✅ updateUserBooksBatchRPC 완료 (${payload.length}건)");
+      // v3: 새로운 push_front 함수 사용 (맨 위 배치 + 동시성 보호)
+      await client.rpc('update_user_books_push_front', params: {'_items': payload});
+      debugPrint("✅ updateUserBooksPushFrontRPC 완료 (${payload.length}건)");
     } catch (e, stack) {
-      debugPrint("❌ updateUserBooksBatchRPC 오류: $e");
+      debugPrint("❌ updateUserBooksPushFrontRPC 오류: $e");
       debugPrint("🔍 스택: $stack");
       rethrow; // 위로 전달
     }

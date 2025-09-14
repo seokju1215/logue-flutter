@@ -59,6 +59,13 @@ class _ProfileTabState extends State<ProfileTab> {
   void _initializeLocalBooks() {
     _localBooks = List<Map<String, dynamic>>.from(widget.books);
     _updateOriginalOrder();
+    
+    // ✅ 프로필 책들의 order_index 디버깅
+    debugPrint('📚 ProfileTab - 프로필 책 order_index 현황:');
+    for (int i = 0; i < _localBooks.length; i++) {
+      final book = _localBooks[i];
+      debugPrint('   [$i] ${book['book_id']} (${book['title'] ?? '제목없음'}) -> order_index: ${book['order_index']}');
+    }
   }
 
   @override
@@ -70,6 +77,19 @@ class _ProfileTabState extends State<ProfileTab> {
       debugPrint('🔄 ProfileTab - 데이터 변경 감지, 즉시 반영');
       debugPrint('  - books 변경: ${oldWidget.books.length} → ${widget.books.length}');
       debugPrint('  - allBooks 변경: ${oldWidget.allBooks.length} → ${widget.allBooks.length}');
+      
+      // ✅ order_index 변경사항 디버깅
+      debugPrint('📚 ProfileTab - order_index 변경사항:');
+      for (int i = 0; i < widget.books.length; i++) {
+        final newBook = widget.books[i];
+        final oldBook = oldWidget.books.length > i ? oldWidget.books[i] : null;
+        final oldOrderIndex = oldBook?['order_index'];
+        final newOrderIndex = newBook['order_index'];
+        
+        if (oldOrderIndex != newOrderIndex) {
+          debugPrint('   [$i] ${newBook['book_id']} -> order_index: $oldOrderIndex → $newOrderIndex');
+        }
+      }
       
       // 순서 변경이 있는지 확인 (ID 순서 비교)
       final oldBookIds = oldWidget.books.map((b) => b['id'] as String).toList();

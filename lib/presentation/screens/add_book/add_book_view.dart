@@ -56,14 +56,6 @@ class AddBookViewState extends State<AddBookView> with AutomaticKeepAliveClientM
       final existingBooks = List<Map<String, dynamic>>.from(_persistentAllBooks);
       debugPrint('🔄 서버 데이터 요청 전 기존 데이터: ${existingBooks.length}개 책');
       
-      // 기존 소수점 값들 로깅
-      for (final book in existingBooks) {
-        if (book['archived_order_index'] != null && 
-            book['archived_order_index'] is double &&
-            book['archived_order_index'] != (book['archived_order_index'] as double).roundToDouble()) {
-          debugPrint('🔍 기존 소수점 값: ${book['id']} -> ${book['archived_order_index']}');
-        }
-      }
       
       final response = await client
           .from('user_books')
@@ -92,15 +84,9 @@ class AddBookViewState extends State<AddBookView> with AutomaticKeepAliveClientM
         // archived_order_index를 double로 변환
         for (final book in books) {
           if (book['archived_order_index'] != null) {
-            // 서버에서 받은 값의 타입과 값 로깅
-            final rawValue = book['archived_order_index'];
-            final rawType = rawValue.runtimeType;
-            debugPrint('🔍 서버 데이터 타입 확인: ${book['id']} -> 값: $rawValue, 타입: $rawType');
-            
             // 강제로 double로 변환
-            final serverValue = (rawValue as num).toDouble();
+            final serverValue = (book['archived_order_index'] as num).toDouble();
             book['archived_order_index'] = serverValue;
-            debugPrint('  ✅ 타입 변환 완료: $rawValue ($rawType) -> $serverValue (double)');
           }
         }
         
