@@ -670,8 +670,8 @@ class FirebaseAnalyticsUtil {
 
   // ===== 공유 및 바이럴 기능 이벤트 =====
 
-  /// 친구 초대 이벤트
-  static Future<void> logFriendInvite({
+  /// 친구 초대 이벤트 (기존)
+  static Future<void> logFriendInvited({
     required String inviteMethod, // 'contacts', 'phone_number', 'link'
     String? userId,
   }) async {
@@ -690,8 +690,8 @@ class FirebaseAnalyticsUtil {
     }
   }
 
-  /// 프로필 링크 복사 이벤트
-  static Future<void> logProfileLinkCopy({
+  /// 프로필 링크 복사 이벤트 (기존)
+  static Future<void> logProfileLinkCopied({
     String? userId,
   }) async {
     try {
