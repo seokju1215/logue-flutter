@@ -110,7 +110,6 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         setState(() => _totalCount = count);
       }
     } catch (e) {
-      debugPrint('❌ 총 권수 가져오기 실패: $e');
       if (mounted) {
         setState(() => _totalCount = 0);
       }
@@ -172,10 +171,9 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
             } else {
               // 기존 책이면 archived_order_index 값만 업데이트 (소수점 보존)
               final existingBook = _localArchivedBooks[existingIndex];
-              if (existingBook['archived_order_index'] != null && 
+              if (existingBook['archived_order_index'] != null &&
                   existingBook['archived_order_index'] is double) {
                 newBook['archived_order_index'] = existingBook['archived_order_index'];
-                debugPrint('🔄 archived_order_index 값 보존: ${newBook['id']} -> ${existingBook['archived_order_index']}');
               }
               // 기존 책을 새 데이터로 교체
               _localArchivedBooks[existingIndex] = newBook;
@@ -195,7 +193,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
         });
       }
     } catch (e) {
-      debugPrint('❌ 페이지 로드 실패: $e');
+      // 페이지 로드 실패 시 무시
     } finally {
       if (mounted && !_isInitialLoading) {
         setState(() => _isPageLoading = false);
@@ -756,11 +754,8 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
   void _onBookTap(Map<String, dynamic> book) async {
     // ✅ 중복 네비게이션 방지
     if (_isNavigating) {
-      debugPrint('⚠️ 이미 네비게이션 중입니다. 중복 호출 무시');
       return;
     }
-    
-    final stopwatch = Stopwatch()..start();
     
     // 책장탭(currentIndex == 1)에서는 책 탭 비활성화
     if (currentIndex == 1) {
@@ -781,21 +776,12 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     final bookId = book['book_id'] as String? ?? book['id'] as String?;
     final userBookId = book['id'] as String? ?? book['user_book_id'] as String?;
     
-    debugPrint('📚 ProfileBooksTabView - 책 탭 시작: ${book['title'] ?? '제목없음'}');
-    debugPrint('   🔍 bookId: $bookId');
-    debugPrint('   🔍 userBookId: $userBookId');
-    debugPrint('   🔍 userId: ${widget.userId}');
-    debugPrint('   📊 전달할 booksData 개수: ${widget.nonArchivedBooks.length}');
-    
     if (bookId == null || userBookId == null) {
       // 책 정보가 누락됨
-      debugPrint('❌ 책 정보 누락 - bookId: $bookId, userBookId: $userBookId');
       return;
     }
     
     _isNavigating = true; // ✅ 네비게이션 시작
-    debugPrint('🚀 MyPostScreen 네비게이션 시작');
-    final navigationStart = DateTime.now();
     
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
@@ -809,14 +795,6 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
     );
     
     _isNavigating = false; // ✅ 네비게이션 완료
-    stopwatch.stop();
-    final navigationEnd = DateTime.now();
-    final navigationDuration = navigationEnd.difference(navigationStart);
-    
-    debugPrint('✅ MyPostScreen 네비게이션 완료');
-    debugPrint('   ⏱️ 전체 소요시간: ${stopwatch.elapsedMilliseconds}ms');
-    debugPrint('   ⏱️ 네비게이션 소요시간: ${navigationDuration.inMilliseconds}ms');
-    debugPrint('   📊 결과: $result');
     
     if (result == true && mounted) {
       // 상위에서 갱신되도록 두고, 여기서는 탭 유지만

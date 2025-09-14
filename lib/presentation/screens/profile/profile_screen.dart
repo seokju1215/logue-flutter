@@ -61,13 +61,10 @@ class ProfileScreen extends StatefulWidget {
 
   static Future<void> loadBooksFromContext(BuildContext context) async {
     // context를 통해 profile_screen의 State를 찾아서 loadBooks 호출
-    debugPrint('🔍 ProfileScreen.loadBooksFromContext 호출됨');
-
     // 먼저 ProfileScreenState를 찾아보기
     final profileScreenState =
         context.findAncestorStateOfType<ProfileScreenState>();
     if (profileScreenState != null) {
-      debugPrint('🔍 ProfileScreenState 찾음, loadBooks 호출');
       await profileScreenState.loadBooks();
       return;
     }
@@ -76,7 +73,6 @@ class ProfileScreen extends StatefulWidget {
     final profileViewState =
         context.findAncestorStateOfType<ProfileViewState>();
     if (profileViewState != null) {
-      debugPrint('🔍 ProfileViewState 찾음, Navigator를 통해 ProfileScreen 접근');
       final navigatorState = profileViewState.widget.navigatorKey.currentState;
       if (navigatorState != null) {
         // Navigator의 context를 통해 ProfileScreen에 접근
@@ -84,32 +80,23 @@ class ProfileScreen extends StatefulWidget {
         final profileScreenState =
             profileContext.findAncestorStateOfType<ProfileScreenState>();
         if (profileScreenState != null) {
-          debugPrint('🔍 Navigator를 통해 ProfileScreenState 찾음, loadBooks 호출');
           await profileScreenState.loadBooks();
           return;
         }
       }
     }
-
-    debugPrint('🔍 ProfileScreenState를 찾을 수 없음');
   }
 
   static Future<void> navigateToMyBookPostScreen(BuildContext context) async {
-    debugPrint('🔍 ProfileScreen.navigateToMyBookPostScreen 호출됨');
     final result = await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const MyBookPostScreen()),
     );
-    debugPrint('🔍 MyBookPostScreen 결과: $result');
     if (result == true) {
-      debugPrint('🔍 포스트 삭제됨, profile_screen 새로고침 시도');
       // profile_screen의 State를 찾아서 loadBooks 호출
       final profileScreenState =
           context.findAncestorStateOfType<ProfileScreenState>();
       if (profileScreenState != null) {
-        debugPrint('🔍 ProfileScreenState 찾음, loadBooks 호출');
         await profileScreenState.loadBooks();
-      } else {
-        debugPrint('🔍 ProfileScreenState를 찾을 수 없음');
       }
     }
   }
@@ -162,7 +149,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     
     // 앱이 포그라운드로 돌아올 때 UI 새로고침
     if (state == AppLifecycleState.resumed && mounted) {
-      debugPrint('🔄 앱 포그라운드 복귀 - UI 새로고침');
       setState(() {}); // UI 새로고침으로 _getFollowCounts() 재호출
     }
   }
@@ -192,7 +178,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
       setState(() {
         _hasShownProfileAnnouncement = true;
       });
-      debugPrint('📢 프로필 안내 표시 (디자인 모드)');
     }
   }
 
@@ -266,17 +251,15 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
         });
       }
     } catch (e) {
-      debugPrint('❌ 프로필 로드 실패: $e');
+      // 프로필 로드 실패 시 무시
     }
   }
 
   // 프로필 전체를 새로고침하는 함수
   Future<void> refreshProfile() async {
-    debugPrint('🔍 프로필 전체 새로고침 시작');
     await _fetchProfile();
     await loadBooks();
     await _checkUnreadNotifications();
-    debugPrint('🔍 프로필 전체 새로고침 완료');
   }
 
   // 팔로워/팔로잉 카운트를 실시간으로 가져오는 함수
@@ -299,7 +282,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
 
       return {'followers': followerCount, 'following': followingCount};
     } catch (e) {
-      debugPrint('❌ 팔로워/팔로잉 카운트 조회 실패: $e');
       return {'followers': 0, 'following': 0};
     }
   }
@@ -368,7 +350,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
             if (oldShowArchivedBooks != null && 
                 newShowArchivedBooks != null && 
                 oldShowArchivedBooks != newShowArchivedBooks) {
-              debugPrint('🔄 show_archived_books 변경 감지: $oldShowArchivedBooks -> $newShowArchivedBooks');
               await _markShowArchivedBooksChanged();
             }
             
@@ -395,7 +376,6 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
           if (!mounted) return;
           
           // 팔로우/언팔로우 변경사항이 발생하면 UI 새로고침
-          debugPrint('🔄 팔로우 테이블 변경 감지: ${payload.eventType}');
           setState(() {}); // UI 새로고침으로 _getFollowCounts() 재호출
         },
       )
@@ -407,9 +387,8 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('has_changed_show_archived_books', true);
-      debugPrint('✅ show_archived_books 변경 기록됨 - 말풍선 더 이상 표시 안함');
     } catch (e) {
-      debugPrint('❌ show_archived_books 변경 기록 실패: $e');
+      // show_archived_books 변경 기록 실패 시 무시
     }
   }
 
@@ -779,16 +758,14 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 
                 // Firebase Analytics 이벤트 전송
                 try {
-                  debugPrint('🚀🚀🚀 프로필 화면에서 공유 이벤트 전송 시도');
                   await FirebaseAnalyticsUtil.logProfileShare(
                     sourceScreen: 'profile_screen',
                     sharedUserId: userId,
                     sharedUsername: profile?['username'] ?? '',
                     shareMethod: 'copy_button',
                   );
-                  debugPrint('🎯🎯🎯 프로필 화면에서 공유 이벤트 전송 완료');
                 } catch (analyticsError) {
-                  debugPrint('❌ 프로필 공유 이벤트 전송 실패: $analyticsError');
+                  // Analytics 이벤트 전송 실패 시 무시
                 }
               }
             },

@@ -36,73 +36,22 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
 
   @override
   void initState() {
-    final initStartTime = DateTime.now();
-    debugPrint('🚀 MyBookPostScreen initState 시작');
-
-    final superInitStart = DateTime.now();
     super.initState();
-    final superInitEnd = DateTime.now();
-    final superInitDuration = superInitEnd.difference(superInitStart);
-    debugPrint('   🏗️ super.initState() 소요시간: ${superInitDuration.inMilliseconds}ms');
-
-    final widgetInfoStart = DateTime.now();
-    debugPrint('   📚 bookId: ${widget.bookId}');
-    debugPrint('   📚 userBookId: ${widget.userBookId}');
-    debugPrint('   👤 userId: ${widget.userId}');
-    debugPrint('   📊 booksData 개수: ${widget.booksData?.length ?? 0}');
-    final widgetInfoEnd = DateTime.now();
-    final widgetInfoDuration = widgetInfoEnd.difference(widgetInfoStart);
-    debugPrint('   📝 위젯 정보 출력 소요시간: ${widgetInfoDuration.inMilliseconds}ms');
-
-    final fetchStartTime = DateTime.now();
-    debugPrint('   🚀 _fetchPosts 호출 시작');
-
-    // ✅ 동기적으로 _fetchPosts 호출 (비동기 오버헤드 제거)
     _fetchPosts();
-
-    final fetchEndTime = DateTime.now();
-    final fetchDuration = fetchEndTime.difference(fetchStartTime);
-    final initEndTime = DateTime.now();
-    final initDuration = initEndTime.difference(initStartTime);
-
-    debugPrint('   ⚡ _fetchPosts 소요시간: ${fetchDuration.inMilliseconds}ms');
-    debugPrint('✅ MyBookPostScreen initState 완료 - 총 소요시간: ${initDuration.inMilliseconds}ms');
-
-    final overhead = initDuration.inMilliseconds - fetchDuration.inMilliseconds - superInitDuration.inMilliseconds - widgetInfoDuration.inMilliseconds;
-    debugPrint('   📊 initState 오버헤드: ${overhead}ms (super: ${superInitDuration.inMilliseconds}ms, info: ${widgetInfoDuration.inMilliseconds}ms, 기타: ${overhead}ms)');
   }
 
   Future<void> _fetchPosts() async {
-    final fetchStartTime = DateTime.now();
     final userId = widget.userId ?? client.auth.currentUser?.id;
 
-    final debugStart = DateTime.now();
-    debugPrint('🔍 MyBookPostScreen _fetchPosts 시작');
-    debugPrint('   👤 userId: $userId');
-    debugPrint('   📚 bookId: ${widget.bookId}');
-    debugPrint('   📚 userBookId: ${widget.userBookId}');
-    final debugEnd = DateTime.now();
-    final debugDuration = debugEnd.difference(debugStart);
-    debugPrint('   📝 _fetchPosts 디버그 출력 소요시간: ${debugDuration.inMilliseconds}ms');
-
     if (userId == null || !mounted) {
-      debugPrint('❌ userId가 null이거나 mounted가 false입니다.');
       return;
     }
 
     try {
       // ✅ 전달된 booksData가 있으면 빠르게 사용
       if (widget.booksData != null && widget.booksData!.isNotEmpty) {
-        final dataProcessingStart = DateTime.now();
-        debugPrint('🚀 전달받은 booksData 사용 - ${widget.booksData!.length}개 항목');
-
-        final mappingStart = DateTime.now();
         final mappedPosts = widget.booksData!.map((e) => BookPostModel.fromMap(e)).toList();
-        final mappingEnd = DateTime.now();
-        final mappingDuration = mappingEnd.difference(mappingStart);
-        debugPrint('   🗺️ BookPostModel 매핑 소요시간: ${mappingDuration.inMilliseconds}ms');
 
-        final indexSearchStart = DateTime.now();
         int index = 0;
         bool needsScroll = false;
         if (widget.userBookId != null) {
@@ -112,19 +61,9 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
           final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
           if (foundIndex != -1) { index = foundIndex; needsScroll = true; }
         }
-        final indexSearchEnd = DateTime.now();
-        final indexSearchDuration = indexSearchEnd.difference(indexSearchStart);
-        debugPrint('   🔍 타겟 인덱스 검색 소요시간: ${indexSearchDuration.inMilliseconds}ms');
-
-        final dataProcessingEnd = DateTime.now();
-        final dataProcessingDuration = dataProcessingEnd.difference(dataProcessingStart);
-        debugPrint('   ⚡ 데이터 처리 완료 - 소요시간: ${dataProcessingDuration.inMilliseconds}ms');
-        debugPrint('   📊 매핑된 포스트 개수: ${mappedPosts.length}');
-        debugPrint('   🎯 타겟 인덱스: $index (스크롤 필요: $needsScroll)');
 
         if (!mounted) return;
 
-        final setStateStart = DateTime.now();
         setState(() {
           posts = mappedPosts;
           initialIndex = index >= 0 ? index : 0;
@@ -132,50 +71,30 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
           _isScrollingToTarget = needsScroll; // ✅ 스크롤 필요 시 오버레이 켬
           isLoading = false;                   // ✅ 리스트는 즉시 렌더(오버레이로 가림)
         });
-        final setStateEnd = DateTime.now();
-        final setStateDuration = setStateEnd.difference(setStateStart);
-        debugPrint('   🎨 setState 소요시간: ${setStateDuration.inMilliseconds}ms');
 
         // 스크롤 필요하면 프레임 기준으로 예약
         if (needsScroll) {
           _scheduleTargetScrollIfNeeded();
         }
-
-        final fetchEndTime = DateTime.now();
-        final fetchDuration = fetchEndTime.difference(fetchStartTime);
-        debugPrint('✅ MyBookPostScreen _fetchPosts 완료 (booksData 사용) - 총 소요시간: ${fetchDuration.inMilliseconds}ms');
         return;
       }
 
       // ✅ 서버에서 가져오기
-      final serverCallStart = DateTime.now();
-      debugPrint('🌐 서버 호출 시작: get_visible_user_books');
       final response = await client.rpc('get_visible_user_books', params: {'target_user_id': userId});
-      final serverCallEnd = DateTime.now();
-      final serverCallDuration = serverCallEnd.difference(serverCallStart);
-      debugPrint('🌐 서버 호출 완료 - 소요시간: ${serverCallDuration.inMilliseconds}ms');
 
       if (!mounted) return;
 
-      debugPrint('🔍 응답 데이터: ${response.length}개 항목');
       if (response.isEmpty) {
-        debugPrint('❌ 응답이 비어있습니다.');
         throw Exception('데이터를 불러올 수 없습니다.');
       }
 
-      final dataProcessingStart = DateTime.now();
       final fetched = List<Map<String, dynamic>>.from(response);
       final userPosts = fetched.where((e) => e['user_id'] == userId).toList();
       if (userPosts.isEmpty) {
-        debugPrint('❌ 해당 사용자의 포스트가 없습니다.');
         throw Exception('해당 사용자의 게시글이 없습니다.');
       }
 
       final mappedPosts = userPosts.map((e) => BookPostModel.fromMap(e)).toList();
-      final dataProcessingEnd = DateTime.now();
-      final dataProcessingDuration = dataProcessingEnd.difference(dataProcessingStart);
-      debugPrint('   ⚡ 서버 데이터 처리 완료 - 소요시간: ${dataProcessingDuration.inMilliseconds}ms');
-      debugPrint('   📊 매핑된 포스트 개수: ${mappedPosts.length}');
 
       int index = 0;
       bool needsScroll = false;
@@ -186,8 +105,6 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
         final foundIndex = mappedPosts.indexWhere((post) => post.bookId == widget.bookId);
         if (foundIndex != -1) { index = foundIndex; needsScroll = true; }
       }
-
-      debugPrint('   🎯 타겟 인덱스: $index (스크롤 필요: $needsScroll)');
 
       if (!mounted) return;
 
@@ -203,12 +120,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
       if (needsScroll) {
         _scheduleTargetScrollIfNeeded();
       }
-
-      final fetchEndTime = DateTime.now();
-      final fetchDuration = fetchEndTime.difference(fetchStartTime);
-      debugPrint('✅ MyBookPostScreen _fetchPosts 완료 (서버 호출) - 총 소요시간: ${fetchDuration.inMilliseconds}ms');
     } catch (e) {
-      debugPrint('❌ 게시글 불러오기 실패: $e');
       if (mounted) setState(() => isLoading = false);
     }
   }

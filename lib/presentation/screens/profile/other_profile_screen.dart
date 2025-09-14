@@ -101,7 +101,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
     
     // 앱이 포그라운드로 돌아올 때 UI 새로고침
     if (state == AppLifecycleState.resumed && mounted) {
-      debugPrint('🔄 앱 포그라운드 복귀 - UI 새로고침');
       setState(() {}); // UI 새로고침
     }
   }
@@ -115,7 +114,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
         'user_id': widget.userId,
       });
     } catch (e) {
-      debugPrint('❌ 방문자 증가 실패: $e');
+      // 방문자 증가 실패 시 무시
     }
   }
 
@@ -149,7 +148,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
 
       return {'followers': followerCount, 'following': followingCount};
     } catch (e) {
-      debugPrint('❌ 팔로워/팔로잉 카운트 조회 실패: $e');
       return {'followers': 0, 'following': 0};
     }
   }
@@ -214,7 +212,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
 
   @override
   void dispose() {
-    debugPrint('🔍 OtherProfileScreen dispose: ${widget.userId}');
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     _currentTabIndexNotifier.dispose();
@@ -255,7 +252,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
           onPressed: () {
-            debugPrint('🔍 ===== 앱바 뒤로가기 버튼 눌림 =====');
             _handleBackNavigation();
           },
         ),
@@ -272,16 +268,14 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                   
                   // Firebase Analytics 이벤트 전송
                   try {
-                    debugPrint('🚀🚀🚀 다른 사용자 프로필에서 공유 이벤트 전송 시도');
                     await FirebaseAnalyticsUtil.logProfileShare(
                       sourceScreen: 'other_profile_screen',
                       sharedUserId: widget.userId,
                       sharedUsername: profile?['username'] ?? '',
                       shareMethod: 'share_button',
                     );
-                    debugPrint('🎯🎯🎯 다른 사용자 프로필에서 공유 이벤트 전송 완료');
                   } catch (analyticsError) {
-                    debugPrint('❌ 다른 사용자 프로필 공유 이벤트 전송 실패: $analyticsError');
+                    // Analytics 이벤트 전송 실패 시 무시
                   }
                 }
               },
@@ -543,12 +537,10 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                   child: !isMyProfile ? OutlinedButton(
                       onPressed: () async {
                         if (_isFollowActionInProgress) {
-                          debugPrint('🔴 팔로우 액션 중복 방지');
                           return;
                         }
 
                         _isFollowActionInProgress = true;
-                        debugPrint('🔍 팔로우 액션 시작: ${widget.userId}');
                         final followNotifier =
                             ref.read(followStateProvider(widget.userId).notifier);
                         final currentFollowers = profile?['followers'] ?? 0;
@@ -556,8 +548,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                         try {
                           if (isFollowing) {
                             // 언팔로우
-                            debugPrint('🔍 언팔로우 버튼 클릭');
-
                             // 팔로우 상태 변경 플래그 설정
                             _hasFollowStateChanged = true;
 
@@ -573,7 +563,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
 
                             // 서버 요청 (백그라운드)
                             await followNotifier.unfollow();
-                            debugPrint('🔍 언팔로우 서버 요청 완료');
                             
                             // Firebase Analytics 이벤트 전송
                             await FirebaseAnalyticsUtil.logUnfollowUser(
@@ -583,8 +572,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                             );
                           } else {
                             // 팔로우
-                            debugPrint('🔍 팔로우 버튼 클릭');
-
                             // 팔로우 상태 변경 플래그 설정
                             _hasFollowStateChanged = true;
 
@@ -599,19 +586,16 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
 
                             // 서버 요청 (백그라운드)
                             await followNotifier.follow();
-                            debugPrint('🔍 팔로우 서버 요청 완료');
                             
                             // Firebase Analytics 이벤트 전송 (별도 try-catch)
                             try {
-                              debugPrint('🚀🚀🚀 팔로우 이벤트 전송 시도: ${widget.userId}');
                               await FirebaseAnalyticsUtil.logFollowUser(
                                 targetUserId: widget.userId,
                                 targetUsername: profile?['username'] ?? '',
                                 sourceScreen: 'other_profile_screen',
                               );
-                              debugPrint('🎯🎯🎯 팔로우 이벤트 전송 완료: ${widget.userId}');
                             } catch (analyticsError) {
-                              debugPrint('❌ 팔로우 이벤트 전송 실패: $analyticsError');
+                              // Analytics 이벤트 전송 실패 시 무시
                             }
                           }
                         } catch (e) {
@@ -629,8 +613,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                                 'followers': currentFollowers,
                               };
                             });
-                            debugPrint(
-                                '❌ ${isFollowing ? '언팔로우' : '팔로우'} 실패: $e');
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                   content: Text(
@@ -640,7 +622,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                         } finally {
                           if (mounted) {
                             _isFollowActionInProgress = false;
-                            debugPrint('🔍 팔로우 액션 완료: ${widget.userId}');
                           }
                         }
                       },
@@ -678,7 +659,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
       onTap: (book) {
         final bookId = book['book_id'] ?? book['id']; // <- 🔥 보장
         final userBookId = book['id']; // user_book_id 전달
-        debugPrint('🔍 other_profile_screen - 책 탭됨: bookId=$bookId, userBookId=$userBookId, userId=${widget.userId}');
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => MyBookPostScreen(
@@ -728,26 +708,17 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
   }
 
   Future<void> _handleBackNavigation() async {
-    debugPrint('🔍 ===== 뒤로가기 처리 시작 =====');
-    debugPrint('🔍 팔로우 상태 변경 여부: $_hasFollowStateChanged');
-    debugPrint('🔍 mounted: $mounted');
-
     // 팔로우 상태가 변경되었을 때만 true 반환
     final result = _hasFollowStateChanged ? true : null;
-    debugPrint('🔍 Navigator.pop 실행 - result: $result');
 
     if (mounted) {
-      debugPrint('🔍 Navigator.pop 호출 전');
-
       // 팔로우 상태가 변경된 경우 네트워크 요청 완료 대기
       if (_hasFollowStateChanged) {
-        debugPrint('🔍 팔로우 상태 변경됨 - 네트워크 요청 완료 대기');
         // 릴리즈 모드에서 네트워크 요청 완료를 보장하기 위한 대기
         await Future.delayed(const Duration(milliseconds: 800));
       }
 
       Navigator.pop(context, result);
-      debugPrint('🔍 Navigator.pop 호출 후');
     }
   }
 
@@ -776,11 +747,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
       // 실제 필요한 높이 = 대표탭 높이 + 탭바 높이 + 여유공간
       final requiredHeight = representativeTabHeight + tabBarHeight + 50.0;
       
-      debugPrint('🔍 OtherProfileScreen - ProfileBooksTabView 높이 계산 (6권 초과):');
-      debugPrint('  - 대표탭 높이: $representativeTabHeight');
-      debugPrint('  - 탭바 높이: $tabBarHeight');
-      debugPrint('  - 필요한 높이: $requiredHeight');
-      
       return requiredHeight -30;
     }
   }
@@ -807,14 +773,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
     
     final finalHeight = totalHeight + 32.0; // 상하 패딩 추가 (16 * 2 = 32)
     
-    debugPrint('🔍 OtherProfileScreen - 대표탭 높이 계산:');
-    debugPrint('  - 화면 너비: $screenWidth');
-    debugPrint('  - 사용 가능 너비: $availableWidth');
-    debugPrint('  - 아이템 너비: $itemWidth, 높이: $itemHeight');
-    debugPrint('  - 행 수: $rowCount');
-    debugPrint('  - 총 높이: $totalHeight + 32 = $finalHeight');
-    
-    return finalHeight ;
+    return finalHeight;
   }
 
   Widget _buildTabsOnly() {

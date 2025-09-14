@@ -112,7 +112,6 @@ class PostItem extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.more_vert),
                     onPressed: () async {
-                      debugPrint('🔍 PostActionBottomSheet 호출: is_archived=${post.is_archived}');
                       final action = await showModalBottomSheet<String>(
                         context: context,
                         useRootNavigator: true,           // ✅ 루트 네비게이터 위에 띄움 → 바텀 네비까지 덮음
@@ -130,7 +129,6 @@ class PostItem extends StatelessWidget {
                           );
                         },
                       );
-                      debugPrint('🔍 PostActionBottomSheet 결과: $action');
 
                       if (action == 'share') {
                         // 공유 기능 구현
@@ -157,14 +155,11 @@ class PostItem extends StatelessWidget {
                         }
                       } else if (action == 'profile') {
                         // 프로필로 이동 기능 구현
-                        debugPrint('🔍 프로필로 이동 시도: ${post.id}');
                         try {
                           final userBookApi = UserBookApi(Supabase.instance.client);
                           await userBookApi.moveToProfile(post.id);
-                          debugPrint('✅ 프로필로 이동 성공: ${post.id}');
                           onDeleteSuccess?.call(); // 프로필 이동 후 목록 새로고침
                         } catch (e) {
-                          debugPrint('❌ 프로필로 이동 실패: $e');
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('프로필 이동 중 오류가 발생했습니다: $e')),
                           );
