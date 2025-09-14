@@ -47,87 +47,29 @@ class _PostContentState extends State<PostContent> {
   void _calculateTextLayout() {
     if (_isCalculated) return;
 
-    // UTF-16 인코딩 문제 해결을 위한 안전한 텍스트 처리
+    final stopwatch = Stopwatch()..start();
+    debugPrint('   🔍 PostContent _calculateTextLayout 시작');
+    debugPrint('     - reviewContent 길이: ${widget.post.reviewContent?.length ?? 0}');
+
+    // 최적화된 UTF-16 안전 텍스트 처리
     String _safeText(String? text) {
       if (text == null || text.isEmpty) return '';
+      
       try {
-        // 더 강력한 UTF-16 정리
-        String cleaned = text;
+        // 1단계: 기본적인 잘못된 문자 제거 (정규식으로 빠르게)
+        String cleaned = text.replaceAll(RegExp(r'[\uFFFD\u0000-\u001F\u007F-\u009F]'), '');
         
-        // 1단계: 기본적인 잘못된 문자 제거
-        cleaned = cleaned.replaceAll(RegExp(r'[\uFFFD\u0000-\u001F\u007F-\u009F]'), '');
+        // 2단계: 잘못된 서로게이트 쌍 제거 (정규식으로 빠르게)
+        cleaned = cleaned.replaceAll(RegExp(r'[\uD800-\uDBFF](?![\uDC00-\uDFFF])'), ''); // 단독 상위 서로게이트
+        cleaned = cleaned.replaceAll(RegExp(r'(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]'), ''); // 단독 하위 서로게이트
         
-        // 2단계: UTF-16 유효성 검사 및 복구
-        try {
-          final bytes = text.codeUnits;
-          final validChars = <int>[];
-          
-          for (int i = 0; i < bytes.length; i++) {
-            final codeUnit = bytes[i];
-            
-            // 기본 평면 문자 (U+0000 ~ U+FFFF)
-            if (codeUnit >= 0 && codeUnit <= 0xFFFF) {
-              // 서로게이트 쌍 검사
-              if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF) {
-                // 상위 서로게이트
-                if (i + 1 < bytes.length) {
-                  final nextCodeUnit = bytes[i + 1];
-                  if (nextCodeUnit >= 0xDC00 && nextCodeUnit <= 0xDFFF) {
-                    // 유효한 서로게이트 쌍
-                    validChars.add(codeUnit);
-                    validChars.add(nextCodeUnit);
-                    i++; // 다음 문자 건너뛰기
-                    continue;
-                  }
-                }
-                // 잘못된 서로게이트 쌍은 건너뛰기
-                continue;
-              } else if (codeUnit >= 0xDC00 && codeUnit <= 0xDFFF) {
-                // 단독 하위 서로게이트는 건너뛰기
-                continue;
-              } else {
-                // 일반 문자
-                validChars.add(codeUnit);
-              }
-            } else {
-              // 이모지 등 기본 평면을 벗어나는 문자도 지원
-              // UTF-16 서로게이트 쌍으로 처리
-              if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF) {
-                // 상위 서로게이트
-                if (i + 1 < bytes.length) {
-                  final nextCodeUnit = bytes[i + 1];
-                  if (nextCodeUnit >= 0xDC00 && nextCodeUnit <= 0xDFFF) {
-                    // 유효한 서로게이트 쌍 (이모지 포함)
-                    validChars.add(codeUnit);
-                    validChars.add(nextCodeUnit);
-                    i++; // 다음 문자 건너뛰기
-                    continue;
-                  }
-                }
-                // 잘못된 서로게이트 쌍은 건너뛰기
-                continue;
-              } else if (codeUnit >= 0xDC00 && codeUnit <= 0xDFFF) {
-                // 단독 하위 서로게이트는 건너뛰기
-                continue;
-              } else {
-                // 기타 문자는 건너뛰기
-                continue;
-              }
-            }
-          }
-          
-          // 유효한 문자들로 문자열 재구성
-          cleaned = String.fromCharCodes(validChars);
-        } catch (e) {
-          debugPrint('⚠️ PostContent UTF-16 복구 실패, 기본 정리 사용: $e');
-        }
+        // 3단계: 연속된 공백 정리
+        cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
         
-        // 3단계: 최종 정리
-        cleaned = cleaned.trim();
         return cleaned.isEmpty ? '' : cleaned;
       } catch (e) {
-        debugPrint('⚠️ PostContent 텍스트 정리 실패: $text, 오류: $e');
-        return '';
+        debugPrint('⚠️ PostContent 텍스트 정리 실패: $e');
+        return text; // 실패 시 원본 반환
       }
     }
 
@@ -151,60 +93,14 @@ class _PostContentState extends State<PostContent> {
       letterSpacing: -0.32,
     );
 
-    // TextPainter 사용 전 UTF-16 유효성 최종 검증
+    // 최적화된 최종 텍스트 검증 (간단한 정규식 사용)
     String _finalSafeText(String text) {
       try {
-        // UTF-16 유효성 검사
-        final codeUnits = text.codeUnits;
-        final validChars = <int>[];
-        
-        for (int i = 0; i < codeUnits.length; i++) {
-          final codeUnit = codeUnits[i];
-          
-          // 기본 평면 문자
-          if (codeUnit >= 0 && codeUnit <= 0xFFFF) {
-            if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF) {
-              // 상위 서로게이트
-              if (i + 1 < codeUnits.length) {
-                final nextCodeUnit = codeUnits[i + 1];
-                if (nextCodeUnit >= 0xDC00 && nextCodeUnit <= 0xDFFF) {
-                  validChars.add(codeUnit);
-                  validChars.add(nextCodeUnit);
-                  i++;
-                  continue;
-                }
-              }
-              continue;
-            } else if (codeUnit >= 0xDC00 && codeUnit <= 0xDFFF) {
-              continue;
-            } else {
-              validChars.add(codeUnit);
-            }
-          } else {
-            // 확장 평면 문자 (이모지 등)
-            if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF) {
-              if (i + 1 < codeUnits.length) {
-                final nextCodeUnit = codeUnits[i + 1];
-                if (nextCodeUnit >= 0xDC00 && nextCodeUnit <= 0xDFFF) {
-                  validChars.add(codeUnit);
-                  validChars.add(nextCodeUnit);
-                  i++;
-                  continue;
-                }
-              }
-              continue;
-            } else if (codeUnit >= 0xDC00 && codeUnit <= 0xDFFF) {
-              continue;
-            } else {
-              continue;
-            }
-          }
-        }
-        
-        return String.fromCharCodes(validChars);
+        // 이미 _safeText에서 처리했으므로 추가 검증만 수행
+        return text.replaceAll(RegExp(r'[\uFFFD]'), ''); // 대체 문자만 제거
       } catch (e) {
-        debugPrint('⚠️ 최종 UTF-16 검증 실패: $e');
-        return '';
+        debugPrint('⚠️ 최종 텍스트 검증 실패: $e');
+        return text; // 실패 시 원본 반환
       }
     }
 
@@ -218,35 +114,22 @@ class _PostContentState extends State<PostContent> {
       return;
     }
 
-    final textPainter = TextPainter(
-      text: TextSpan(text: safeFullText, style: textStyle),
-      maxLines: maxLines,
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: MediaQuery.of(context).size.width - 44);
-
-    if (!textPainter.didExceedMaxLines) {
+    // 간단한 문자 수 기반으로 더보기 버튼 결정 (TextPainter 대신)
+    const maxChars = 200; // 대략적인 문자 수 제한
+    
+    if (safeFullText.length <= maxChars) {
       setState(() {
         _displayText = fullText;
         _shouldShowMoreButton = false;
         _isCalculated = true;
       });
     } else {
-      // " ... 더보기"가 들어갈 공간 확보
-      int endIndex = safeFullText.length;
-      for (int i = safeFullText.length - 1; i > 0; i--) {
-        final testText = safeFullText.substring(0, i) + ellipsis + moreText;
-        
-        // 테스트 텍스트도 UTF-16 검증
-        final safeTestText = _finalSafeText(testText);
-        if (safeTestText.isEmpty) continue;
-        
-        final testPainter = TextPainter(
-          text: TextSpan(text: safeTestText, style: textStyle),
-          maxLines: maxLines,
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: MediaQuery.of(context).size.width - 44);
-
-        if (!testPainter.didExceedMaxLines) {
+      // 간단한 문자 수 기반으로 잘라내기
+      int endIndex = maxChars;
+      
+      // 단어 경계에서 자르기 (더 자연스러운 잘라내기)
+      for (int i = maxChars; i > maxChars - 50 && i > 0; i--) {
+        if (safeFullText[i] == ' ' || safeFullText[i] == '\n') {
           endIndex = i;
           break;
         }
@@ -258,91 +141,38 @@ class _PostContentState extends State<PostContent> {
         _isCalculated = true;
       });
     }
+    
+    stopwatch.stop();
+    debugPrint('   ⏱️ PostContent _calculateTextLayout 소요시간: ${stopwatch.elapsedMicroseconds}μs');
+    if (stopwatch.elapsedMicroseconds > 5000) {
+      debugPrint('   ⚠️ PostContent 텍스트 계산 시간 초과! 렉 발생 가능성 높음!');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // UTF-16 인코딩 문제 해결을 위한 안전한 텍스트 처리
+    final stopwatch = Stopwatch()..start();
+    debugPrint('   🎨 PostContent build 시작');
+    
+    // 최적화된 UTF-16 안전 텍스트 처리 (build 메서드용)
     String _safeText(String? text) {
       if (text == null || text.isEmpty) return '';
+      
       try {
-        // 더 강력한 UTF-16 정리
-        String cleaned = text;
+        // 1단계: 기본적인 잘못된 문자 제거 (정규식으로 빠르게)
+        String cleaned = text.replaceAll(RegExp(r'[\uFFFD\u0000-\u001F\u007F-\u009F]'), '');
         
-        // 1단계: 기본적인 잘못된 문자 제거
-        cleaned = cleaned.replaceAll(RegExp(r'[\uFFFD\u0000-\u001F\u007F-\u009F]'), '');
+        // 2단계: 잘못된 서로게이트 쌍 제거 (정규식으로 빠르게)
+        cleaned = cleaned.replaceAll(RegExp(r'[\uD800-\uDBFF](?![\uDC00-\uDFFF])'), ''); // 단독 상위 서로게이트
+        cleaned = cleaned.replaceAll(RegExp(r'(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]'), ''); // 단독 하위 서로게이트
         
-        // 2단계: UTF-16 유효성 검사 및 복구
-        try {
-          final bytes = text.codeUnits;
-          final validChars = <int>[];
-          
-          for (int i = 0; i < bytes.length; i++) {
-            final codeUnit = bytes[i];
-            
-            // 기본 평면 문자 (U+0000 ~ U+FFFF)
-            if (codeUnit >= 0 && codeUnit <= 0xFFFF) {
-              // 서로게이트 쌍 검사
-              if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF) {
-                // 상위 서로게이트
-                if (i + 1 < bytes.length) {
-                  final nextCodeUnit = bytes[i + 1];
-                  if (nextCodeUnit >= 0xDC00 && nextCodeUnit <= 0xDFFF) {
-                    // 유효한 서로게이트 쌍
-                    validChars.add(codeUnit);
-                    validChars.add(nextCodeUnit);
-                    i++; // 다음 문자 건너뛰기
-                    continue;
-                  }
-                }
-                // 잘못된 서로게이트 쌍은 건너뛰기
-                continue;
-              } else if (codeUnit >= 0xDC00 && codeUnit <= 0xDFFF) {
-                // 단독 하위 서로게이트는 건너뛰기
-                continue;
-              } else {
-                // 일반 문자
-                validChars.add(codeUnit);
-              }
-            } else {
-              // 이모지 등 기본 평면을 벗어나는 문자도 지원
-              // UTF-16 서로게이트 쌍으로 처리
-              if (codeUnit >= 0xD800 && codeUnit <= 0xDBFF) {
-                // 상위 서로게이트
-                if (i + 1 < bytes.length) {
-                  final nextCodeUnit = bytes[i + 1];
-                  if (nextCodeUnit >= 0xDC00 && nextCodeUnit <= 0xDFFF) {
-                    // 유효한 서로게이트 쌍 (이모지 포함)
-                    validChars.add(codeUnit);
-                    validChars.add(nextCodeUnit);
-                    i++; // 다음 문자 건너뛰기
-                    continue;
-                  }
-                }
-                // 잘못된 서로게이트 쌍은 건너뛰기
-                continue;
-              } else if (codeUnit >= 0xDC00 && codeUnit <= 0xDFFF) {
-                // 단독 하위 서로게이트는 건너뛰기
-                continue;
-              } else {
-                // 기타 문자는 건너뛰기
-                continue;
-              }
-            }
-          }
-          
-          // 유효한 문자들로 문자열 재구성
-          cleaned = String.fromCharCodes(validChars);
-        } catch (e) {
-          debugPrint('⚠️ PostContent build UTF-16 복구 실패, 기본 정리 사용: $e');
-        }
+        // 3단계: 연속된 공백 정리
+        cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
         
-        // 3단계: 최종 정리
-        cleaned = cleaned.trim();
         return cleaned.isEmpty ? '' : cleaned;
       } catch (e) {
-        debugPrint('⚠️ PostContent build 텍스트 정리 실패: $text, 오류: $e');
-        return '';
+        debugPrint('⚠️ PostContent build 텍스트 정리 실패: $e');
+        return text; // 실패 시 원본 반환
       }
     }
 
@@ -359,15 +189,19 @@ class _PostContentState extends State<PostContent> {
       // 안전한 텍스트로 표시
       final safeContent = _safeText(content);
       if (safeContent.isEmpty) {
+        stopwatch.stop();
+        debugPrint('   ⏱️ PostContent build 소요시간: ${stopwatch.elapsedMicroseconds}μs (빈 컨텐츠)');
         return const SizedBox(height: 0);
       }
+      stopwatch.stop();
+      debugPrint('   ⏱️ PostContent build 소요시간: ${stopwatch.elapsedMicroseconds}μs (미계산 상태)');
       return Text(
         safeContent,
         style: textStyle,
       );
     }
 
-    return _shouldShowMoreButton
+    final result = _shouldShowMoreButton
         ? RichText(
             text: TextSpan(
               style: textStyle,
@@ -407,5 +241,13 @@ class _PostContentState extends State<PostContent> {
             _safeText(_displayText ?? ''),
             style: textStyle,
           );
+    
+    stopwatch.stop();
+    debugPrint('   ⏱️ PostContent build 소요시간: ${stopwatch.elapsedMicroseconds}μs');
+    if (stopwatch.elapsedMicroseconds > 5000) {
+      debugPrint('   ⚠️ PostContent build 시간 초과! 렉 발생 가능성 높음!');
+    }
+    
+    return result;
   }
 }
