@@ -106,6 +106,14 @@ class AddBookViewState extends State<AddBookView> with AutomaticKeepAliveClientM
   Future<void> refreshData() async {
     debugPrint('🔄 AddBookView - 수동 새로고침 시작');
     await _fetchAllBooksFromServer();
+    
+    // ✅ UI 업데이트를 위한 setState 호출
+    if (mounted) {
+      setState(() {
+        // 데이터가 이미 _persistentAllBooks에 업데이트되었으므로 UI만 리빌드
+      });
+      debugPrint('✅ AddBookView - UI 업데이트 완료');
+    }
   }
 
   /// 로컬 데이터 업데이트 (archive_tab에서 순서 변경 시)

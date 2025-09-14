@@ -134,26 +134,16 @@ class _AddBookScreenState extends State<AddBookScreen> {
     }
   }
 
-  /// 수동 새로고침 (필요시에만 호출) - 상위 데이터 새로고침 사용
-  Future<void> _fetchAllBooks() async {
-    debugPrint('🔄 AddBookScreen - 수동 새로고침 요청');
+  /// 로컬 데이터 동기화 (DB 호출 없이)
+  void _syncLocalData() {
+    debugPrint('🔄 AddBookScreen - 로컬 데이터 동기화');
     
-    if (widget.onRefreshData != null) {
-      // 상위에서 데이터 새로고침
-      await widget.onRefreshData!();
-      
-      // 새로고침된 데이터로 로컬 상태 업데이트
-      if (mounted) {
-        setState(() {
-          allBooks = List<Map<String, dynamic>>.from(widget.persistentAllBooks);
-          isLoading = false;
-        });
-        
-        // ProfileTab 키를 새로 생성하여 강제 리빌드 (데이터 변경 즉시 반영)
+    if (mounted) {
+      setState(() {
+        // ProfileTab 키를 새로 생성하여 강제 리빌드
         _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
         debugPrint('🔄 ProfileTab 키 새로 생성: $_profileTabKey');
-      }
-      debugPrint('✅ AddBookScreen - 새로고침 완료: ${allBooks.length}개 책');
+      });
     }
   }
 
@@ -267,6 +257,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     setState(() {
                       _currentIndex = index;
                     });
+                    
+                    // ✅ 프로필 탭(0)으로 돌아올 때 ProfileTab 키만 새로 생성 (로컬 동기화)
+                    if (index == 0) {
+                      debugPrint('🔄 PageView에서 프로필 탭으로 돌아옴 - 로컬 동기화');
+                      setState(() {
+                        _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
+                      });
+                    }
                   }
                 },
                 children: [
@@ -275,12 +273,12 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     isLimitReached: widget.isLimitReached,
                     books: profileBooks, // computed property 사용
                     allBooks: allBooks, // 모든 책 목록
-                    onRefresh: _fetchAllBooks,
+                    onRefresh: _syncLocalData,
                     onBookAdded: (result) {
                       // 책 추가 완료 시 데이터만 새로고침 (Navigator.pop 제거)
                       if (result == true) {
                         debugPrint('📚 책 추가 완료 - 데이터 새로고침');
-                        _fetchAllBooks();
+                        _syncLocalData();
                       }
                     },
                     navigatorKey: widget.navigatorKey,
@@ -299,19 +297,17 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     key: _archiveTabStateKey, // GlobalKey 사용
                     allBooks: allBooks, // 모든 책 목록 전달
                     bookDataService: _bookDataService, // BookDataService 전달
-                    onRefresh: _fetchAllBooks,
+                    onRefresh: _syncLocalData,
                     onFocusMe: focusArchiveTab,
                     onBookAdded: () {
                       if (mounted) {
                         setState(() {
                           isLoading = true;
                         });
-                        _fetchAllBooks().then((_) {
-                          if (mounted) {
-                            setState(() {
-                              isLoading = false;
-                            });
-                          }
+                        // 로컬 동기화만 수행
+                        _syncLocalData();
+                        setState(() {
+                          isLoading = false;
                         });
                       }
                     },
@@ -379,6 +375,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
             }
           }
 
+          // ✅ 프로필 탭으로 이동하는 경우 즉시 ProfileTab 키 새로 생성 (깜빡임 방지)
+          if (index == 0) {
+            debugPrint('🔄 탭 클릭으로 프로필 탭으로 이동 - 로컬 동기화');
+            setState(() {
+              _profileTabKey = 'profile_${DateTime.now().millisecondsSinceEpoch}';
+            });
+          }
+          
           // 즉시 탭 이동 (저장 완료 기다리지 않음)
           _pageController.animateToPage(
             index,

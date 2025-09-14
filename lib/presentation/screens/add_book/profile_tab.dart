@@ -91,7 +91,7 @@ class _ProfileTabState extends State<ProfileTab> {
         }
       }
       
-      // 순서 변경이 있는지 확인 (ID 순서 비교)
+      // ✅ 간단하고 빠른 변경 감지: ID 순서 비교
       final oldBookIds = oldWidget.books.map((b) => b['id'] as String).toList();
       final newBookIds = widget.books.map((b) => b['id'] as String).toList();
       final hasOrderChange = !_areListsEqual(oldBookIds, newBookIds);
@@ -101,34 +101,21 @@ class _ProfileTabState extends State<ProfileTab> {
         // 순서가 변경된 경우 로컬 상태를 상위 데이터로 동기화
         _initializeLocalBooks();
       } else {
-        debugPrint('ℹ️ 순서 변경 없음 - 로컬 순서 완전 보존');
-        // 순서가 변경되지 않은 경우 로컬 순서를 완전히 보존
-        // 단, 새로운 책이 추가/제거된 경우에만 해당 책들을 동기화
-        
-        // 추가된 책들만 로컬에 추가 (순서는 상위 데이터 기준)
-        final addedBooks = widget.books.where((b) => !oldBookIds.contains(b['id'])).toList();
-        if (addedBooks.isNotEmpty) {
-          // 추가된 책들을 로컬 순서에 맞게 삽입
-          for (final addedBook in addedBooks) {
-            final targetIndex = widget.books.indexWhere((b) => b['id'] == addedBook['id']);
-            if (targetIndex != -1 && targetIndex < _localBooks.length) {
-              _localBooks.insert(targetIndex, Map<String, dynamic>.from(addedBook));
-            } else {
-              _localBooks.add(Map<String, dynamic>.from(addedBook));
-            }
+        debugPrint('ℹ️ 순서 변경 없음 - 개별 책 정보만 업데이트');
+        // 순서가 변경되지 않은 경우 로컬 순서를 보존하되, 개별 책 정보는 업데이트
+        for (int i = 0; i < _localBooks.length; i++) {
+          final localBook = _localBooks[i];
+          final updatedBook = widget.books.firstWhere(
+            (b) => b['id'] == localBook['id'],
+            orElse: () => localBook,
+          );
+          if (updatedBook != localBook) {
+            // 개별 책 정보만 업데이트 (순서는 유지)
+            _localBooks[i] = Map<String, dynamic>.from(updatedBook);
+            debugPrint('🔄 책 정보 업데이트: ${localBook['id']}');
           }
-          debugPrint('➕ ${addedBooks.length}개 책 추가됨');
         }
-        
-        // 제거된 책들만 로컬에서 제거
-        final removedBookIds = oldBookIds.toSet().difference(newBookIds.toSet());
-        if (removedBookIds.isNotEmpty) {
-          _localBooks.removeWhere((b) => removedBookIds.contains(b['id']));
-          debugPrint('➖ ${removedBookIds.length}개 책 제거됨');
-        }
-        
-        // 로컬 순서는 그대로 유지 (사용자가 변경한 순서 보존)
-        debugPrint('🔒 로컬 순서 완전 보존: ${_localBooks.map((b) => b['id']).toList()}');
+        debugPrint('🔒 로컬 순서 보존: ${_localBooks.map((b) => b['id']).toList()}');
       }
       
       // UI 강제 리빌드
@@ -203,8 +190,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
       debugPrint('✅ ProfileTab - 순서 변경 저장 완료');
       
-      // 순서 변경 후에는 상위 새로고침을 호출하지 않음 (순서 보존을 위해)
-      // widget.onRefresh(); // 이 줄 제거
+      // ✅ 로컬에서만 처리하므로 상위 새로고침 불필요
       
     } catch (e) {
       debugPrint('❌ ProfileTab - 순서 변경 저장 실패: $e');
