@@ -417,13 +417,43 @@ class _ProfileTabState extends State<ProfileTab> {
                                             widget.onLoadingStateChanged?.call(true);
                                             
                                             try {
-                                              final api = UserBookApi(Supabase.instance.client);
+                                              // ✅ 1) 원본 데이터 저장
+                                              final originalAllBooks = List<Map<String, dynamic>>.from(widget.allBooks);
                                               
-                                              // 1) 변경된 것만 추림
+                                              // ✅ 2) 변경된 값 한 번만 찾기
                                               final changed = _diffUserBooks(
                                                 updated: updatedBooks,
-                                                original: widget.allBooks,
+                                                original: originalAllBooks,
                                               );
+                                              
+                                              debugPrint('🔍 변경된 데이터: ${changed.length}개');
+                                              
+                                              // ✅ 3) 로컬 즉시 반영 (변경된 값만)
+                                              debugPrint('🔄 로컬 데이터 즉시 반영 시작');
+                                              for (final updated in changed) {
+                                                final id = updated['id'];
+                                                final idx = widget.allBooks.indexWhere((b) => b['id'] == id);
+                                                if (idx != -1) {
+                                                  // is_archived 업데이트
+                                                  if (updated['is_archived'] != null) {
+                                                    widget.allBooks[idx]['is_archived'] = updated['is_archived'];
+                                                    debugPrint('🔄 로컬 is_archived 업데이트: ${id} -> ${updated['is_archived']}');
+                                                  }
+                                                  // archived_order_index 업데이트
+                                                  if (updated['archived_order_index'] != null) {
+                                                    widget.allBooks[idx]['archived_order_index'] = updated['archived_order_index'];
+                                                    debugPrint('🔄 로컬 archived_order_index 업데이트: ${id} -> ${updated['archived_order_index']}');
+                                                  }
+                                                  // order_index 업데이트
+                                                  if (updated['order_index'] != null) {
+                                                    widget.allBooks[idx]['order_index'] = updated['order_index'];
+                                                    debugPrint('🔄 로컬 order_index 업데이트: ${id} -> ${updated['order_index']}');
+                                                  }
+                                                }
+                                              }
+                                              debugPrint('✅ 로컬 데이터 즉시 반영 완료');
+                                              
+                                              final api = UserBookApi(Supabase.instance.client);
                                               
                                               // 변경이 없으면 바로 종료
                                               if (changed.isEmpty) {
