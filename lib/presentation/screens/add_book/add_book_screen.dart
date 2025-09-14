@@ -61,6 +61,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
   // ArchiveTab의 State에 접근하기 위한 GlobalKey
   final GlobalKey<State<ArchiveTab>> _archiveTabStateKey = GlobalKey<State<ArchiveTab>>();
   
+  // ✅ ProfileTab의 State 접근용 GlobalKey 추가
+  final GlobalKey<State<ProfileTab>> _profileTabStateKey = GlobalKey<State<ProfileTab>>();
+  
   // archive_tab의 변경사항 상태 추적
   bool _hasArchiveChanges = false;
   
@@ -190,6 +193,14 @@ class _AddBookScreenState extends State<AddBookScreen> {
         if (archiveTabState != null) {
           await (archiveTabState as dynamic).flushPendingChanges();
         }
+        
+        // ✅ 뒤로가기 시 프로필 정렬 저장
+        final profileTabState = _profileTabStateKey.currentState;
+        if (profileTabState != null) {
+          debugPrint('🔄 AddBookScreen onWillPop - ProfileTab 정렬 변경 저장');
+          await (profileTabState as dynamic).flushPendingReorder();
+        }
+        
         // 뒤로가기 차단 (바텀 네비게이션에서 관리)
         return false;
       },
@@ -234,6 +245,16 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 onPageChanged: (index) async {
                   debugPrint('🔄 PageView 변경: 현재=$_currentIndex, 목표=$index, 변경사항=$_hasArchiveChanges');
                   
+                  // ✅ 프로필(0)에서 다른 탭으로 스와이프 이동 시, 정렬 변경 확정
+                  if (_currentIndex == 0 && index != 0) {
+                    final profileTabState = _profileTabStateKey.currentState;
+                    if (profileTabState != null) {
+                      debugPrint('📝 ProfileTab 정렬 변경 flush 시작');
+                      await (profileTabState as dynamic).flushPendingReorder();
+                      debugPrint('✅ ProfileTab 정렬 변경 flush 완료');
+                    }
+                  }
+                  
                   // ✅ 보관함(1) → 다른 탭으로 넘어갈 때 저장 (백그라운드에서)
                   if (_currentIndex == 1 && index != 1 && _hasArchiveChanges) {
                     debugPrint('🔄 PageView에서 보관함 변경사항 저장 시작 (백그라운드)');
@@ -269,7 +290,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 },
                 children: [
                   ProfileTab(
-                    key: ValueKey(_profileTabKey),
+                    key: _profileTabStateKey, // ✅ GlobalKey로 교체
                     isLimitReached: widget.isLimitReached,
                     books: profileBooks, // computed property 사용
                     allBooks: allBooks, // 모든 책 목록
@@ -291,6 +312,21 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     onRegisterArchiveNotificationCallback: (callback) {
                       debugPrint('🔗 ArchiveBottomSheet 알림 콜백 등록');
                       _notifyArchiveBottomSheet = callback;
+                    },
+                    // ✅ 새 콜백: 프로필 탭에서 순서 변경 시 부모 allBooks 즉시 갱신
+                    onBooksChanged: (updatedBooks) {
+                      debugPrint('🧭 ProfileTab onBooksChanged: ${updatedBooks.length}개');
+                      setState(() {
+                        for (final updated in updatedBooks) {
+                          final id = updated['id'];
+                          final idx = allBooks.indexWhere((b) => b['id'] == id);
+                          if (idx != -1) {
+                            allBooks[idx]['order_index'] = updated['order_index'];
+                          }
+                        }
+                      });
+                      // 상위에도 지속 반영
+                      widget.onUpdateLocalBooks?.call(updatedBooks);
                     },
                   ),
                   ArchiveTab(

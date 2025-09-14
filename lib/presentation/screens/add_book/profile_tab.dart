@@ -22,6 +22,9 @@ class ProfileTab extends StatefulWidget {
   final GlobalKey<NavigatorState>? navigatorKey; // AddBookView의 Navigator에 접근하기 위한 키
   final Function(bool)? onLoadingStateChanged; // 로딩 상태 변경 콜백
   final Function(VoidCallback)? onRegisterArchiveNotificationCallback; // archive_bottom_sheet 알림 콜백 등록
+  
+  // ✅ 새 콜백: 정렬 변경 시 부모에게 변경된 (id, order_index) 리스트를 전달
+  final ValueChanged<List<Map<String, dynamic>>>? onBooksChanged;
 
   const ProfileTab({
     Key? key,
@@ -33,6 +36,7 @@ class ProfileTab extends StatefulWidget {
     this.navigatorKey,
     this.onLoadingStateChanged,
     this.onRegisterArchiveNotificationCallback,
+    this.onBooksChanged,
   }) : super(key: key);
 
   @override
@@ -49,6 +53,9 @@ class _ProfileTabState extends State<ProfileTab> {
   
   // 로컬 순서 상태 관리 (widget.books를 직접 수정하지 않음)
   late List<Map<String, dynamic>> _localBooks;
+  
+  // ✅ 정렬 변경이 있었는지 플래그
+  bool _hasPendingReorder = false;
 
   @override
   void initState() {
@@ -138,6 +145,19 @@ class _ProfileTabState extends State<ProfileTab> {
     });
   }
 
+  // ✅ 부모가 호출할 flush 메서드
+  Future<void> flushPendingReorder() async {
+    if (!_hasPendingReorder) return;
+    _hasPendingReorder = false;
+
+    // 부모에 변경사항 올리기 (id, order_index만 최소 전달)
+    widget.onBooksChanged?.call(_localBooks
+        .map((b) => {'id': b['id'], 'order_index': b['order_index']})
+        .toList());
+
+    debugPrint('✅ ProfileTab flushPendingReorder 완료');
+  }
+
   void _showLoadingOverlay() {
     if (_loadingOverlay != null) return; // 중복 방지
     _loadingOverlay = OverlayEntry(
@@ -208,13 +228,25 @@ class _ProfileTabState extends State<ProfileTab> {
     setState(() {
       final item = _localBooks.removeAt(oldIndex);
       _localBooks.insert(newIndex, item);
+      
+      // order_index 재계산
+      for (int i = 0; i < _localBooks.length; i++) {
+        _localBooks[i]['order_index'] = i;
+      }
+      
       final currentOrder = _localBooks.map((b) => b['id'] as String).toList();
       isEdited = !_areListsEqual(currentOrder, originalOrder);
+      _hasPendingReorder = true;
       
       debugPrint('  - 변경된 순서: ${currentOrder}');
       debugPrint('  - 원래 순서: ${originalOrder}');
       debugPrint('  - 편집됨: $isEdited');
     });
+
+    // ✅ 즉시 부모에 변경사항 알리기 (실시간 반영용)
+    widget.onBooksChanged?.call(_localBooks
+        .map((b) => {'id': b['id'], 'order_index': b['order_index']})
+        .toList());
 
     // 순서 변경 후 즉시 서버에 저장
     _updateBookOrder();
