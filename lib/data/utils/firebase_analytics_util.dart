@@ -228,20 +228,16 @@ class FirebaseAnalyticsUtil {
     }
   }
 
-  /// 프로필 공유 이벤트
-  static Future<void> logProfileShare({
-    required String sourceScreen, // 어느 화면에서 공유했는지
-    String? sharedUserId, // 공유된 사용자 ID (다른 사람 프로필 공유 시)
+  /// 프로필 링크 복사 이벤트 (내 프로필 화면)
+  static Future<void> logProfileLinkCopy({
+    String? sharedUserId, // 공유된 사용자 ID
     String? sharedUsername, // 공유된 사용자명
-    String? shareMethod, // 공유 방법 (앱 공유, 링크 복사 등)
   }) async {
     try {
       final now = DateTime.now();
       final parameters = {
-        'source_screen': sourceScreen,
         'shared_user_id': sharedUserId ?? '',
         'shared_username': sharedUsername ?? '',
-        'share_method': shareMethod ?? 'unknown',
         'timestamp': now.toIso8601String(),
         'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
         'year': now.year,
@@ -250,20 +246,84 @@ class FirebaseAnalyticsUtil {
         'weekday': now.weekday, // 1=Monday, 7=Sunday
       };
       
-      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: profile_share');
-      debugPrint('📱 소스 화면: $sourceScreen');
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: profile_link_copy');
       debugPrint('👤 공유된 사용자: $sharedUsername ($sharedUserId)');
-      debugPrint('🔗 공유 방법: $shareMethod');
       debugPrint('📊 파라미터: $parameters');
       
       await _analytics.logEvent(
-        name: 'profile_share',
+        name: 'profile_link_copy',
         parameters: parameters,
       );
       
-      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: profile_share');
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: profile_link_copy');
     } catch (e) {
-      debugPrint('❌ Firebase Analytics 프로필 공유 이벤트 실패: $e');
+      debugPrint('❌ Firebase Analytics 프로필 링크 복사 이벤트 실패: $e');
+    }
+  }
+
+  /// 다른 사용자 프로필 공유 이벤트
+  static Future<void> logOtherProfileShare({
+    String? sharedUserId, // 공유된 사용자 ID
+    String? sharedUsername, // 공유된 사용자명
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'shared_user_id': sharedUserId ?? '',
+        'shared_username': sharedUsername ?? '',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: other_profile_share');
+      debugPrint('👤 공유된 사용자: $sharedUsername ($sharedUserId)');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'other_profile_share',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: other_profile_share');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 다른 사용자 프로필 공유 이벤트 실패: $e');
+    }
+  }
+
+  /// 친구 초대 이벤트
+  static Future<void> logFriendInvite({
+    String? sharedUserId, // 공유된 사용자 ID
+    String? sharedUsername, // 공유된 사용자명
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'shared_user_id': sharedUserId ?? '',
+        'shared_username': sharedUsername ?? '',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: friend_invite');
+      debugPrint('👤 공유된 사용자: $sharedUsername ($sharedUserId)');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await _analytics.logEvent(
+        name: 'friend_invite',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: friend_invite');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 친구 초대 이벤트 실패: $e');
     }
   }
 

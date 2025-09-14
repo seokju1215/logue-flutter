@@ -268,11 +268,9 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                   
                   // Firebase Analytics 이벤트 전송
                   try {
-                    await FirebaseAnalyticsUtil.logProfileShare(
-                      sourceScreen: 'other_profile_screen',
+                    await FirebaseAnalyticsUtil.logOtherProfileShare(
                       sharedUserId: widget.userId,
                       sharedUsername: profile?['username'] ?? '',
-                      shareMethod: 'share_button',
                     );
                   } catch (analyticsError) {
                     // Analytics 이벤트 전송 실패 시 무시

@@ -214,11 +214,9 @@ class _FindFriendsScreenState extends ConsumerState<FindFriendsScreen> {
                                 // Firebase Analytics 이벤트 전송
                                 try {
                                   debugPrint('🚀🚀🚀 친구찾기에서 친구초대 이벤트 전송 시도');
-                                  await FirebaseAnalyticsUtil.logProfileShare(
-                                    sourceScreen: 'find_friends_screen',
+                                  await FirebaseAnalyticsUtil.logFriendInvite(
                                     sharedUserId: userId,
                                     sharedUsername: username,
-                                    shareMethod: 'invite_friends_button',
                                   );
                                   debugPrint('🎯🎯🎯 친구찾기에서 친구초대 이벤트 전송 완료');
                                 } catch (analyticsError) {

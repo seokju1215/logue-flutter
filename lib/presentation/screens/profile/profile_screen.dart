@@ -758,11 +758,9 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 
                 // Firebase Analytics 이벤트 전송
                 try {
-                  await FirebaseAnalyticsUtil.logProfileShare(
-                    sourceScreen: 'profile_screen',
+                  await FirebaseAnalyticsUtil.logProfileLinkCopy(
                     sharedUserId: userId,
                     sharedUsername: profile?['username'] ?? '',
-                    shareMethod: 'copy_button',
                   );
                 } catch (analyticsError) {
                   // Analytics 이벤트 전송 실패 시 무시
