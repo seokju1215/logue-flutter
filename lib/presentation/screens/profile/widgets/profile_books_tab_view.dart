@@ -6,6 +6,7 @@ import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:my_logue/core/widgets/book/user_book_grid.dart';
 import 'package:my_logue/presentation/screens/main_navigation_screen.dart';
 import 'package:my_logue/presentation/screens/post/my_post_screen.dart';
+import 'package:my_logue/presentation/screens/book/book_detail_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -757,11 +758,6 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       return;
     }
     
-    // 책장탭(currentIndex == 1)에서는 책 탭 비활성화
-    if (currentIndex == 1) {
-      return; // 책장탭에서는 클릭 무시
-    }
-    
     // 말풍선이 표시된 상태에서는 책 탭을 막고 말풍선만 숨기기
     if (_showBubble && mounted) {
       setState(() {
@@ -772,34 +768,52 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
       return; // 책 상세 화면으로 이동하지 않음
     }
     
-    // nonArchivedBooks와 _localArchivedBooks의 구조가 다를 수 있음
-    final bookId = book['book_id'] as String? ?? book['id'] as String?;
-    final userBookId = book['id'] as String? ?? book['user_book_id'] as String?;
+    // 책 ID 추출 (다양한 구조 대응)
+    final bookId = book['book_id'] as String? ?? 
+                   book['books']?['id'] as String? ?? 
+                   book['id'] as String?;
     
-    if (bookId == null || userBookId == null) {
+    if (bookId == null) {
       // 책 정보가 누락됨
       return;
     }
     
     _isNavigating = true; // ✅ 네비게이션 시작
     
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => MyBookPostScreen(
-          bookId: bookId,
-          userBookId: userBookId,
-          userId: widget.userId, // userId도 전달
-          booksData: widget.nonArchivedBooks, // ✅ 기존 책 데이터 전달
+    if (currentIndex == 1) {
+      // 책장 탭: BookDetailScreen으로 이동
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => BookDetailScreen(bookId: bookId),
         ),
-      ),
-    );
+      );
+    } else {
+      // 대표 탭: MyBookPostScreen으로 이동
+      final userBookId = book['id'] as String? ?? book['user_book_id'] as String?;
+      
+      if (userBookId == null) {
+        _isNavigating = false;
+        return;
+      }
+      
+      final result = await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => MyBookPostScreen(
+            bookId: bookId,
+            userBookId: userBookId,
+            userId: widget.userId,
+            booksData: widget.nonArchivedBooks,
+          ),
+        ),
+      );
+      
+      if (result == true && mounted) {
+        // 상위에서 갱신되도록 두고, 여기서는 탭 유지만
+        setState(() {});
+      }
+    }
     
     _isNavigating = false; // ✅ 네비게이션 완료
-    
-    if (result == true && mounted) {
-      // 상위에서 갱신되도록 두고, 여기서는 탭 유지만
-      setState(() {});
-    }
   }
 
   Widget _buildEmptyState({required bool isRepresentativeTab}) {
