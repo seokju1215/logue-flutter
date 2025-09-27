@@ -13,6 +13,91 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class FirebaseAnalyticsUtil {
   static final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   
+  /// GA4 UI용 커스텀 파라미터 값 (uid)
+  static String? _uid;
+
+  /// 표준 user_id(신원 결합/BigQuery) + UI용 uid 동시 세팅
+  static Future<void> setUserId({String? id}) async {
+    _uid = id;
+    debugPrint('🔥 setUserId 호출됨: _uid = $_uid');
+    await _analytics.setUserId(id: id);
+  }
+
+  /// Analytics 수집 활성화/비활성화
+  static Future<void> setAnalyticsCollectionEnabled(bool enabled) async {
+    try {
+      await _analytics.setAnalyticsCollectionEnabled(enabled);
+      debugPrint('📊 Analytics 수집 ${enabled ? '활성화' : '비활성화'} 완료');
+    } catch (e) {
+      debugPrint('❌ Analytics 수집 설정 실패: $e');
+    }
+  }
+
+  /// 공통 파라미터 전처리: user_id 제거 + logue_user_id 자동 주입
+  static Map<String, Object>? _injectUid(Map<String, Object>? params) {
+    debugPrint('🔥 _injectUid 호출됨 - _uid: $_uid');
+    final map = {...(params ?? const {})};
+    debugPrint('🔥 _injectUid 입력 파라미터: $map');
+    // 실수 방지: 표준 user_id 키는 제거 (GA4는 setUserId로만)
+    map.remove('user_id');
+    if (_uid != null && _uid!.isNotEmpty) {
+      map['logue_user_id'] = _uid!;
+      debugPrint('🔥 _injectUid: logue_user_id 주입됨 = $_uid');
+    } else {
+      debugPrint('⚠️ _injectUid: _uid가 null이거나 비어있음 = $_uid');
+    }
+    debugPrint('🔥 _injectUid 최종 파라미터: $map');
+    // 권장: 파라미터 25개 제한 고려 (필요시 정리 로직 추가)
+    return map.isEmpty ? null : map;
+  }
+
+  /// 모든 커스텀 이벤트 전송 엔트리포인트
+  static Future<void> logEvent({
+    required String name,
+    Map<String, Object>? parameters,
+  }) async {
+    try {
+      debugPrint('🔥 logEvent 호출됨: $name, _uid: $_uid');
+      debugPrint('🔥 logEvent 입력 파라미터: $parameters');
+      
+      // logue_user_id가 항상 포함되도록 보장
+      final finalParams = _injectUid(parameters) ?? <String, Object>{};
+      
+      // _uid가 없으면 현재 사용자 ID를 가져와서 설정
+      String? currentUserId = _uid;
+      if (currentUserId == null || currentUserId.isEmpty) {
+        try {
+          final user = Supabase.instance.client.auth.currentUser;
+          currentUserId = user?.id;
+          if (currentUserId != null) {
+            _uid = currentUserId; // 다음번을 위해 저장
+            debugPrint('🔥 logEvent: _uid가 없어서 현재 사용자 ID로 설정 = $currentUserId');
+          }
+        } catch (e) {
+          debugPrint('⚠️ logEvent: 현재 사용자 ID 가져오기 실패: $e');
+        }
+      }
+      
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        finalParams['logue_user_id'] = currentUserId;
+        debugPrint('🔥 logEvent: logue_user_id 추가 = $currentUserId');
+      } else {
+        debugPrint('⚠️ logEvent: logue_user_id를 추가할 수 없음 (사용자 ID 없음)');
+      }
+      
+      debugPrint('🔥 logEvent 최종 파라미터: $finalParams');
+      
+      await _analytics.logEvent(
+        name: name,
+        parameters: finalParams,
+      );
+      
+      debugPrint('✅ logEvent 전송 완료: $name');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 이벤트 실패($name): $e');
+    }
+  }
+  
   // ===== 사용자 인증 및 기본 이벤트 =====
   
   /// 사용자 로그인 이벤트
@@ -22,24 +107,22 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       await _analytics.logLogin(loginMethod: method);
-      if (userId != null) {
-        await _analytics.setUserId(id: userId);
-      }
+      if (userId != null) await setUserId(id: userId);
+      await logEvent(name: 'login', parameters: {
+        'method': method,
+      });
     } catch (e) {
-      print('❌ Firebase Analytics 로그인 이벤트 실패: $e');
+      debugPrint('❌ 로그인 이벤트 실패: $e');
     }
   }
 
   /// 사용자 로그아웃 이벤트
-  static Future<void> logLogout({String? userId}) async {
+  static Future<void> logLogout() async {
     try {
-      await _analytics.logEvent(
-        name: 'user_logout',
-        parameters: {}, // user_id는 setUserId()로 자동 추가됨
-      );
-      await _analytics.setUserId(id: null);
+      await logEvent(name: 'user_logout');
+      await setUserId(id: null);
     } catch (e) {
-      print('❌ Firebase Analytics 로그아웃 이벤트 실패: $e');
+      debugPrint('❌ 로그아웃 이벤트 실패: $e');
     }
   }
 
@@ -50,30 +133,29 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       await _analytics.logSignUp(signUpMethod: method);
-      if (userId != null) {
-        await _analytics.setUserId(id: userId);
-      }
+      if (userId != null) await setUserId(id: userId);
+      await logEvent(name: 'sign_up', parameters: {
+        'method': method,
+      });
     } catch (e) {
-      print('❌ Firebase Analytics 회원가입 이벤트 실패: $e');
+      debugPrint('❌ 회원가입 이벤트 실패: $e');
     }
   }
 
   /// 사용자 계정 탈퇴 이벤트
   static Future<void> logAccountDeletion({
     String? reason,
-    String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'user_account_deletion',
         parameters: {
           'reason': reason ?? '',
-          // user_id는 setUserId()로 자동 추가됨
         },
       );
-      await _analytics.setUserId(id: null);
+      await setUserId(id: null);
     } catch (e) {
-      print('❌ Firebase Analytics 계정 탈퇴 이벤트 실패: $e');
+      debugPrint('❌ 계정 탈퇴 이벤트 실패: $e');
     }
   }
 
@@ -83,8 +165,9 @@ class FirebaseAnalyticsUtil {
   static Future<void> logAppOpen() async {
     try {
       await _analytics.logAppOpen();
+      await logEvent(name: 'app_open');
     } catch (e) {
-      print('❌ Firebase Analytics 앱 시작 이벤트 실패: $e');
+      debugPrint('❌ 앱 시작 이벤트 실패: $e');
     }
   }
 
@@ -94,10 +177,9 @@ class FirebaseAnalyticsUtil {
     String? sessionId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'app_session_start',
         parameters: {
-          'user_id': userId ?? '',
           'session_id': sessionId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
         },
@@ -114,10 +196,9 @@ class FirebaseAnalyticsUtil {
     int? durationMinutes,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'app_session_end',
         parameters: {
-          'user_id': userId ?? '',
           'session_id': sessionId ?? '',
           'duration_minutes': durationMinutes ?? 0,
           'timestamp': DateTime.now().toIso8601String(),
@@ -132,25 +213,18 @@ class FirebaseAnalyticsUtil {
   static Future<void> logScreenView({
     required String screenName,
     String? screenClass,
-    String? userId,
   }) async {
     try {
       await _analytics.logScreenView(
         screenName: screenName,
         screenClass: screenClass,
       );
-      // 추가로 커스텀 이벤트로도 기록
-      await _analytics.logEvent(
-        name: 'screen_view',
-        parameters: {
-          'screen_name': screenName,
-          'screen_class': screenClass ?? '',
-          'user_id': userId ?? '',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
+      await logEvent(name: 'screen_view', parameters: {
+        'screen_name': screenName,
+        'screen_class': screenClass ?? '',
+      });
     } catch (e) {
-      print('❌ Firebase Analytics 화면 전환 이벤트 실패: $e');
+      debugPrint('❌ 화면 전환 이벤트 실패: $e');
     }
   }
 
@@ -181,7 +255,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('📱 소스 화면: $sourceScreen');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'follow_user',
         parameters: parameters,
       );
@@ -217,7 +291,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('📱 소스 화면: $sourceScreen');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'unfollow_user',
         parameters: parameters,
       );
@@ -250,7 +324,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('👤 공유된 사용자: $sharedUsername ($sharedUserId)');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'profile_link_copy',
         parameters: parameters,
       );
@@ -283,7 +357,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('👤 공유된 사용자: $sharedUsername ($sharedUserId)');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'other_profile_share',
         parameters: parameters,
       );
@@ -316,7 +390,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('👤 공유된 사용자: $sharedUsername ($sharedUserId)');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'friend_invite',
         parameters: parameters,
       );
@@ -338,7 +412,6 @@ class FirebaseAnalyticsUtil {
       final now = DateTime.now();
       final parameters = {
         'source_screen': sourceScreen,
-        'user_id': userId ?? '',
         'username': username ?? '',
         'copied_link': copiedLink ?? '',
         'timestamp': now.toIso8601String(),
@@ -355,7 +428,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('🔗 복사된 링크: $copiedLink');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'copy_profile_link',
         parameters: parameters,
       );
@@ -375,7 +448,6 @@ class FirebaseAnalyticsUtil {
       final now = DateTime.now();
       final parameters = {
         'source_screen': sourceScreen,
-        'user_id': userId ?? '',
         'timestamp': now.toIso8601String(),
         'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
         'year': now.year,
@@ -389,7 +461,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('👤 사용자 ID: $userId');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'find_friends_click',
         parameters: parameters,
       );
@@ -411,7 +483,6 @@ class FirebaseAnalyticsUtil {
       final parameters = {
         'old_username': oldUsername,
         'new_username': newUsername,
-        'user_id': userId ?? '',
         'username_length': newUsername.length,
         'has_special_chars': newUsername.contains(RegExp(r'[^a-zA-Z0-9_]')) ? 'true' : 'false',
         'has_numbers': newUsername.contains(RegExp(r'[0-9]')) ? 'true' : 'false',
@@ -428,7 +499,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('🆕 새로운 사용자명: $newUsername');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'username_change',
         parameters: parameters,
       );
@@ -450,7 +521,7 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       final now = DateTime.now();
-      await _analytics.logEvent(
+      await logEvent(
         name: 'book_added',
         parameters: {
           'book_title': bookTitle,
@@ -498,7 +569,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('📝 후기 정보: title="${reviewTitle ?? ''}", content_length=${reviewContent?.length ?? 0}');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'add_book_to_profile',
         parameters: parameters,
       );
@@ -520,7 +591,7 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       final now = DateTime.now();
-      await _analytics.logEvent(
+      await logEvent(
         name: 'add_book_to_archive',
         parameters: {
           'book_title': bookTitle,
@@ -553,7 +624,7 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       final now = DateTime.now();
-      await _analytics.logEvent(
+      await logEvent(
         name: 'book_review_written',
         parameters: {
           'book_title': bookTitle,
@@ -583,14 +654,13 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'book_moved',
         parameters: {
           'book_title': bookTitle,
           'book_author': bookAuthor,
           'from_location': fromLocation,
           'to_location': toLocation,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -607,12 +677,11 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'book_move_button_clicked',
         parameters: {
           'from_location': fromLocation,
           'to_location': toLocation,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -631,12 +700,11 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'user_follow_action',
         parameters: {
           'target_user_id': targetUserId,
           'action': action,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -653,12 +721,11 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'follow_count_change',
         parameters: {
           'followers_count': followersCount,
           'following_count': followingCount,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -676,11 +743,10 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'friend_invited',
         parameters: {
           'invite_method': inviteMethod,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -695,10 +761,9 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'profile_link_copied',
         parameters: {
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -716,11 +781,10 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'friend_search_clicked',
         parameters: {
           'search_method': searchMethod,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -741,12 +805,11 @@ class FirebaseAnalyticsUtil {
         searchTerm: searchTerm,
       );
       // 추가로 커스텀 이벤트로도 기록
-      await _analytics.logEvent(
+      await logEvent(
         name: 'search_performed',
         parameters: {
           'search_term': searchTerm,
           'search_type': searchType,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -766,13 +829,12 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'profile_changed',
         parameters: {
           'change_type': changeType,
           'old_value': oldValue ?? '',
           'new_value': newValue ?? '',
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -794,7 +856,6 @@ class FirebaseAnalyticsUtil {
     try {
       final now = DateTime.now();
       final parameters = {
-        'user_id': userId ?? '',
         'old_avatar_url': oldAvatarUrl ?? '',
         'new_avatar_url': newAvatarUrl ?? '',
         'change_type': changeType ?? 'unknown',
@@ -814,7 +875,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('🆕 새로운 아바타: $newAvatarUrl');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'profile_photo_change',
         parameters: parameters,
       );
@@ -835,7 +896,6 @@ class FirebaseAnalyticsUtil {
     String? bannerTitle,           // 배너 제목
     String? bannerUrl,             // 배너 링크 URL
     String? position,              // 배너 위치 (top, middle, bottom)
-    String? userId,
   }) async {
     try {
       final now = DateTime.now();
@@ -846,13 +906,8 @@ class FirebaseAnalyticsUtil {
         'banner_title': bannerTitle ?? '',
         'banner_url': bannerUrl ?? '',
         'position': position ?? 'unknown',
-        'user_id': userId ?? '',
         'timestamp': now.toIso8601String(),
         'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
-        'year': now.year,
-        'month': now.month,
-        'day': now.day,
-        'weekday': now.weekday, // 1=Monday, 7=Sunday
       };
       
       debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: banner_click');
@@ -862,7 +917,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('📍 배너 위치: $position');
       debugPrint('📊 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'banner_click',
         parameters: parameters,
       );
@@ -906,7 +961,7 @@ class FirebaseAnalyticsUtil {
       debugPrint('👤 사용자 ID: $userId');
       debugPrint('📊 전송할 파라미터: $parameters');
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'app_start',
         parameters: parameters,
       );
@@ -951,11 +1006,10 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'customer_inquiry',
         parameters: {
           'inquiry_type': inquiryType,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -974,12 +1028,11 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'app_version_info',
         parameters: {
           'app_version': appVersion,
           'build_number': buildNumber,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -1000,7 +1053,6 @@ class FirebaseAnalyticsUtil {
     try {
       final parameters = <String, Object>{
         'behavior_type': behaviorType,
-        'user_id': userId ?? '',
         'timestamp': DateTime.now().toIso8601String(),
         'date': DateTime.now().toIso8601String().split('T')[0],
       };
@@ -1010,7 +1062,7 @@ class FirebaseAnalyticsUtil {
         parameters[entry.key] = entry.value ?? '';
       }
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'user_behavior_pattern',
         parameters: parameters,
       );
@@ -1028,12 +1080,11 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'user_retention',
         parameters: {
           'days_since_last_visit': daysSinceLastVisit,
           'retention_type': retentionType,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -1050,12 +1101,11 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'user_churn',
         parameters: {
           'days_inactive': daysInactive,
           'churn_reason': churnReason,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -1074,12 +1124,11 @@ class FirebaseAnalyticsUtil {
     String? userId,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'time_based_access',
         parameters: {
           'day_of_week': dayOfWeek,
           'hour': hour,
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -1097,10 +1146,9 @@ class FirebaseAnalyticsUtil {
     required String userType, // 'new', 'returning', 'active'
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'daily_active_user',
         parameters: {
-          'user_id': userId,
           'user_type': userType,
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
@@ -1117,10 +1165,9 @@ class FirebaseAnalyticsUtil {
     required String userType, // 'new', 'returning', 'active'
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'weekly_active_user',
         parameters: {
-          'user_id': userId,
           'user_type': userType,
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
@@ -1138,10 +1185,9 @@ class FirebaseAnalyticsUtil {
     required String userType, // 'new', 'returning', 'active'
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'monthly_active_user',
         parameters: {
-          'user_id': userId,
           'user_type': userType,
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
@@ -1162,10 +1208,9 @@ class FirebaseAnalyticsUtil {
     required String source, // 'organic', 'referral', 'campaign'
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'new_user_registration',
         parameters: {
-          'user_id': userId,
           'registration_method': registrationMethod,
           'source': source,
           'timestamp': DateTime.now().toIso8601String(),
@@ -1185,10 +1230,9 @@ class FirebaseAnalyticsUtil {
     required bool hasJob,
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'profile_creation',
         parameters: {
-          'user_id': userId,
           'has_profile_photo': hasProfilePhoto,
           'has_bio': hasBio,
           'has_job': hasJob,
@@ -1212,7 +1256,6 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       final parameters = <String, Object>{
-        'user_id': userId,
         'content_type': contentType,
         'content_id': contentId,
         'timestamp': DateTime.now().toIso8601String(),
@@ -1224,7 +1267,7 @@ class FirebaseAnalyticsUtil {
         parameters[entry.key] = entry.value ?? '';
       }
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'ugc_generated',
         parameters: parameters,
       );
@@ -1241,10 +1284,9 @@ class FirebaseAnalyticsUtil {
     required String interactionType, // 'view', 'like', 'share', 'comment'
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'ugc_interaction',
         parameters: {
-          'user_id': userId,
           'content_type': contentType,
           'content_id': contentId,
           'interaction_type': interactionType,
@@ -1266,10 +1308,9 @@ class FirebaseAnalyticsUtil {
     required String sessionType, // 'active', 'passive', 'background'
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'app_usage_time',
         parameters: {
-          'user_id': userId,
           'session_duration_minutes': sessionDurationMinutes,
           'session_type': sessionType,
           'timestamp': DateTime.now().toIso8601String(),
@@ -1289,10 +1330,9 @@ class FirebaseAnalyticsUtil {
     required String timePeriod, // 'daily', 'weekly', 'monthly'
   }) async {
     try {
-      await _analytics.logEvent(
+      await logEvent(
         name: 'feature_usage_frequency',
         parameters: {
-          'user_id': userId,
           'feature_name': featureName,
           'usage_count': usageCount,
           'time_period': timePeriod,
@@ -1330,7 +1370,7 @@ class FirebaseAnalyticsUtil {
   }) async {
     try {
       final targetDate = date ?? DateTime.now();
-      await _analytics.logEvent(
+      await logEvent(
         name: 'daily_book_activity',
         parameters: {
           'books_added_count': booksAdded,
@@ -1359,7 +1399,7 @@ class FirebaseAnalyticsUtil {
       final startDate = weekStartDate ?? _getWeekStartDate();
       final endDate = startDate.add(const Duration(days: 6));
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'weekly_book_summary',
         parameters: {
           'weekly_books_added': weeklyBooksAdded,
@@ -1387,7 +1427,7 @@ class FirebaseAnalyticsUtil {
       final targetMonth = monthDate ?? DateTime.now();
       final monthStart = DateTime(targetMonth.year, targetMonth.month, 1);
       
-      await _analytics.logEvent(
+      await logEvent(
         name: 'monthly_book_summary',
         parameters: {
           'monthly_books_added': monthlyBooksAdded,
@@ -1415,27 +1455,4 @@ class FirebaseAnalyticsUtil {
   
   /// 커스텀 이벤트 로깅
   /// 
-  /// 주의: user_id는 setUserId()로 자동 설정되므로 parameters에 포함하지 마세요.
-  /// Firebase Analytics가 자동으로 모든 이벤트에 user_id를 추가합니다.
-  static Future<void> logEvent({
-    required String name,
-    Map<String, Object>? parameters,
-  }) async {
-    try {
-      // user_id가 parameters에 포함되어 있다면 제거
-      Map<String, Object>? cleanParameters = parameters;
-      if (parameters != null && parameters.containsKey('user_id')) {
-        cleanParameters = Map.from(parameters);
-        cleanParameters.remove('user_id');
-        print('⚠️ user_id가 parameters에서 제거되었습니다. setUserId()를 사용하세요.');
-      }
-      
-      await _analytics.logEvent(
-        name: name,
-        parameters: cleanParameters,
-      );
-    } catch (e) {
-      print('❌ Firebase Analytics 커스텀 이벤트 실패: $e');
-    }
-  }
 } 

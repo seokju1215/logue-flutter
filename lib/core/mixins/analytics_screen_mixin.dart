@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/utils/firebase_analytics_util.dart';
 
 mixin AnalyticsScreenMixin<T extends StatefulWidget> on State<T> {
@@ -21,11 +20,9 @@ mixin AnalyticsScreenMixin<T extends StatefulWidget> on State<T> {
   /// 화면 진입 이벤트 로깅
   Future<void> _logScreenView() async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
       await FirebaseAnalyticsUtil.logScreenView(
         screenName: screenName,
         screenClass: screenClass,
-        userId: userId,
       );
     } catch (e) {
       print('❌ 화면 진입 이벤트 로깅 실패: $e');
@@ -35,13 +32,11 @@ mixin AnalyticsScreenMixin<T extends StatefulWidget> on State<T> {
   /// 화면 나감 이벤트 로깅
   Future<void> _logScreenExit() async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
       await FirebaseAnalyticsUtil.logEvent(
         name: 'screen_exit',
         parameters: {
           'screen_name': screenName,
           'screen_class': screenClass ?? '',
-          'user_id': userId ?? '',
           'timestamp': DateTime.now().toIso8601String(),
           'date': DateTime.now().toIso8601String().split('T')[0],
         },
@@ -57,11 +52,9 @@ mixin AnalyticsScreenMixin<T extends StatefulWidget> on State<T> {
     Map<String, dynamic>? parameters,
   }) async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
       final allParameters = <String, Object>{
         'screen_name': screenName,
         'screen_class': screenClass ?? '',
-        'user_id': userId ?? '',
         'timestamp': DateTime.now().toIso8601String(),
         'date': DateTime.now().toIso8601String().split('T')[0],
       };

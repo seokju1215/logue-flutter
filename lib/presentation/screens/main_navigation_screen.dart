@@ -7,7 +7,7 @@ import 'package:my_logue/presentation/screens/profile/profile_view.dart';
 import 'package:my_logue/presentation/screens/post/my_post_screen.dart';
 import 'package:my_logue/presentation/screens/add_book/add_book_view.dart';
 
-import '../../data/utils/announcement_dialog_util.dart';
+import '../../data/utils/popup_manager.dart';
 import '../../data/utils/update_check_util.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -165,7 +165,7 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
 
     if (!_hasShownAnnouncement) {
       _hasShownAnnouncement = true;
-      AnnouncementDialogUtil.showIfNeeded(context);
+      PopupManager.showPopupsIfNeeded(context);
     }
   }
 

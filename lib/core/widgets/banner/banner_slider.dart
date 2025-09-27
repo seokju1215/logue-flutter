@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../data/utils/firebase_analytics_util.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BannerSlider extends StatefulWidget {
   final List<Map<String, dynamic>> banners;
@@ -43,7 +42,6 @@ class _BannerSliderState extends State<BannerSlider> {
                   
                   // Firebase Analytics 이벤트 전송
                   try {
-                    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
                     final bannerId = banner['id']?.toString() ?? 'unknown';
                     final bannerTitle = banner['title'] as String?;
                     final bannerType = banner['type'] as String? ?? 'promotion';
@@ -56,7 +54,6 @@ class _BannerSliderState extends State<BannerSlider> {
                       bannerTitle: bannerTitle,
                       bannerUrl: url,
                       position: 'top',
-                      userId: currentUserId,
                     );
                     debugPrint('🎯🎯🎯 홈 인기탭에서 배너 클릭 이벤트 전송 완료');
                   } catch (analyticsError) {

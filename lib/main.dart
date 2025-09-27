@@ -38,7 +38,11 @@ void main() async {
       try {
         final analytics = FirebaseAnalytics.instance;
         await analytics.setAnalyticsCollectionEnabled(true);
-        print('✅ Firebase Analytics 설정 완료');
+        print('✅ Firebase Analytics 수집 활성화 완료');
+        
+        // 테스트 이벤트 전송
+        await analytics.logEvent(name: 'app_initialized');
+        print('✅ Firebase Analytics 테스트 이벤트 전송 완료');
       } catch (e) {
         print('❌ Firebase Analytics 설정 실패: $e');
       }
@@ -117,8 +121,7 @@ void main() async {
             
             // Firebase Analytics 로그인 이벤트
             try {
-              await FirebaseAnalytics.instance.logLogin(loginMethod: 'email');
-              await FirebaseAnalytics.instance.setUserId(id: user.id);
+              await FirebaseAnalyticsUtil.logLogin(method: 'email', userId: user.id);
               print('✅ Firebase Analytics 로그인 이벤트 전송 완료');
             } catch (e) {
               print('❌ Firebase Analytics 로그인 이벤트 전송 실패: $e');
@@ -193,8 +196,7 @@ void main() async {
           } else if (data.event == AuthChangeEvent.signedOut) {
             // Firebase Analytics 로그아웃 이벤트
             try {
-              await FirebaseAnalytics.instance.logEvent(name: 'user_logout');
-              await FirebaseAnalytics.instance.setUserId(id: null);
+              await FirebaseAnalyticsUtil.logLogout();
               print('✅ Firebase Analytics 로그아웃 이벤트 전송 완료');
             } catch (e) {
               print('❌ Firebase Analytics 로그아웃 이벤트 전송 실패: $e');
