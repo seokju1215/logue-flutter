@@ -97,6 +97,7 @@ class PopupManager {
         description: description,
         photoUrl: photoUrl,
         link: data['link'], // 링크 필드 추가
+        ratio: data['ratio'], // 비율 필드 추가
       );
 
       // 마지막 팝업인지 확인

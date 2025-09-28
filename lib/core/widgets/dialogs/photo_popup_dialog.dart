@@ -37,7 +37,11 @@ class _PhotoPopupDialogState extends State<PhotoPopupDialog> with TickerProvider
       parent: _fadeController,
       curve: Curves.easeInOut,
     ));
-    _loadImageSize();
+    
+    // ratio가 있으면 이미지 크기 로딩 생략하고 바로 스켈레톤 UI 표시
+    if (widget.photoPopup.ratio == null || widget.photoPopup.ratio!.isEmpty) {
+      _loadImageSize();
+    }
   }
 
   @override
@@ -143,9 +147,15 @@ class _PhotoPopupDialogState extends State<PhotoPopupDialog> with TickerProvider
     // 좌우 여백 고정
     final photoWidth = actualPopupWidth;
     
-    // 이미지 크기가 로드되었으면 실제 비율로 계산, 아니면 기본값 사용
+    // ratio 정보를 사용하여 높이 계산 (우선순위: ratio > 이미지 크기 > 기본값)
     double photoHeight = photoWidth; // 기본값 (정사각형)
-    if (_imageSize != null) {
+    
+    // 1. ratio 정보가 있으면 사용
+    if (widget.photoPopup.ratio != null && widget.photoPopup.ratio!.isNotEmpty) {
+      photoHeight = _calculateHeightFromRatio(widget.photoPopup.ratio!, photoWidth);
+    }
+    // 2. ratio가 없고 이미지 크기가 로드되었으면 실제 비율로 계산
+    else if (_imageSize != null) {
       final containerSize = ImageSizeUtil.calculateContainerSize(
         imageSize: _imageSize!,
         maxWidth: photoWidth,
@@ -216,23 +226,9 @@ class _PhotoPopupDialogState extends State<PhotoPopupDialog> with TickerProvider
                     },
                   ),
                 ),
-                // 로딩 오버레이 (이미지가 로드되지 않았을 때만)
+                // 스켈레톤 UI (이미지가 로드되지 않았을 때만)
                 if (!_isImageLoaded)
-                  Container(
-                    width: photoWidth,
-                    height: photoHeight,
-                    color: AppColors.black100,
-                    child: const Center(
-                      child: SizedBox(
-                        width: 32,
-                        height: 32,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          color: AppColors.black500,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildSkeletonUI(photoWidth, photoHeight),
               ],
             ),
           ),
@@ -307,5 +303,82 @@ class _PhotoPopupDialogState extends State<PhotoPopupDialog> with TickerProvider
   void _onDontShowToday(BuildContext context) {
     // 오늘 하루 보지 않기 로직은 서비스에서 처리
     Navigator.pop(context, 'dont_show_today');
+  }
+
+  /// 스켈레톤 UI를 생성합니다
+  Widget _buildSkeletonUI(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.black100,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(0),
+          bottomRight: Radius.circular(0),
+          topLeft: Radius.circular(10),
+          topRight: Radius.circular(10),
+        ),
+      ),
+      child: Stack(
+        children: [
+          // 그라데이션 애니메이션 효과
+          AnimatedBuilder(
+            animation: _fadeController,
+            builder: (context, child) {
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.black100,
+                      AppColors.black100.withOpacity(0.7),
+                      AppColors.black100,
+                    ],
+                    stops: [
+                      0.0,
+                      0.5,
+                      1.0,
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          // 로딩 인디케이터
+          const Center(
+            child: SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: AppColors.black500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ratio 문자열에서 높이를 계산합니다 (예: "1:1", "3:4", "4:5", "3:5")
+  double _calculateHeightFromRatio(String ratio, double width) {
+    try {
+      final parts = ratio.split(':');
+      if (parts.length != 2) return width; // 잘못된 형식이면 정사각형
+      
+      final widthRatio = double.tryParse(parts[0]);
+      final heightRatio = double.tryParse(parts[1]);
+      
+      if (widthRatio == null || heightRatio == null || widthRatio == 0) {
+        return width; // 파싱 실패하면 정사각형
+      }
+      
+      // 비율에 맞는 높이 계산
+      return width * (heightRatio / widthRatio);
+    } catch (e) {
+      debugPrint('ratio 파싱 오류: $e');
+      return width; // 오류 시 정사각형
+    }
   }
 }

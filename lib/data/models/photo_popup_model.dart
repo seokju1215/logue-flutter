@@ -8,6 +8,7 @@ class PhotoPopupModel {
   final String? description;
   final String photoUrl;
   final String? link;
+  final String? ratio; // 비율 정보 (예: "1:1", "3:4", "4:5", "3:5")
 
   PhotoPopupModel({
     required this.id,
@@ -19,6 +20,7 @@ class PhotoPopupModel {
     this.description,
     required this.photoUrl,
     this.link,
+    this.ratio,
   });
 
   factory PhotoPopupModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class PhotoPopupModel {
       description: json['description'],
       photoUrl: json['photo_url'] ?? '',
       link: json['link'],
+      ratio: json['ratio'],
     );
   }
 
@@ -46,6 +49,7 @@ class PhotoPopupModel {
       'description': description,
       'photo_url': photoUrl,
       'link': link,
+      'ratio': ratio,
     };
   }
 }

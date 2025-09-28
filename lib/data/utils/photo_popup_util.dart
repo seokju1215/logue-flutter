@@ -84,6 +84,7 @@ class PhotoPopupUtil {
         description: description,
         photoUrl: photoUrl,
         link: data['link'], // 링크 필드 추가
+        ratio: data['ratio'], // 비율 필드 추가
       );
 
       // 디버깅: 생성된 PhotoPopupModel의 link 확인
