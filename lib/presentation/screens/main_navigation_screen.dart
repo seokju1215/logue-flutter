@@ -12,6 +12,7 @@ import '../../data/utils/update_check_util.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   static int lastSelectedIndex = 0;
+  static bool hasShownPopupsInThisSession = false; // 앱 세션 동안 팝업 표시 여부
 
   final Widget? child;
   final int initialTabIndex;
@@ -35,7 +36,6 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget? _child;
   bool _hasNavigatedToPostScreen = false;
   bool _hasCheckedUpdate = false;
-  bool _hasShownAnnouncement = false;
   bool _isAddBookLoading = false; // AddBookView의 ProfileTab 로딩 상태
   bool _hasUsedHomeInitialTab = false; // homeInitialTab 사용 여부
   
@@ -163,8 +163,9 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
       });
     }
 
-    if (!_hasShownAnnouncement) {
-      _hasShownAnnouncement = true;
+    // 앱 세션 동안 한 번만 팝업 표시
+    if (!MainNavigationScreen.hasShownPopupsInThisSession) {
+      MainNavigationScreen.hasShownPopupsInThisSession = true;
       PopupManager.showPopupsIfNeeded(context);
     }
   }

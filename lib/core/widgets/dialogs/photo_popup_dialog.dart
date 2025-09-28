@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/data/models/photo_popup_model.dart';
 import 'package:my_logue/data/utils/image_size_util.dart';
+import 'package:my_logue/data/utils/firebase_analytics_util.dart';
 import 'package:my_logue/presentation/screens/webview_screen.dart';
 
 class PhotoPopupDialog extends StatefulWidget {
@@ -280,6 +281,9 @@ class _PhotoPopupDialogState extends State<PhotoPopupDialog> with TickerProvider
         final url = widget.photoPopup.link!;
         debugPrint('🖼️ WebViewScreen으로 이동: $url');
         
+        // 사진 클릭 이벤트 전송 (Firebase + Mixpanel)
+        _trackPhotoPopupClick(url);
+        
         // WebViewScreen으로 네비게이션 (팝업은 그대로 유지)
         await Navigator.of(context).push(
           MaterialPageRoute(
@@ -379,6 +383,40 @@ class _PhotoPopupDialogState extends State<PhotoPopupDialog> with TickerProvider
     } catch (e) {
       debugPrint('ratio 파싱 오류: $e');
       return width; // 오류 시 정사각형
+    }
+  }
+
+  /// 사진 팝업 클릭 이벤트 트래킹 (Firebase + Mixpanel)
+  void _trackPhotoPopupClick(String url) {
+    try {
+      // 현재 날짜 정보
+      final now = DateTime.now();
+      final date = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final hour = now.hour;
+      final weekday = now.weekday; // 1=월요일, 7=일요일
+      
+      // 이벤트 파라미터 구성
+      final parameters = <String, Object>{
+        'photo_popup_id': widget.photoPopup.id,
+        'photo_popup_title': widget.photoPopup.title ?? 'No Title',
+        'photo_popup_url': url,
+        'photo_popup_display_order': widget.photoPopup.displayOrder,
+        'photo_popup_ratio': widget.photoPopup.ratio ?? 'No Ratio',
+        'click_date': date,
+        'click_hour': hour,
+        'click_weekday': weekday,
+        'platform': widget.photoPopup.platform,
+      };
+      
+      // Firebase Analytics + Mixpanel 이벤트 전송
+      FirebaseAnalyticsUtil.logEvent(
+        name: 'photo_popup_click',
+        parameters: parameters,
+      );
+      
+      debugPrint('📊 사진 팝업 클릭 이벤트 전송 완료: ${widget.photoPopup.id}');
+    } catch (e) {
+      debugPrint('❌ 사진 팝업 클릭 이벤트 전송 실패: $e');
     }
   }
 }
