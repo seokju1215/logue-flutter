@@ -76,6 +76,17 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   }
 
   @override
+  void didUpdateWidget(ArchiveBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // allBooks가 변경되었을 때 최신 데이터로 업데이트
+    if (oldWidget.allBooks != widget.allBooks) {
+      debugPrint('🔄 ArchiveBottomSheet - allBooks 변경 감지, 최신 데이터로 업데이트');
+      _updateFromExternalData();
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.removeListener(_onScrollReachBottom);
     _scrollController.dispose();
@@ -94,6 +105,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
   /// 외부(archive_tab)에서 변경된 데이터로 즉시 업데이트
   void _updateFromExternalData() {
     try {
+      debugPrint('🔄 _updateFromExternalData 시작 - allBooks 개수: ${widget.allBooks.length}');
+      debugPrint('🔄 보관함 책 개수: ${widget.allBooks.where((book) => book['is_archived'] == true).length}');
+      
       // widget.allBooks에서 보관함 책들만 필터링하여 즉시 반영
       final archivedBooks = widget.allBooks
           .where((book) => book['is_archived'] == true)
@@ -335,16 +349,6 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
       });
   }
 
-  @override
-  void didUpdateWidget(covariant ArchiveBottomSheet oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    
-    // allBooks가 변경되었을 때 보관함 책들을 다시 필터링
-    if (oldWidget.allBooks != widget.allBooks) {
-      debugPrint('🔄 ArchiveBottomSheet - allBooks 변경 감지, 보관함 책들 재필터링');
-      _resetFrom(_getArchivedBooks());
-    }
-  }
 
   void _resetFrom(List<Map<String, dynamic>> source) {
     // _localBooks가 비어있으면 source를 사용, 아니면 _localBooks를 사용

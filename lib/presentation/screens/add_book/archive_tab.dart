@@ -20,6 +20,7 @@ class ArchiveTab extends StatefulWidget {
   final VoidCallback? onBookAdded;
   final Function(List<Map<String, dynamic>>)? onBooksChanged;
   final BookDataService? bookDataService; // BookDataService 인스턴스
+  final Function(List<Map<String, dynamic>>)? onNewBooksAdded; // 새로 추가된 책들을 상위로 전달
 
   final GlobalKey<NavigatorState>? navigatorKey;
   final VoidCallback? onFocusMe;
@@ -32,6 +33,7 @@ class ArchiveTab extends StatefulWidget {
     this.onBookAdded,
     this.onBooksChanged,
     this.bookDataService,
+    this.onNewBooksAdded,
 
     this.navigatorKey,
     this.onFocusMe,
@@ -125,6 +127,9 @@ class _ArchiveTabState extends State<ArchiveTab> {
   // ========== 서버 호출 ==========
 
   Future<void> _refreshFromServer() async {
+    // 기존 책 ID들을 저장하여 새로 추가된 책들을 추적
+    final previousBookIds = _localBooks.map((book) => book['id'] as String).toSet();
+    
     setState(() {
       _isInitialLoading = true;
       _offset = 0;
@@ -148,6 +153,20 @@ class _ArchiveTabState extends State<ArchiveTab> {
           _isInitialLoading = false;
         });
         debugPrint('✅ BookDataService에서 보관함 데이터 로드 완료: ${archivedBooks.length}권');
+        
+        // 새로 추가된 책들을 찾아서 상위 컴포넌트에 알림
+        final newBookIds = _localBooks.map((book) => book['id'] as String).toSet();
+        final newlyAddedBookIds = newBookIds.difference(previousBookIds);
+        
+        if (newlyAddedBookIds.isNotEmpty) {
+          final newlyAddedBooks = _localBooks.where((book) => 
+            newlyAddedBookIds.contains(book['id'] as String)
+          ).toList();
+          
+          debugPrint('📚 새로 추가된 ${newlyAddedBooks.length}개 책을 상위로 전달 (BookDataService)');
+          widget.onNewBooksAdded?.call(newlyAddedBooks);
+        }
+        
         return;
       }
     }
@@ -156,7 +175,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
     await _loadNextPage();
     
     if (mounted) {
-      setState(() {
+setState(() {
         _isInitialLoading = false;
       });
     }
@@ -260,6 +279,9 @@ class _ArchiveTabState extends State<ArchiveTab> {
       // 4) 로컬 리스트에 추가 (기존 archived_order_index 값 보존)
       if (mounted) {
         setState(() {
+          // 새로 추가된 책들을 추적
+          final newlyAddedBooks = <Map<String, dynamic>>[];
+          
           // 새 데이터만 추가 (중복 방지)
           for (final newBook in pageItems) {
             // 이미 존재하는 책인지 확인
@@ -270,6 +292,8 @@ class _ArchiveTabState extends State<ArchiveTab> {
             if (existingIndex == -1) {
               // 새 책이면 추가
               _localBooks.add(newBook);
+              newlyAddedBooks.add(newBook);
+              debugPrint('📚 새 책 추가됨: ${newBook['id']}');
             } else {
               // 기존 책이면 archived_order_index 값만 업데이트 (소수점 보존)
               final existingBook = _localBooks[existingIndex];
@@ -297,6 +321,12 @@ class _ArchiveTabState extends State<ArchiveTab> {
           
           // BookDataService와 동기화
           _syncWithBookDataService();
+          
+          // 새로 추가된 책들을 상위 컴포넌트에 알림
+          if (newlyAddedBooks.isNotEmpty) {
+            debugPrint('📚 새로 추가된 ${newlyAddedBooks.length}개 책을 상위로 전달');
+            widget.onNewBooksAdded?.call(newlyAddedBooks);
+          }
         });
       }
     } catch (e) {

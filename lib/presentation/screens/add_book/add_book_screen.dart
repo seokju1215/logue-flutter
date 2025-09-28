@@ -347,6 +347,29 @@ class _AddBookScreenState extends State<AddBookScreen> {
                         });
                       }
                     },
+                    onNewBooksAdded: (newBooks) {
+                      // archive_tab에서 새로 추가된 책들을 allBooks에 추가
+                      if (mounted) {
+                        setState(() {
+                          for (final newBook in newBooks) {
+                            // 이미 존재하는 책인지 확인
+                            final existingIndex = allBooks.indexWhere(
+                              (book) => book['id'] == newBook['id'],
+                            );
+                            if (existingIndex == -1) {
+                              // 새 책이면 allBooks에 추가
+                              allBooks.add(newBook);
+                              debugPrint('📚 새 책을 allBooks에 추가: ${newBook['id']}');
+                              debugPrint('📚 새 책 상세 정보: ${newBook['title']} (is_archived: ${newBook['is_archived']})');
+                            } else {
+                              debugPrint('⚠️ 이미 존재하는 책: ${newBook['id']}');
+                            }
+                          }
+                          debugPrint('📚 allBooks 총 개수: ${allBooks.length}');
+                          debugPrint('📚 보관함 책 개수: ${allBooks.where((book) => book['is_archived'] == true).length}');
+                        });
+                      }
+                    },
                     onBooksChanged: (updatedBooks) {
                       debugPrint('🔄 onBooksChanged 호출됨: ${updatedBooks.length}개 책');
                       // 보관함 책 순서 로컬 반영
