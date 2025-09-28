@@ -26,6 +26,9 @@ class PopupManager {
 
   /// 사진 팝업 표시 (있으면)
   static Future<bool> _showPhotoPopupIfNeeded(BuildContext context) async {
+    const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: true);
+    debugPrint('🔍 QA 모드: $isQA');
+    
     final client = Supabase.instance.client;
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
@@ -33,6 +36,7 @@ class PopupManager {
     // 오늘 이미 "보지 않기"를 눌렀는지 확인 (전체 팝업 차단)
     final dontShowToday = prefs.getString(_photoPopupDontShowTodayKey);
     if (dontShowToday != null && _isBlockedToday(dontShowToday)) {
+      debugPrint('🔍 오늘 "보지 않기"를 눌러서 photo_popup 차단됨');
       return false; // 오늘은 더 이상 표시하지 않음
     }
 
@@ -40,6 +44,7 @@ class PopupManager {
     final platform = Theme.of(context).platform == TargetPlatform.iOS ? 'ios' : 'android';
 
     // ✅ Supabase에서 사진 팝업 설정 불러오기 (여러 개)
+    debugPrint('🔍 플랫폼: $platform, QA 모드: $isQA');
     final dataList = await client
         .from('photo_popup')
         .select()
@@ -48,13 +53,24 @@ class PopupManager {
         .order('display_order', ascending: true)
         .order('updated_at', ascending: false);
 
-    if (dataList.isEmpty) return false; // ❌ 비활성화거나 없음
+    debugPrint('🔍 photo_popup 데이터베이스 쿼리 결과: ${dataList.length}개');
+    if (dataList.isNotEmpty) {
+      debugPrint('🔍 첫 번째 데이터: ${dataList.first}');
+    }
+
+    if (dataList.isEmpty) {
+      debugPrint('🔍 photo_popup 데이터가 없음 - 비활성화거나 없음');
+      return false; // ❌ 비활성화거나 없음
+    }
 
     // 사진 URL이 있는 팝업들만 필터링하고 개별 차단 상태 확인
     final validPopups = <Map<String, dynamic>>[];
     for (final data in dataList) {
       final photoUrl = data['photo_url'] ?? '';
-      if (photoUrl.isEmpty) continue;
+      if (photoUrl.isEmpty) {
+        debugPrint('🔍 photo_url이 비어있음: ${data['id']}');
+        continue;
+      }
 
       final popupId = data['id'] ?? '';
       final individualDontShowKey = '${_photoPopupDontShowTodayKey}individual_$popupId';
@@ -63,10 +79,17 @@ class PopupManager {
       // 개별 팝업이 오늘 차단되지 않은 경우만 추가
       if (individualDontShow == null || !_isBlockedToday(individualDontShow)) {
         validPopups.add(data);
+        debugPrint('🔍 유효한 팝업 추가: $popupId');
+      } else {
+        debugPrint('🔍 개별 팝업이 오늘 차단됨: $popupId');
       }
     }
 
-    if (validPopups.isEmpty) return false; // 유효한 사진이 없으면 표시하지 않음
+    debugPrint('🔍 최종 유효한 팝업 개수: ${validPopups.length}');
+    if (validPopups.isEmpty) {
+      debugPrint('🔍 유효한 사진이 없음 - 표시하지 않음');
+      return false; // 유효한 사진이 없으면 표시하지 않음
+    }
 
     // ✅ 순차적으로 팝업 표시 (비동기 대기)
     await _showPhotoPopupsSequentially(context, validPopups, prefs, now);

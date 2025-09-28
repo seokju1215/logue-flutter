@@ -4,7 +4,7 @@ import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/data/models/photo_popup_model.dart';
 import 'package:my_logue/data/utils/image_size_util.dart';
 import 'package:my_logue/data/utils/firebase_analytics_util.dart';
-import 'package:my_logue/presentation/screens/webview_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PhotoPopupDialog extends StatefulWidget {
   final PhotoPopupModel photoPopup;
@@ -279,25 +279,21 @@ class _PhotoPopupDialogState extends State<PhotoPopupDialog> with TickerProvider
     if (widget.photoPopup.link != null && widget.photoPopup.link!.isNotEmpty) {
       try {
         final url = widget.photoPopup.link!;
-        debugPrint('🖼️ WebViewScreen으로 이동: $url');
+        debugPrint('🖼️ 외부 브라우저로 이동: $url');
         
         // 사진 클릭 이벤트 전송 (Firebase + Mixpanel)
         _trackPhotoPopupClick(url);
         
-        // WebViewScreen으로 네비게이션 (팝업은 그대로 유지)
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => WebViewScreen(
-              url: url,
-              title: widget.photoPopup.title,
-            ),
-          ),
-        );
-        
-        debugPrint('🖼️ WebViewScreen에서 돌아옴 - 팝업은 유지');
-        // 웹뷰 화면에서 돌아와도 팝업은 그대로 유지
+        // 외부 브라우저로 URL 열기
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          debugPrint('🖼️ 외부 브라우저에서 열림: $url');
+        } else {
+          debugPrint('❌ URL을 열 수 없음: $url');
+        }
       } catch (e) {
-        debugPrint('❌ WebViewScreen 열기 실패: $e');
+        debugPrint('❌ 외부 브라우저 열기 실패: $e');
       }
     } else {
       debugPrint('⚠️ 링크가 없음 또는 비어있음');
