@@ -36,6 +36,9 @@ class PhotoPopupUtil {
 
     if (dataList.isEmpty) return; // ❌ 비활성화거나 없음
 
+    // 디버깅: 데이터베이스에서 가져온 데이터 확인
+    debugPrint('📊 photo_popup 데이터: $dataList');
+
     // 사진 URL이 있는 팝업들만 필터링하고 개별 차단 상태 확인
     final validPopups = <Map<String, dynamic>>[];
     for (final data in dataList) {
@@ -80,7 +83,11 @@ class PhotoPopupUtil {
         title: title,
         description: description,
         photoUrl: photoUrl,
+        link: data['link'], // 링크 필드 추가
       );
+
+      // 디버깅: 생성된 PhotoPopupModel의 link 확인
+      debugPrint('📊 PhotoPopupModel 생성됨 - link: ${photoPopup.link}');
 
       // 마지막 팝업인지 확인
       final isLastPopup = i == popupDataList.length - 1;
@@ -91,7 +98,6 @@ class PhotoPopupUtil {
         barrierDismissible: true,
         builder: (_) => PhotoPopupDialog(
           photoPopup: photoPopup,
-          linkUrl: null, // TODO: 데이터베이스에서 링크 URL 가져오기
         ),
       );
 

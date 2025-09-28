@@ -1,6 +1,8 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'mixpanel_util.dart';
 
 /// Firebase Analytics 유틸리티 클래스
 /// 
@@ -15,12 +17,39 @@ class FirebaseAnalyticsUtil {
   
   /// GA4 UI용 커스텀 파라미터 값 (uid)
   static String? _uid;
+  
+  /// FirebaseAnalyticsUtil 초기화
+  static Future<void> initialize() async {
+    try {
+      // Firebase Analytics 수집 활성화
+      await _analytics.setAnalyticsCollectionEnabled(true);
+      debugPrint('✅ FirebaseAnalyticsUtil 초기화 완료');
+    } catch (e) {
+      debugPrint('❌ FirebaseAnalyticsUtil 초기화 실패: $e');
+    }
+  }
 
-  /// 표준 user_id(신원 결합/BigQuery) + UI용 uid 동시 세팅
+  /// 표준 user_id(신원 결합/BigQuery) + UI용 uid 동시 세팅 (Firebase + Mixpanel)
   static Future<void> setUserId({String? id}) async {
     _uid = id;
     debugPrint('🔥 setUserId 호출됨: _uid = $_uid');
-    await _analytics.setUserId(id: id);
+    
+    // Firebase Analytics에 사용자 ID 설정
+    try {
+      await _analytics.setUserId(id: id);
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 사용자 ID 설정 실패: $e');
+    }
+    
+    // Mixpanel에도 동일한 사용자 ID 설정
+    try {
+      if (id != null && id.isNotEmpty) {
+        MixpanelUtil.identify(id);
+        debugPrint('📊 Mixpanel 사용자 ID 설정: $id');
+      }
+    } catch (e) {
+      debugPrint('❌ Mixpanel 사용자 ID 설정 실패: $e');
+    }
   }
 
   /// Analytics 수집 활성화/비활성화
@@ -51,51 +80,63 @@ class FirebaseAnalyticsUtil {
     return map.isEmpty ? null : map;
   }
 
-  /// 모든 커스텀 이벤트 전송 엔트리포인트
+  /// 모든 커스텀 이벤트 전송 엔트리포인트 (Firebase + Mixpanel)
   static Future<void> logEvent({
     required String name,
     Map<String, Object>? parameters,
   }) async {
-    try {
-      debugPrint('🔥 logEvent 호출됨: $name, _uid: $_uid');
-      debugPrint('🔥 logEvent 입력 파라미터: $parameters');
-      
-      // logue_user_id가 항상 포함되도록 보장
-      final finalParams = _injectUid(parameters) ?? <String, Object>{};
-      
-      // _uid가 없으면 현재 사용자 ID를 가져와서 설정
-      String? currentUserId = _uid;
-      if (currentUserId == null || currentUserId.isEmpty) {
-        try {
-          final user = Supabase.instance.client.auth.currentUser;
-          currentUserId = user?.id;
-          if (currentUserId != null) {
-            _uid = currentUserId; // 다음번을 위해 저장
-            debugPrint('🔥 logEvent: _uid가 없어서 현재 사용자 ID로 설정 = $currentUserId');
-          }
-        } catch (e) {
-          debugPrint('⚠️ logEvent: 현재 사용자 ID 가져오기 실패: $e');
+    debugPrint('🔥 logEvent 호출됨: $name, _uid: $_uid');
+    debugPrint('🔥 logEvent 입력 파라미터: $parameters');
+    
+    // logue_user_id가 항상 포함되도록 보장
+    final finalParams = _injectUid(parameters) ?? <String, Object>{};
+    
+    // _uid가 없으면 현재 사용자 ID를 가져와서 설정
+    String? currentUserId = _uid;
+    if (currentUserId == null || currentUserId.isEmpty) {
+      try {
+        final user = Supabase.instance.client.auth.currentUser;
+        currentUserId = user?.id;
+        if (currentUserId != null) {
+          _uid = currentUserId; // 다음번을 위해 저장
+          debugPrint('🔥 logEvent: _uid가 없어서 현재 사용자 ID로 설정 = $currentUserId');
         }
+      } catch (e) {
+        debugPrint('⚠️ logEvent: 현재 사용자 ID 가져오기 실패: $e');
       }
-      
-      if (currentUserId != null && currentUserId.isNotEmpty) {
-        finalParams['logue_user_id'] = currentUserId;
-        debugPrint('🔥 logEvent: logue_user_id 추가 = $currentUserId');
-      } else {
-        debugPrint('⚠️ logEvent: logue_user_id를 추가할 수 없음 (사용자 ID 없음)');
-      }
-      
-      debugPrint('🔥 logEvent 최종 파라미터: $finalParams');
-      
+    }
+    
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      finalParams['logue_user_id'] = currentUserId;
+      debugPrint('🔥 logEvent: logue_user_id 추가 = $currentUserId');
+    } else {
+      debugPrint('⚠️ logEvent: logue_user_id를 추가할 수 없음 (사용자 ID 없음)');
+    }
+    
+    debugPrint('🔥 logEvent 최종 파라미터: $finalParams');
+    
+    // Firebase Analytics 전송
+    try {
       await _analytics.logEvent(
         name: name,
         parameters: finalParams,
       );
-      
-      debugPrint('✅ logEvent 전송 완료: $name');
-    } catch (e) {
-      debugPrint('❌ Firebase Analytics 이벤트 실패($name): $e');
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 완료: $name');
+    } catch (firebaseError) {
+      debugPrint('❌ Firebase Analytics 이벤트 실패($name): $firebaseError');
     }
+    
+    // Mixpanel 전송 (Firebase와 동일한 이벤트)
+    try {
+      // Object 타입을 dynamic으로 변환하여 Mixpanel에 전송
+      final mixpanelParams = finalParams.map((key, value) => MapEntry(key, value as dynamic));
+      MixpanelUtil.track(name, properties: mixpanelParams);
+      debugPrint('📊 Mixpanel 이벤트 전송 완료: $name');
+    } catch (mixpanelError) {
+      debugPrint('❌ Mixpanel 이벤트 실패($name): $mixpanelError');
+    }
+    
+    debugPrint('✅ logEvent 전송 완료: $name');
   }
   
   // ===== 사용자 인증 및 기본 이벤트 =====
@@ -512,6 +553,112 @@ class FirebaseAnalyticsUtil {
 
   // ===== 책 관련 이벤트 =====
   
+  /// 책 검색 이벤트
+  static Future<void> logBookSearch({
+    required String query,
+    String? userId,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'query': query,
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: book_search');
+      debugPrint('🔍 검색어: $query');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await logEvent(
+        name: 'book_search',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: book_search');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 책 검색 이벤트 실패: $e');
+    }
+  }
+
+  /// 책 추가 이벤트
+  static Future<void> logBookAdd({
+    required String bookTitle,
+    required String bookId,
+    String? bookAuthor,
+    String? userId,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'book_title': bookTitle,
+        'book_id': bookId,
+        'book_author': bookAuthor ?? '',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: book_add');
+      debugPrint('📚 책 제목: $bookTitle');
+      debugPrint('📚 책 ID: $bookId');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await logEvent(
+        name: 'book_add',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: book_add');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 책 추가 이벤트 실패: $e');
+    }
+  }
+
+  /// 리뷰 작성 이벤트
+  static Future<void> logReviewWrite({
+    required String bookTitle,
+    required String bookId,
+    String? bookAuthor,
+    String? userId,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final parameters = {
+        'book_title': bookTitle,
+        'book_id': bookId,
+        'book_author': bookAuthor ?? '',
+        'timestamp': now.toIso8601String(),
+        'date': now.toIso8601String().split('T')[0], // YYYY-MM-DD
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'weekday': now.weekday, // 1=Monday, 7=Sunday
+      };
+      
+      debugPrint('🔥 Firebase Analytics 이벤트 전송 시작: review_write');
+      debugPrint('📝 책 제목: $bookTitle');
+      debugPrint('📚 책 ID: $bookId');
+      debugPrint('📊 파라미터: $parameters');
+      
+      await logEvent(
+        name: 'review_write',
+        parameters: parameters,
+      );
+      
+      debugPrint('✅ Firebase Analytics 이벤트 전송 완료: review_write');
+    } catch (e) {
+      debugPrint('❌ Firebase Analytics 리뷰 작성 이벤트 실패: $e');
+    }
+  }
+
   /// 책 추가 이벤트 (신규 추가)
   static Future<void> logBookAdded({
     required String bookTitle,

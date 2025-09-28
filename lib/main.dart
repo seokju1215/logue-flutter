@@ -40,6 +40,10 @@ void main() async {
         await analytics.setAnalyticsCollectionEnabled(true);
         print('✅ Firebase Analytics 수집 활성화 완료');
         
+        // FirebaseAnalyticsUtil 초기화
+        await FirebaseAnalyticsUtil.initialize();
+        print('✅ FirebaseAnalyticsUtil 초기화 완료');
+        
         // 테스트 이벤트 전송
         await analytics.logEvent(name: 'app_initialized');
         print('✅ Firebase Analytics 테스트 이벤트 전송 완료');

@@ -9,7 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/widgets/book/book_frame.dart';
 import '../../../core/widgets/dialogs/book_limit_dialog.dart';
 import '../../../core/services/book_data_service.dart';
-import '../../../data/utils/mixpanel_util.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
 import 'profile_tab.dart';
 import 'archive_tab.dart';
 
@@ -79,7 +79,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
     _bookDataService = BookDataService();
 
     // 화면 방문 트래킹
-    MixpanelUtil.trackScreenView('Add Book');
+        FirebaseAnalyticsUtil.logScreenView(screenName: 'Add Book');
 
     // 상위에서 전달받은 데이터 사용
     _initializeWithPersistentData();

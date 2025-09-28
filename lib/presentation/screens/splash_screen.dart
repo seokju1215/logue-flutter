@@ -5,7 +5,7 @@ import 'package:my_logue/presentation/screens/signup/login_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io' show Platform;
 import '../../data/utils/update_check_util.dart';
-import '../../data/utils/mixpanel_util.dart';
+import '../../data/utils/firebase_analytics_util.dart';
 import '../../data/services/analytics_session_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     // 앱 시작 트래킹
-    MixpanelUtil.trackAppOpen();
+        FirebaseAnalyticsUtil.logAppOpen();
     _startSplashFlow();
   }
 
@@ -122,13 +122,7 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacementNamed(context, '/select-3books');
     } else {
       if (profile != null) {
-        MixpanelUtil.setUserProperties({
-          'username': profile['username'],
-          'job': profile['job'],
-          'joined_at': profile['created_at'],
-          'platform': Platform.isIOS ? 'iOS' : 'Android',
-          'app_version': await UpdateCheckUtil.getCurrentAppVersion(), // 예: 1.0.2
-        });
+        // 사용자 속성은 FirebaseAnalyticsUtil에서 자동으로 처리됨
         
         // AnalyticsSessionService 시작 (DAU, WAU, MAU 수집)
         try {

@@ -4,7 +4,7 @@ import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/domain/entities/follow_list_type.dart';
 
 import '../../providers/follow_state_provider.dart';
-import '../../../data/utils/mixpanel_util.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
 
 
 class FollowUserTile extends ConsumerWidget {
@@ -100,7 +100,7 @@ class FollowUserTile extends ConsumerWidget {
               onPressed: () {
                 print('팔로우 버튼 클릭됨: userId = $userId');
                 // 팔로우 트래킹
-                MixpanelUtil.trackFollow(userId);
+                FirebaseAnalyticsUtil.logFollow(targetUserId: userId, action: 'follow');
                 // 부모 컴포넌트에서 처리하도록 콜백만 호출
                 onTapFollow?.call();
               },

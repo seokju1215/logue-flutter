@@ -7,6 +7,7 @@ class PhotoPopupModel {
   final String? title;
   final String? description;
   final String photoUrl;
+  final String? link;
 
   PhotoPopupModel({
     required this.id,
@@ -17,6 +18,7 @@ class PhotoPopupModel {
     this.title,
     this.description,
     required this.photoUrl,
+    this.link,
   });
 
   factory PhotoPopupModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class PhotoPopupModel {
       title: json['title'],
       description: json['description'],
       photoUrl: json['photo_url'] ?? '',
+      link: json['link'],
     );
   }
 
@@ -42,6 +45,7 @@ class PhotoPopupModel {
       'title': title,
       'description': description,
       'photo_url': photoUrl,
+      'link': link,
     };
   }
 }

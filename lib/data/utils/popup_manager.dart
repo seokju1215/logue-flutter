@@ -96,6 +96,7 @@ class PopupManager {
         title: title,
         description: description,
         photoUrl: photoUrl,
+        link: data['link'], // 링크 필드 추가
       );
 
       // 마지막 팝업인지 확인
@@ -107,7 +108,6 @@ class PopupManager {
         barrierDismissible: true,
         builder: (_) => PhotoPopupDialog(
           photoPopup: photoPopup,
-          linkUrl: null, // TODO: 데이터베이스에서 링크 URL 가져오기
         ),
       );
 

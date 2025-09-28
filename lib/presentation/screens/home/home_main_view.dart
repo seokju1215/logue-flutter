@@ -6,7 +6,7 @@ import 'package:my_logue/presentation/screens/home/search/search_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/presentation/screens/home/home_following_tab.dart';
 import 'package:my_logue/presentation/screens/home/home_popular_tab.dart';
-import '../../../data/utils/mixpanel_util.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
 
 class HomeMainView extends StatefulWidget {
   const HomeMainView({super.key, this.initialTab = 0});
@@ -32,7 +32,7 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
     _pageController = PageController(initialPage: _currentIndex);
 
     // 홈 화면 방문 트래킹
-    MixpanelUtil.trackScreenView('Home');
+        FirebaseAnalyticsUtil.logScreenView(screenName: 'Home');
   }
 
   @override

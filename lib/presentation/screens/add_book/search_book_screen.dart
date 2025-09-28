@@ -7,7 +7,7 @@ import '../../../data/datasources/user_book_api.dart';
 import '../../../data/models/book_model.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
 import 'package:my_logue/presentation/screens/add_book/write_review_screen.dart';
-import '../../../data/utils/mixpanel_util.dart';
+import '../../../data/utils/firebase_analytics_util.dart';
 import 'dart:async'; // ✅ 디바운싱 타이머를 위한 임포트
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -46,7 +46,7 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
     print('🔍 검색어: "$query"');
 
     // 책 검색 트래킹
-    MixpanelUtil.trackBookSearch(query);
+        FirebaseAnalyticsUtil.logBookSearch(query: query);
 
     setState(() => _isLoading = true);
     _isSearching = true;
