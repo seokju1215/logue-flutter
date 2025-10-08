@@ -8,6 +8,7 @@ import 'package:my_logue/presentation/screens/home/find_friends/input_phone_numb
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/core/widgets/post/post_item.dart';
 import 'package:my_logue/core/widgets/follow/follow_user_tile.dart';
+import 'package:my_logue/core/widgets/banner/banner_slider.dart';
 import '../../../data/models/book_post_model.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../profile/other_profile_screen.dart';
@@ -45,8 +46,10 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
   final client = Supabase.instance.client;
   List<Map<String, dynamic>> usersWithSameBooks = [];
   List<Map<String, dynamic>> recentActiveUsers = [];
+  List<Map<String, dynamic>> banners = [];
   bool isLoading = true;
   bool isLoadingUsers = true;
+  bool isLoadingBanners = true;
   bool isFindingFriends = false;
 
   // 캐싱을 위한 변수들
@@ -59,6 +62,7 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
     super.initState();
     _loadUsersWithSameBooks();
     _fetchRecentActiveUsers();
+    _fetchBanners();
   }
 
   /// 캐시된 데이터가 있는지 확인하고 적절히 로드
@@ -159,6 +163,29 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
       if (mounted) {
         setState(() {
           isLoadingUsers = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchBanners() async {
+    try {
+      final bannerRes = await client
+          .from('banner_ads')
+          .select()
+          .order('order_index', ascending: true);
+
+      if (mounted) {
+        setState(() {
+          banners = List<Map<String, dynamic>>.from(bannerRes);
+          isLoadingBanners = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ 배너 조회 실패: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingBanners = false;
         });
       }
     }
@@ -445,92 +472,13 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
     return SingleChildScrollView(
       primary: false,
       physics: const BouncingScrollPhysics(), // ✅ 부드러운 스크롤
-      padding: const EdgeInsets.fromLTRB(0, 27, 0, 27),
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 27),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-              padding: const EdgeInsets.only(left: 22),
-              child: StrokeTextStyle.createStrokeText(
-                  text: '내 지인 중에서 LOGUE 유저 찾아보기',
-                  fontSize: 16,
-                  color: AppColors.black900,
-                  fontWeight: FontWeight.w400,
-                  height: 1.187)),
-          const SizedBox(height: 13),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 21),
-            child: Row(
-              children: [
-                const Expanded(child: SizedBox()),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: isFindingFriends
-                        ? null
-                        : () async {
-                            setState(() {
-                              isFindingFriends = true;
-                            });
-                            
-                            // Firebase Analytics 이벤트 전송
-                            try {
-                              final currentUserId = client.auth.currentUser?.id;
-                              debugPrint('🚀🚀🚀 홈 추천에서 친구찾기 버튼 클릭 이벤트 전송 시도');
-                              await FirebaseAnalyticsUtil.logFindFriendsClick(
-                                sourceScreen: 'home_recommend_tab',
-                                userId: currentUserId,
-                              );
-                              debugPrint('🎯🎯🎯 홈 추천에서 친구찾기 버튼 클릭 이벤트 전송 완료');
-                            } catch (analyticsError) {
-                              debugPrint('❌ 친구찾기 버튼 클릭 이벤트 전송 실패: $analyticsError');
-                            }
-                            
-                            try {
-                              await _handleFindFriends();
-                            } finally {
-                              if (mounted) {
-                                setState(() {
-                                  isFindingFriends = false;
-                                });
-                              }
-                            }
-                          },
-                    style: _outlinedStyle(context),
-                    child: isFindingFriends
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Text(
-                                '친구 찾기',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.black900,
-                                  height: 1.25,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            ],
-                          )
-                        : const Text(
-                            '친구 찾기',
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.black900,
-                                height: 1.25),
-                          ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // 배너 섹션
+          if (banners.isNotEmpty)
+            BannerSlider(banners: banners),
           const SizedBox(height: 35),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22),

@@ -46,16 +46,16 @@ class _BannerSliderState extends State<BannerSlider> {
                     final bannerTitle = banner['title'] as String?;
                     final bannerType = banner['type'] as String? ?? 'promotion';
                     
-                    debugPrint('🚀🚀🚀 홈 인기탭에서 배너 클릭 이벤트 전송 시도');
+                    debugPrint('🚀🚀🚀 홈에서 배너 클릭 이벤트 전송 시도');
                     await FirebaseAnalyticsUtil.logBannerClick(
                       bannerId: bannerId,
                       bannerType: bannerType,
-                      sourceScreen: 'home_popular_tab',
+                      sourceScreen: 'home_recommend_tab',
                       bannerTitle: bannerTitle,
                       bannerUrl: url,
                       position: 'top',
                     );
-                    debugPrint('🎯🎯🎯 홈 인기탭에서 배너 클릭 이벤트 전송 완료');
+                    debugPrint('🎯🎯🎯 홈에서 배너 클릭 이벤트 전송 완료');
                   } catch (analyticsError) {
                     debugPrint('❌ 배너 클릭 이벤트 전송 실패: $analyticsError');
                   }

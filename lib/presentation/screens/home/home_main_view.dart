@@ -5,13 +5,12 @@ import 'package:my_logue/presentation/screens/home/home_recommand_tab.dart';
 import 'package:my_logue/presentation/screens/home/search/search_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_logue/presentation/screens/home/home_following_tab.dart';
-import 'package:my_logue/presentation/screens/home/home_popular_tab.dart';
 import '../../../data/utils/firebase_analytics_util.dart';
 
 class HomeMainView extends StatefulWidget {
   const HomeMainView({super.key, this.initialTab = 0});
 
-  /// 0=추천, 1=팔로잉, 2=인기
+  /// 0=추천, 1=팔로잉
   final int initialTab;
 
   @override
@@ -20,7 +19,7 @@ class HomeMainView extends StatefulWidget {
 
 class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMixin {
   late final PageController _pageController;
-  final List<String> labels = ['추천', '팔로잉', '인기'];
+  final List<String> labels = ['추천', '팔로잉'];
   late int _currentIndex;
 
   @override
@@ -152,7 +151,6 @@ class _HomeMainViewState extends State<HomeMainView> with TickerProviderStateMix
           children: const [
             HomeRecommendTab(),
             HomeFollowingTab(),
-            HomePopularTab(),
           ],
         ),
       ),
