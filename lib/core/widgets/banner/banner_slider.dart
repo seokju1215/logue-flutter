@@ -24,10 +24,13 @@ class _BannerSliderState extends State<BannerSlider> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bannerHeight = (screenWidth * 248) / 393; // 393:248 비율 유지
+    
     return Column(
       children: [
         SizedBox(
-          height: 248,
+          height: bannerHeight,
           child: PageView.builder(
             controller: _pageController,
             itemCount: widget.banners.length,

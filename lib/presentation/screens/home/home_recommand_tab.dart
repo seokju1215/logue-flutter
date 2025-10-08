@@ -471,7 +471,7 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       primary: false,
-      physics: const BouncingScrollPhysics(), // ✅ 부드러운 스크롤
+      physics: const ClampingScrollPhysics(), // 바운스 효과 제거
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 27),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
