@@ -189,7 +189,7 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
               child: RepaintBoundary( // ✅ 복잡한 셀이면 개별 래스터화로 스크롤 부드럽게
                 child: PostItem(
                   post: post,
-                  isMyPost: isMine,
+                  isMyPost: false,
                   onEditSuccess: () {
                     // 전체 리셋 후 재로드(필요 시 compute 재사용)
                     setState(() {

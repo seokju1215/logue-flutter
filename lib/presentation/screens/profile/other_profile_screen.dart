@@ -468,11 +468,11 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
             ),
           ],
         ),
-        FutureBuilder<Map<String, int>>(
-          future: _getFollowCounts(),
-          builder: (context, snapshot) {
-            final followerCount = snapshot.data?['followers'] ?? 0;
-            final followingCount = snapshot.data?['following'] ?? 0;
+        Builder(
+          builder: (context) {
+            // 캐시된 카운트 사용, 없으면 기본값 0
+            final followerCount = _followerCount;
+            final followingCount = _followingCount;
 
             return Row(
               children: [
@@ -557,6 +557,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                                 'followers': (currentFollowers - 1)
                                     .clamp(0, currentFollowers),
                               };
+                              // 캐시된 팔로워 카운트도 즉시 업데이트
+                              _followerCount = (_followerCount - 1).clamp(0, _followerCount);
                             });
 
                             // 서버 요청 (백그라운드)
@@ -580,6 +582,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                                 ...?profile,
                                 'followers': currentFollowers + 1,
                               };
+                              // 캐시된 팔로워 카운트도 즉시 업데이트
+                              _followerCount = _followerCount + 1;
                             });
 
                             // 서버 요청 (백그라운드)
@@ -610,6 +614,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> with Wi
                                 ...?profile,
                                 'followers': currentFollowers,
                               };
+                              // 실패 시 캐시된 팔로워 카운트도 원래대로 롤백
+                              _followerCount = currentFollowers;
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
