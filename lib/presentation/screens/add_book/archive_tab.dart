@@ -372,6 +372,7 @@ setState(() {
   Map<String, dynamic>? _movedBook;
   int? _oldIndex;
   int? _newIndex;
+  List<Map<String, dynamic>> _booksToUpdate = []; // 재조정된 책들
 
   void _onReorder(int oldIndex, int newIndex) {
     if (oldIndex == newIndex) return;
@@ -383,8 +384,7 @@ setState(() {
     final movedBookId = movedBook['id'] as String;
     
     debugPrint('🔄 _onReorder - 배열 조작 전:');
-    debugPrint('  위치 $oldIndex: ${movedBook['id']} -> archived_order_index: ${movedBook['archived_order_index']} (이동할 책)');
-    
+
     // 배열에서 제거
     _localBooks.removeAt(oldIndex);
     
@@ -410,9 +410,67 @@ setState(() {
       
       // 더 정밀한 중간값 계산
       if (prevBookIndex == nextBookIndex) {
-        // 같은 값이면 0.5 추가 (double 타입 보장)
-        newValue = prevBookIndex + 0.5;
-        debugPrint('🔍 같은 값 처리: prev=$prevBookIndex, next=$nextBookIndex, newValue=$newValue (타입: ${newValue.runtimeType})');
+        // ⚠️ 같은 값 발견! 주변 책들을 재조정해야 함
+        debugPrint('⚠️ 중복 값 발견: prev=$prevBookIndex, next=$nextBookIndex');
+        debugPrint('🔧 주변 책들을 재조정합니다...');
+        
+        // 현재 이동하려는 책의 앞쪽 책들 중 중복된 값 찾기
+        int fixStartIndex = newIndex - 1;
+        while (fixStartIndex > 0 && 
+               (_localBooks[fixStartIndex]['archived_order_index'] as num).toDouble() == prevBookIndex) {
+          fixStartIndex--;
+        }
+        
+        // 현재 이동하려는 책의 뒤쪽 책들 중 중복된 값 찾기
+        int fixEndIndex = newIndex + 1;
+        while (fixEndIndex < _localBooks.length && 
+               (_localBooks[fixEndIndex]['archived_order_index'] as num).toDouble() == nextBookIndex) {
+          fixEndIndex++;
+        }
+        
+        debugPrint('🔍 재조정 범위: $fixStartIndex ~ $fixEndIndex');
+        
+        // 재조정할 범위의 시작/끝 값 결정
+        final rangeStart = fixStartIndex >= 0 
+            ? (_localBooks[fixStartIndex]['archived_order_index'] as num).toDouble()
+            : prevBookIndex - 10.0;
+        final rangeEnd = fixEndIndex < _localBooks.length
+            ? (_localBooks[fixEndIndex]['archived_order_index'] as num).toDouble()
+            : nextBookIndex + 10.0;
+        
+        debugPrint('🔍 재조정 값 범위: $rangeStart ~ $rangeEnd');
+        
+        // 중복된 책들을 균등하게 재배치
+        final fixCount = fixEndIndex - fixStartIndex - 1; // 재조정할 책의 개수
+        final step = (rangeEnd - rangeStart) / (fixCount + 1);
+        
+        debugPrint('🔍 재조정 개수: $fixCount, step: $step');
+        
+        // 재조정이 필요한 책들을 저장
+        _booksToUpdate.clear();
+        
+        for (int i = fixStartIndex + 1; i < fixEndIndex; i++) {
+          if (i == newIndex) continue; // 현재 이동 중인 책은 건너뜀
+          
+          final oldValue = _localBooks[i]['archived_order_index'];
+          final adjustedValue = rangeStart + (step * (i - fixStartIndex));
+          _localBooks[i]['archived_order_index'] = adjustedValue;
+          
+          // DB 업데이트 목록에 추가
+          _booksToUpdate.add({
+            'id': _localBooks[i]['id'],
+            'old_value': oldValue,
+            'new_value': adjustedValue,
+          });
+          
+          debugPrint('   [$i] ${_localBooks[i]['id']}: $oldValue → $adjustedValue (재조정)');
+        }
+        
+        // 이동하는 책의 새 값은 재조정된 값들 사이에 배치
+        newValue = rangeStart + (step * (newIndex - fixStartIndex));
+        debugPrint('🔍 이동하는 책의 새 값: $newValue');
+        debugPrint('🔍 재조정된 책 개수: ${_booksToUpdate.length}');
+        
       } else {
         // 다른 값이면 정확한 중간값 계산
         newValue = (prevBookIndex + nextBookIndex) / 2.0;
@@ -457,7 +515,6 @@ setState(() {
       final book = _localBooks[i];
       final isMoved = book['id'] == movedBookId;
       final orderIndex = book['archived_order_index'];
-      debugPrint('  위치 $i: ${book['id']} -> archived_order_index: $orderIndex (타입: ${orderIndex.runtimeType})${isMoved ? ' (이동된 책)' : ''}');
     }
     
     // 즉시 저장
@@ -466,17 +523,41 @@ setState(() {
 
   /// 드래그 완료 시 즉시 저장 (간격 방식)
   Future<void> _saveOrderImmediately() async {
+    debugPrint('');
+    debugPrint('════════════════════════════════════════════════════════════');
+    debugPrint('🚀 [DEBUG] _saveOrderImmediately() 시작');
+    debugPrint('════════════════════════════════════════════════════════════');
+    
     if (_movedBook == null) {
-      debugPrint('⚠️ _movedBook이 null이므로 저장 건너뜀');
+      debugPrint('⚠️ [DEBUG] _movedBook이 null이므로 저장 건너뜀');
+      debugPrint('════════════════════════════════════════════════════════════');
+      debugPrint('');
       return;
     }
 
-    debugPrint('🔄 순서 변경 즉시 저장 시작 (간격 방식) - 이동한 책: ${_movedBook!['id']}');
+    debugPrint('📖 [DEBUG] 이동한 책 정보:');
+    debugPrint('   - ID: ${_movedBook!['id']}');
+    debugPrint('   - book_id: ${_movedBook!['book_id']}');
+    debugPrint('   - old_index: $_oldIndex');
+    debugPrint('   - new_index: $_newIndex');
+    debugPrint('   - archived_order_index: ${_movedBook!['archived_order_index']} (타입: ${_movedBook!['archived_order_index'].runtimeType})');
+    debugPrint('');
     
     // 현재 위치에서 이동된 책 찾기
     final newPosition = _localBooks.indexWhere((book) => book['id'] == _movedBook!['id']);
+    debugPrint('🔍 [DEBUG] _localBooks에서 이동된 책 찾기:');
+    debugPrint('   - newPosition: $newPosition');
+    
     if (newPosition == -1) {
-      debugPrint('❌ 이동된 책을 찾을 수 없음');
+      debugPrint('❌ [DEBUG] 이동된 책을 찾을 수 없음!');
+      debugPrint('   - _localBooks 개수: ${_localBooks.length}');
+      debugPrint('   - 찾으려는 책 ID: ${_movedBook!['id']}');
+      debugPrint('   - _localBooks의 모든 ID:');
+      for (int i = 0; i < _localBooks.length; i++) {
+        debugPrint('     [$i] ${_localBooks[i]['id']}');
+      }
+      debugPrint('════════════════════════════════════════════════════════════');
+      debugPrint('');
       return;
     }
 
@@ -484,28 +565,89 @@ setState(() {
     final rawValue = _movedBook!['archived_order_index'];
     final newValue = (rawValue as num).toDouble();
     
-    debugPrint('📚 책 ${_movedBook!['id']}: newPosition=$newPosition, rawValue=$rawValue (${rawValue.runtimeType}), newValue=$newValue (${newValue.runtimeType})');
+    debugPrint('🔢 [DEBUG] archived_order_index 값:');
+    debugPrint('   - rawValue: $rawValue (타입: ${rawValue.runtimeType})');
+    debugPrint('   - newValue: $newValue (타입: ${newValue.runtimeType})');
+    debugPrint('');
+    
+    debugPrint('📋 [DEBUG] DB 업데이트 전 주변 책들 상태:');
+    final startIdx = (newPosition - 2).clamp(0, _localBooks.length);
+    final endIdx = (newPosition + 3).clamp(0, _localBooks.length);
+    for (int i = startIdx; i < endIdx; i++) {
+      final book = _localBooks[i];
+      final marker = i == newPosition ? ' 👈 이동된 책' : '';
+      debugPrint('   [$i] ID: ${book['id']}, archived_order_index: ${book['archived_order_index']} (${book['archived_order_index'].runtimeType})$marker');
+    }
+    debugPrint('');
     
     try {
       // 이동된 책만 업데이트
       final oldValue = _movedBook!['archived_order_index'];
       
-      await client
+      debugPrint('💾 [DEBUG] DB 업데이트 시작:');
+      debugPrint('   - 테이블: user_books');
+      debugPrint('   - 조건: id = ${_movedBook!['id']}');
+      debugPrint('   - 업데이트 값: archived_order_index = $newValue');
+      debugPrint('');
+      
+      final updateResult = await client
           .from('user_books')
           .update({'archived_order_index': newValue})
-          .eq('id', _movedBook!['id']);
+          .eq('id', _movedBook!['id'])
+          .select();
       
-      debugPrint('📚 책 ${_movedBook!['id']}: archived_order_index ${oldValue} → ${newValue}');
+      debugPrint('✅ [DEBUG] DB 업데이트 완료:');
+      debugPrint('   - 반환 결과: $updateResult');
+      debugPrint('   - 변경: archived_order_index ${oldValue} → ${newValue}');
+      debugPrint('');
+      
+      // 재조정된 책들도 DB에 저장
+      if (_booksToUpdate.isNotEmpty) {
+        debugPrint('🔧 [DEBUG] 재조정된 책들 DB 업데이트 시작: ${_booksToUpdate.length}개');
+        
+        for (final bookUpdate in _booksToUpdate) {
+          try {
+            await client
+                .from('user_books')
+                .update({'archived_order_index': bookUpdate['new_value']})
+                .eq('id', bookUpdate['id']);
+            
+            debugPrint('   ✅ ${bookUpdate['id']}: ${bookUpdate['old_value']} → ${bookUpdate['new_value']}');
+          } catch (updateError) {
+            debugPrint('   ❌ ${bookUpdate['id']} 업데이트 실패: $updateError');
+          }
+        }
+        
+        debugPrint('✅ [DEBUG] 재조정된 책들 DB 업데이트 완료');
+        debugPrint('');
+        
+        // 업데이트 목록 초기화
+        _booksToUpdate.clear();
+      }
       
       // 로컬 상태 업데이트 (double 타입 보장)
       final bookIndex = _localBooks.indexWhere((book) => book['id'] == _movedBook!['id']);
+      debugPrint('🔄 [DEBUG] 로컬 상태 업데이트:');
+      debugPrint('   - bookIndex: $bookIndex');
+      
       if (bookIndex != -1) {
         final finalValue = newValue.toDouble();
+        final beforeValue = _localBooks[bookIndex]['archived_order_index'];
         _localBooks[bookIndex]['archived_order_index'] = finalValue;
-        debugPrint('📚 _localBooks 배열 업데이트: 위치 $bookIndex, archived_order_index: $finalValue (타입: ${finalValue.runtimeType})');
+        debugPrint('   - 업데이트 전: $beforeValue (${beforeValue.runtimeType})');
+        debugPrint('   - 업데이트 후: $finalValue (${finalValue.runtimeType})');
+      } else {
+        debugPrint('   ⚠️ bookIndex가 -1입니다!');
       }
+      debugPrint('');
       
-      debugPrint('💾 DB 직접 업데이트 완료: 1개 책');
+      debugPrint('📋 [DEBUG] DB 업데이트 후 주변 책들 상태:');
+      for (int i = startIdx; i < endIdx; i++) {
+        final book = _localBooks[i];
+        final marker = i == newPosition ? ' 👈 업데이트된 책' : '';
+        debugPrint('   [$i] ID: ${book['id']}, archived_order_index: ${book['archived_order_index']} (${book['archived_order_index'].runtimeType})$marker');
+      }
+      debugPrint('');
       
       // 변경사항 초기화
       setState(() {
@@ -515,13 +657,28 @@ setState(() {
         _newIndex = null;
       });
       
+      debugPrint('🔄 [DEBUG] 상태 초기화 완료:');
+      debugPrint('   - _hasLocalChanges: $_hasLocalChanges');
+      debugPrint('   - _movedBook: $_movedBook');
+      debugPrint('');
+      
       // 콜백 호출
       widget.onBooksChanged?.call(List<Map<String, dynamic>>.from(_localBooks));
       
-      debugPrint('✅ 순서 변경 즉시 저장 완료: 1개 업데이트');
+      debugPrint('📞 [DEBUG] onBooksChanged 콜백 호출 완료');
+      debugPrint('');
+      debugPrint('✅ [DEBUG] 순서 변경 즉시 저장 완료');
+      debugPrint('════════════════════════════════════════════════════════════');
+      debugPrint('');
       
-    } catch (e) {
-      debugPrint('❌ 순서 저장 실패: $e');
+    } catch (e, stackTrace) {
+      debugPrint('');
+      debugPrint('❌❌❌ [DEBUG] 순서 저장 실패 ❌❌❌');
+      debugPrint('오류: $e');
+      debugPrint('스택 트레이스:');
+      debugPrint('$stackTrace');
+      debugPrint('════════════════════════════════════════════════════════════');
+      debugPrint('');
     }
   }
 
@@ -555,13 +712,11 @@ setState(() {
           if (newPosition > 0) {
             // 이전 책: newPosition-1 위치의 책
             prev = (_localBooks[newPosition - 1]['archived_order_index'] as num).toDouble();
-            debugPrint('📚 책 $id: prev 찾음 - ${_localBooks[newPosition - 1]['id']} (위치: ${newPosition - 1}, 값: $prev)');
           }
           
           if (newPosition < _localBooks.length - 1) {
             // 다음 책: newPosition+1 위치의 책  
             next = (_localBooks[newPosition + 1]['archived_order_index'] as num).toDouble();
-            debugPrint('📚 책 $id: next 찾음 - ${_localBooks[newPosition + 1]['id']} (위치: ${newPosition + 1}, 값: $next)');
           }
           
           // 새로운 값 = (prev + next) / 2.0 (double 타입 보장)

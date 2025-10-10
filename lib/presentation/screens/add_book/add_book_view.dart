@@ -136,7 +136,6 @@ class AddBookViewState extends State<AddBookView> with AutomaticKeepAliveClientM
             final newValue = (updatedBook['archived_order_index'] as num?)?.toDouble();
             if (newValue != null) {
               _persistentAllBooks[index]['archived_order_index'] = newValue;
-              debugPrint('🔄 archived_order_index 업데이트: ${updatedBook['id']} -> $newValue');
             }
           }
         }
