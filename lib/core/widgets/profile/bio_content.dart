@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../themes/app_colors.dart';
+import 'package:characters/characters.dart';
 
 class BioContent extends StatefulWidget {
   final String bio;
@@ -80,9 +81,12 @@ class _BioContentState extends State<BioContent> {
       });
     } else {
       const suffix = '...';
-      int end = fullText.length;
+      // 이모지를 안전하게 처리하기 위해 Characters 사용
+      final characters = fullText.characters;
+      int end = characters.length;
       while (end > 0) {
-        final test = fullText.substring(0, end) + suffix;
+        final testChars = characters.take(end);
+        final test = testChars.string + suffix;
         final testSpan = TextSpan(text: test, style: textStyle);
         final testTp = TextPainter(
           text: testSpan,
@@ -93,7 +97,7 @@ class _BioContentState extends State<BioContent> {
 
         if (!testTp.didExceedMaxLines) {
           setState(() {
-            _truncatedText = fullText.substring(0, end).trimRight();
+            _truncatedText = testChars.string.trimRight();
             _shouldTruncate = true;
           });
           return;
