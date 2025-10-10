@@ -1,19 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 인터넷 사용 -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Android 12 이하: 이미지 접근용 -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <!-- Android 13 이상: 이미지 접근용 -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- Android 15: 카메라 접근용 -->
+    <!-- Android 15: 카메라 접근용 (카메라로 직접 촬영할 때만 필요) -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- Android 15: 미디어 접근용 -->
-    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <!-- 주소록 접근용 -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Android 13 이상: 광고 ID 접근용 -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+    
+    <!-- ✅ Photo Picker 권한 제거:
+         - READ_EXTERNAL_STORAGE (삭제)
+         - READ_MEDIA_IMAGES (삭제)
+         - READ_MEDIA_VISUAL_USER_SELECTED (삭제)
+         ➡️ Photo Picker는 권한 없이 사용자가 선택한 항목만 일회성 접근 -->
     <application
         android:label="Logue"
         android:name="${applicationName}"
@@ -51,6 +50,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        
+        <!-- ✅ Photo Picker 백포트 모듈 자동 설치/업데이트 트리거 -->
+        <service
+            android:name="com.google.android.gms.metadata.ModuleDependencies"
+            android:enabled="false"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
+            </intent-filter>
+            <meta-data
+                android:name="photopicker_activity:0:required"
+                android:value="" />
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

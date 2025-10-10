@@ -5,8 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 import 'package:my_logue/core/themes/app_colors.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:my_logue/core/widgets/dialogs/avatar_bottom_sheet.dart';
 
 class EditAvatarButton extends StatefulWidget {
@@ -43,7 +41,7 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
           top: false,                    // 상단만 보호, 하단은 홈 인디케이터까지 덮을 수 있도록
           // bottom: false,              // 홈 인디케이터까지 완전히 덮고 싶으면 주석 해제
           child: AvatarBottomSheet(
-            onPhotoLibraryTap: _requestPhotoLibraryPermission,
+            onPhotoLibraryTap: () => _pickImage(ImageSource.gallery),
             onDeleteTap: _deleteAvatar,
             isDefaultAvatar: widget.avatarUrl == 'basic',
           ),
@@ -68,56 +66,9 @@ class _EditAvatarButtonState extends State<EditAvatarButton> {
     }
   }
 
-  Future<void> _requestPhotoLibraryPermission() async {
-    try {
-      if (Platform.isIOS) {
-        // iOS에서는 image_picker가 직접 권한을 처리하도록 함
-        _pickImage(ImageSource.gallery);
-      } else {
-        // Android 13+ (API 33+)
-        if (Platform.isAndroid) {
-          final deviceInfo = DeviceInfoPlugin();
-          final androidInfo = await deviceInfo.androidInfo;
-          final sdkInt = androidInfo.version.sdkInt;
-          
-          if (sdkInt >= 33) {
-            // Android 13+ 에서는 READ_MEDIA_IMAGES 권한 사용
-            final photosStatus = await Permission.photos.status;
-            if (photosStatus.isDenied) {
-              final result = await Permission.photos.request();
-              if (result.isGranted) {
-                _pickImage(ImageSource.gallery);
-              } else {
-                _showSnackBar('사진 접근 권한이 필요합니다.', AppColors.red500);
-              }
-            } else if (photosStatus.isGranted) {
-              _pickImage(ImageSource.gallery);
-            } else {
-              _showSnackBar('사진 접근 권한이 필요합니다.', AppColors.red500);
-            }
-          } else {
-            // Android 12 이하에서는 storage 권한 사용
-            final storageStatus = await Permission.storage.status;
-            if (storageStatus.isDenied) {
-              final result = await Permission.storage.request();
-              if (result.isGranted) {
-                _pickImage(ImageSource.gallery);
-              } else {
-                _showSnackBar('저장소 접근 권한이 필요합니다.', AppColors.red500);
-        }
-            } else if (storageStatus.isGranted) {
-              _pickImage(ImageSource.gallery);
-            } else {
-              _showSnackBar('저장소 접근 권한이 필요합니다.', AppColors.red500);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('📸 권한 요청 중 오류: $e');
-      _pickImage(ImageSource.gallery);
-    }
-  }
+  // ✅ Photo Picker 사용으로 권한 요청 불필요
+  // Android: Photo Picker (ActivityX 1.7.0+)로 권한 없이 사용자가 선택한 항목만 일회성 접근
+  // iOS: image_picker가 자체적으로 권한 처리
 
   Future<void> _pickImage(ImageSource source) async {
     try {

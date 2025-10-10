@@ -64,3 +64,8 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // ✅ Photo Picker 지원 (Android 4.4+)
+    implementation("androidx.activity:activity-ktx:1.9.0")
+}
