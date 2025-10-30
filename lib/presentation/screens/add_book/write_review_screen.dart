@@ -83,7 +83,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     final reviewTitle = _titleController.text.trim();
     final reviewContent = _contentController.text.trim();
 
-    if (reviewTitle.length > 50 || reviewContent.length > 1000) return;
+    if (reviewTitle.length > 50 || reviewContent.length > 2000) return;
 
     setState(() => _isSaving = true);
     _showLoadingOverlay();
@@ -294,7 +294,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                               style: TextStyle(fontSize: 12, color: AppColors.black500)),
                         ),
                         Text(
-                          '${_contentController.text.length}/1000',
+                          '${_contentController.text.length}/2000',
                           style: const TextStyle(fontSize: 12, color: AppColors.black500),
                         ),
                       ],
@@ -302,7 +302,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     TextField(
                       buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                       controller: _contentController,
-                      maxLength: 1000,
+                      maxLength: 2000,
                       minLines: 3,
                       maxLines: null,
                       style: const TextStyle(fontSize: 14, color: AppColors.black900),

@@ -47,7 +47,7 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
     final newTitle = _titleController.text.trim();
     final newContent = _contentController.text.trim();
 
-    if (newTitle.length > 50 || newContent.length > 1000) return;
+    if (newTitle.length > 50 || newContent.length > 2000) return;
 
     setState(() => _isSaving = true);
 
@@ -206,7 +206,7 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
                 Padding(
                   padding: const EdgeInsets.only(right: 9),
                   child: Text(
-                    '${_contentController.text.length}/1000',
+                    '${_contentController.text.length}/2000',
                     style: const TextStyle(fontSize: 12, color: AppColors.black500),
                   ),
                 ),
@@ -214,7 +214,7 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
             ),
             TextField(
               controller: _contentController,
-              maxLength: 1000,
+              maxLength: 2000,
               minLines: 8,
               maxLines: null,
               keyboardType: TextInputType.multiline,

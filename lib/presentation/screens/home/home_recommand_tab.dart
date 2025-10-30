@@ -626,7 +626,7 @@ class _HomeRecommendTabState extends ConsumerState<HomeRecommendTab> {
                 ],
               ],
             ),
-          if (usersWithSameBooks.isNotEmpty) const SizedBox(height: 17),
+          if (usersWithSameBooks.isNotEmpty) const SizedBox(height: 0),
           // 최근 활성 유저 섹션
           const SizedBox(height: 35),
           Padding(
