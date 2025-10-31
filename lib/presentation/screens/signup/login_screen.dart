@@ -9,7 +9,8 @@ import 'package:my_logue/core/providers/follow_state_provider.dart';
 
 class LoginScreen extends ConsumerWidget {
   final bool blocked;
-  const LoginScreen({super.key, this.blocked = false});
+  final bool suspended;
+  const LoginScreen({super.key, this.blocked = false, this.suspended = false});
 
   void _loginWithGoogle(BuildContext context, WidgetRef ref) async {
     // 로그인 시 모든 followStateProvider 무효화
@@ -61,7 +62,20 @@ class LoginScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (blocked) ...[
+                if (suspended) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      "운영정책 위반으로 계정이 14일간 정지되었습니다.\n정지 기간 이후 다시 로그인할 수 있습니다.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.black900,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ] else if (blocked) ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 24),
                     child: Text(

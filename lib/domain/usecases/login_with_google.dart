@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:my_logue/presentation/screens/signup/login_screen.dart';
 
 class LoginWithGoogle {
   final SupabaseClient client;
@@ -46,6 +47,33 @@ class LoginWithGoogle {
       final session = client.auth.currentSession;
       if (session == null) {
         throw Exception('로그인에 실패했습니다.');
+      }
+
+      // 정지 회원 확인
+      final user = client.auth.currentUser;
+      if (user != null) {
+        final profile = await client
+            .from('profiles')
+            .select('is_suspended')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (profile != null && profile.isNotEmpty) {
+          final isSuspended = profile['is_suspended'] as bool? ?? false;
+          if (isSuspended) {
+            // 정지 회원이면 로그아웃하고 로그인 화면으로 이동
+            await client.auth.signOut();
+            if (!context.mounted) return;
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const LoginScreen(suspended: true),
+              ),
+            );
+            return;
+          }
+        }
       }
 
       // 네비게이션 스택 완전 초기화 (popUntil 후 pushNamedAndRemoveUntil)
