@@ -76,7 +76,7 @@ class AladinBookApi {
       );
 
       final lookupResponse = await http.get(lookupUrl).timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 10),
         onTimeout: () {
           throw Exception('상세 정보 조회가 시간 초과되었습니다.');
         },
@@ -91,6 +91,10 @@ class AladinBookApi {
           // 상세 정보로 기존 아이템 업데이트
           item['subInfo'] = detailedItem['subInfo'] ?? item['subInfo'];
           item['description'] = detailedItem['description'] ?? item['description'];
+          // cover도 상세 정보에서 가져오기 (더 정확한 이미지)
+          if (detailedItem['cover'] != null && (detailedItem['cover'] as String).isNotEmpty) {
+            item['cover'] = detailedItem['cover'];
+          }
         }
       }
     } catch (e) {

@@ -367,9 +367,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                       )
                     ],
                   )
-                : _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _results.isEmpty
+                : _results.isEmpty
                         ? Center(
                             child: Transform.translate(
                               offset: AppConstants.getCenterOffset(context),

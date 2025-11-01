@@ -191,9 +191,7 @@ class _SearchBookScreenState extends State<SearchBookScreen> {
             Expanded(
               child: _searchController.text.isEmpty
                   ? const SizedBox.shrink()
-                  : _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _results.isEmpty
+                  : _results.isEmpty
                           ? Center(
                               child: Transform.translate(
                                 offset: AppConstants.getCenterOffset(context),

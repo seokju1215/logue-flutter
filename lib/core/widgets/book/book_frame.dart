@@ -77,7 +77,19 @@ class BookFrame extends StatelessWidget {
     );
   }
 
-  Widget _placeholderBox() => Container(color: Colors.grey[200]);
+  Widget _placeholderBox() => Container(
+    color: Colors.grey[200],
+    child: const Center(
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppColors.black500,
+        ),
+      ),
+    ),
+  );
   Widget _errorBox() =>
       Container(color: Colors.grey[300], child: const Icon(Icons.broken_image));
 }
