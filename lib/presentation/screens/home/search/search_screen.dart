@@ -312,18 +312,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         children: [
           _query.isEmpty
               ? const SizedBox.shrink()
-              : _userResults.isEmpty && _bookResults.isEmpty
-                  ? const SizedBox.expand(
-                      child: Center(
-                        child: Text(
-                          "검색 결과가 없어요.",
-                          style: TextStyle(
-                              fontSize: 14, color: AppColors.black500),
-                          textAlign: TextAlign.center,
-                        ),
+              : _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
                       ),
                     )
-                  : SingleChildScrollView(
+                  : _userResults.isEmpty && _bookResults.isEmpty
+                      ? const SizedBox.expand(
+                          child: Center(
+                            child: Text(
+                              "검색 결과가 없어요.",
+                              style: TextStyle(
+                                  fontSize: 14, color: AppColors.black500),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
                           padding: const EdgeInsets.symmetric(
                               vertical: 19, horizontal: 0),
                           child: Column(
@@ -493,18 +499,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                         ),
           _query.isEmpty
               ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
-              : _userResults.isEmpty
-                  ? const SizedBox.expand(
-                      child: Center(
-                        child: Text(
-                          "검색 결과가 없어요.",
-                          style: TextStyle(
-                              fontSize: 14, color: AppColors.black500),
-                          textAlign: TextAlign.center,
-                        ),
+              : _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
                       ),
                     )
-                  : Column(
+                  : _userResults.isEmpty
+                      ? const SizedBox.expand(
+                          child: Center(
+                            child: Text(
+                              "검색 결과가 없어요.",
+                              style: TextStyle(
+                                  fontSize: 14, color: AppColors.black500),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        )
+                      : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Padding(
@@ -629,7 +641,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                           ],
                         ),
           _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
+                  ),
+                )
               : _query.isEmpty
                   ? const SizedBox.shrink() // 🔍 검색 전에는 아무것도 안 보이게
                   : _bookResults.isEmpty
