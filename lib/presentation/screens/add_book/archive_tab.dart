@@ -1064,6 +1064,7 @@ setState(() {
                                           imageUrl: (book['books']
                                           ?['image']) ??
                                               'https://via.placeholder.com150',
+                                          showLoadingIndicator: false,
                                         ),
                                       ),
                                     ),

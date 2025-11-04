@@ -39,7 +39,10 @@ class UserBookGrid extends StatelessWidget {
                 onTap!(book);
               }
             },
-            child: BookFrame(imageUrl: imageUrl ?? ''),
+            child: BookFrame(
+              imageUrl: imageUrl ?? '',
+              showLoadingIndicator: false,
+            ),
           );
         },
       ),

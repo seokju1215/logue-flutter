@@ -562,6 +562,7 @@ class _ProfileTabState extends State<ProfileTab> {
                               child: BookFrame(
                                 imageUrl:
                                 book['books']?['image'] ?? 'https://via.placeholder.com/150',
+                                showLoadingIndicator: false,
                               ),
                             ),
                           ),

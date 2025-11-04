@@ -904,7 +904,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                               BlendMode.srcOver,
                                             ),
                                             child: BookFrame(
-                                                imageUrl: imageUrl),
+                                              imageUrl: imageUrl,
+                                              showLoadingIndicator: false,
+                                            ),
                                           ),
                                         ),
                                         Align(

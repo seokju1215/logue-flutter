@@ -4,8 +4,13 @@ import 'package:my_logue/core/themes/app_colors.dart';
 
 class BookFrame extends StatelessWidget {
   final String imageUrl;
+  final bool showLoadingIndicator;
 
-  const BookFrame({Key? key, required this.imageUrl}) : super(key: key);
+  const BookFrame({
+    Key? key,
+    required this.imageUrl,
+    this.showLoadingIndicator = true,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -77,19 +82,24 @@ class BookFrame extends StatelessWidget {
     );
   }
 
-  Widget _placeholderBox() => Container(
-    color: Colors.grey[200],
-    child: const Center(
-      child: SizedBox(
-        width: 24,
-        height: 24,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: AppColors.black500,
+  Widget _placeholderBox() {
+    if (!showLoadingIndicator) {
+      return Container(color: Colors.grey[200]);
+    }
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.black500,
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
   Widget _errorBox() =>
       Container(color: Colors.grey[300], child: const Icon(Icons.broken_image));
 }

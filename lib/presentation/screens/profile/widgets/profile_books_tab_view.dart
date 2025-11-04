@@ -713,6 +713,7 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
                         borderRadius: BorderRadius.circular(0),
                         child: BookFrame(
                           imageUrl: imageUrl,
+                          showLoadingIndicator: false,
                         ),
                       ),
                     ),
