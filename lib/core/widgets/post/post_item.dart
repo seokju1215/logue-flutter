@@ -119,7 +119,9 @@ class PostItem extends StatelessWidget {
                         backgroundColor: Colors.grey[300],
                       ),
                       const SizedBox(width: 9),
-                      Text(userName,
+                      Text(isMyPost && userName.length > 13
+                          ? '${userName.substring(0, 10)}...'
+                          : userName,
                           style: const TextStyle(fontSize: 14, color: AppColors.black900, height: 1.5, letterSpacing: -0.32)),
                     ],
                   ),

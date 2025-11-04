@@ -20,7 +20,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:my_logue/data/utils/firebase_analytics_util.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: false);
+const bool isQA = bool.fromEnvironment('QA_MODE', defaultValue: true);
 
 // AnalyticsSessionService 전역 인스턴스
 final AnalyticsSessionService analyticsSessionService = AnalyticsSessionService();
