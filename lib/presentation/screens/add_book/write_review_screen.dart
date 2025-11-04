@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/data/models/book_model.dart';
@@ -30,8 +31,26 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   @override
   void initState() {
     super.initState();
-    _titleController.addListener(() => setState(() {}));
-    _contentController.addListener(() => setState(() {}));
+    _titleController.addListener(() {
+      // 제목이 50자를 넘으면 자동으로 잘라내기
+      if (_titleController.text.length > 50) {
+        _titleController.value = TextEditingValue(
+          text: _titleController.text.substring(0, 50),
+          selection: TextSelection.collapsed(offset: 50),
+        );
+      }
+      setState(() {});
+    });
+    _contentController.addListener(() {
+      // 내용이 2000자를 넘으면 자동으로 잘라내기
+      if (_contentController.text.length > 2000) {
+        _contentController.value = TextEditingValue(
+          text: _contentController.text.substring(0, 2000),
+          selection: TextSelection.collapsed(offset: 2000),
+        );
+      }
+      setState(() {});
+    });
   }
   void _showLoadingOverlay() {
     if (_loadingOverlay != null) return; // 중복 방지
@@ -228,13 +247,23 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: _isSaving ? null : _saveReview,
-            child: const Text(
-                    '확인',
-                    style: TextStyle(
-                      color: Color(0xFF0055FF),
-                    ),
-                  ),
+            onPressed: (_isSaving || 
+                        _titleController.text.trim().isEmpty || 
+                        _titleController.text.length > 50 || 
+                        _contentController.text.length > 2000) 
+                        ? null 
+                        : _saveReview,
+            child: Text(
+              '확인',
+              style: TextStyle(
+                color: (_isSaving || 
+                        _titleController.text.trim().isEmpty || 
+                        _titleController.text.length > 50 || 
+                        _contentController.text.length > 2000)
+                        ? AppColors.black300
+                        : const Color(0xFF0055FF),
+              ),
+            ),
           ),
         ],
       ),
@@ -275,6 +304,9 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                       maxLength: 50,
                       minLines: 2,
                       maxLines: null,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(50),
+                      ],
                       style: const TextStyle(fontSize: 14, color: AppColors.black900),
                       decoration: InputDecoration(
                         contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
@@ -305,6 +337,9 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                       maxLength: 2000,
                       minLines: 3,
                       maxLines: null,
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(2000),
+                      ],
                       style: const TextStyle(fontSize: 14, color: AppColors.black900),
                       decoration: InputDecoration(
                         contentPadding: const EdgeInsets.symmetric(vertical: 9, horizontal: 9),
