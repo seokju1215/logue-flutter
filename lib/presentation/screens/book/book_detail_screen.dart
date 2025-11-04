@@ -224,7 +224,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         // 1️⃣ 내 DB에서 저자로 책 검색
         final dbResults = await userBookApi.searchBooksFromDB(author);
         
-        // 3️⃣ 결과 합치기 및 중복 제거
+        // 결과 합치기 및 중복 제거
         final allBooks = <Map<String, dynamic>>[];
         final seenIsbns = <String>{};
         final seenTitles = <String>{};
@@ -247,11 +247,14 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         try {
           final aladinResults = await api.searchBooksByAuthor(author);
           
-          // 알라딘 결과 추가 (중복 제거)
+          // 알라딘 결과 추가 (DB에 이미 있는 ISBN과 겹치는 것은 제외)
+          // search_screen과 동일한 로직: DB 결과의 ISBN과 겹치는 알라딘 책은 검색 결과에서 제외
           for (final aladinBook in aladinResults) {
-            final isbn = aladinBook['isbn']?.toString() ?? '';
+            // 알라딘 API는 isbn13을 반환하므로, isbn13 우선으로 ISBN 가져오기
+            final isbn = (aladinBook['isbn13'] ?? aladinBook['isbn'] ?? '').toString();
             final title = aladinBook['title']?.toString().toLowerCase() ?? '';
             
+            // DB에 이미 있는 ISBN과 겹치지 않는 경우만 추가
             if (isbn.isNotEmpty && !seenIsbns.contains(isbn)) {
               allBooks.add(aladinBook);
               seenIsbns.add(isbn);

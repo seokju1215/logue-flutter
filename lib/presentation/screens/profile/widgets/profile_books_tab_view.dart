@@ -444,33 +444,38 @@ class ProfileBooksTabViewState extends State<ProfileBooksTabView> {
             Positioned(
               top: _isTabBarPinned ? 30 : 0,
               right: 28,
-              child: Stack(
-                children: [
-                  // 말풍선 배경
-                  SvgPicture.asset(
-                    'assets/bubble.svg',
-                    width: 240,
-                    height: 50,
-                  ),
-                  // 텍스트 오버레이
-                  Positioned.fill(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Center(
-                        child: Text(
-                          '프로필 편집에서 숨길 수 있어요',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500,
-                            height: 1.2,
+              child: SizedBox(
+                width: 240,
+                height: 50,
+                child: Stack(
+                  children: [
+                    // 말풍선 배경
+                    SvgPicture.asset(
+                      'assets/bubble.svg',
+                      width: 240,
+                      height: 50,
+                      fit: BoxFit.fill,
+                    ),
+                    // 텍스트 오버레이
+                    Positioned.fill(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Center(
+                          child: Text(
+                            '프로필 편집에서 숨길 수 있어요',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black,
+                              fontWeight: FontWeight.w500,
+                              height: 1.2,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
         ],
