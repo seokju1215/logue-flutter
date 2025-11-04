@@ -32,10 +32,27 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   void initState() {
     super.initState();
     _titleController.addListener(() {
+      final text = _titleController.text;
+      
+      // 줄바꿈이 2줄을 넘으면 마지막 줄바꿈 이후의 텍스트 제거
+      final newlineCount = '\n'.allMatches(text).length;
+      if (newlineCount > 1) {
+        // 첫 번째 줄바꿈의 위치 찾기
+        final firstNewlineIndex = text.indexOf('\n');
+        if (firstNewlineIndex != -1) {
+          // 첫 번째 줄바꿈 이후의 모든 텍스트 제거
+          _titleController.value = TextEditingValue(
+            text: text.substring(0, firstNewlineIndex + 1),
+            selection: TextSelection.collapsed(offset: firstNewlineIndex + 1),
+          );
+          return;
+        }
+      }
+      
       // 제목이 50자를 넘으면 자동으로 잘라내기
-      if (_titleController.text.length > 50) {
+      if (text.length > 50) {
         _titleController.value = TextEditingValue(
-          text: _titleController.text.substring(0, 50),
+          text: text.substring(0, 50),
           selection: TextSelection.collapsed(offset: 50),
         );
       }
@@ -302,10 +319,27 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                       buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                       controller: _titleController,
                       maxLength: 50,
-                      minLines: 2,
-                      maxLines: null,
+                      maxLines: 2, // 최대 2줄까지만
+                      keyboardType: TextInputType.multiline,
                       inputFormatters: [
                         LengthLimitingTextInputFormatter(50),
+                        // 두 번째 줄바꿈(\n)부터 차단
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          final oldText = oldValue.text;
+                          final newText = newValue.text;
+                          
+                          // 기존 줄바꿈 개수
+                          final oldLineCount = '\n'.allMatches(oldText).length;
+                          // 새로운 줄바꿈 개수
+                          final newLineCount = '\n'.allMatches(newText).length;
+                          
+                          // 이미 1개의 줄바꿈(2줄)이 있고, 새로 추가된 텍스트에 줄바꿈이 있으면 차단
+                          if (oldLineCount >= 1 && newLineCount > oldLineCount) {
+                            return oldValue; // 두 번째 줄바꿈부터 입력 차단
+                          }
+                          
+                          return newValue;
+                        }),
                       ],
                       style: const TextStyle(fontSize: 14, color: AppColors.black900),
                       decoration: InputDecoration(

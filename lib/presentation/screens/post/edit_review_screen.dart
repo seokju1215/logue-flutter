@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_logue/core/themes/app_colors.dart';
 import 'package:my_logue/core/widgets/book/book_frame.dart';
@@ -36,8 +37,43 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
     _titleController.text = widget.post.reviewTitle ?? '';
     _contentController.text = widget.post.reviewContent ?? '';
 
-    _titleController.addListener(() => setState(() {}));
-    _contentController.addListener(() => setState(() {}));
+    _titleController.addListener(() {
+      final text = _titleController.text;
+      
+      // 줄바꿈이 2줄을 넘으면 마지막 줄바꿈 이후의 텍스트 제거
+      final newlineCount = '\n'.allMatches(text).length;
+      if (newlineCount > 1) {
+        // 첫 번째 줄바꿈의 위치 찾기
+        final firstNewlineIndex = text.indexOf('\n');
+        if (firstNewlineIndex != -1) {
+          // 첫 번째 줄바꿈 이후의 모든 텍스트 제거
+          _titleController.value = TextEditingValue(
+            text: text.substring(0, firstNewlineIndex + 1),
+            selection: TextSelection.collapsed(offset: firstNewlineIndex + 1),
+          );
+          return;
+        }
+      }
+      
+      // 제목이 50자를 넘으면 자동으로 잘라내기
+      if (text.length > 50) {
+        _titleController.value = TextEditingValue(
+          text: text.substring(0, 50),
+          selection: TextSelection.collapsed(offset: 50),
+        );
+      }
+      setState(() {});
+    });
+    _contentController.addListener(() {
+      // 내용이 2000자를 넘으면 자동으로 잘라내기
+      if (_contentController.text.length > 2000) {
+        _contentController.value = TextEditingValue(
+          text: _contentController.text.substring(0, 2000),
+          selection: TextSelection.collapsed(offset: 2000),
+        );
+      }
+      setState(() {});
+    });
   }
 
   Future<void> _updateReview() async {
@@ -138,11 +174,21 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
         title: const Text('수정', style: TextStyle(fontSize: 16, color: AppColors.black900, fontWeight: FontWeight.w500,)),
         actions: [
           TextButton(
-            onPressed: _isSaving ? null : _updateReview,
+            onPressed: (_isSaving || 
+                        _titleController.text.trim().isEmpty || 
+                        _titleController.text.length > 50 || 
+                        _contentController.text.length > 2000) 
+                        ? null 
+                        : _updateReview,
             child: Text(
               '저장',
               style: TextStyle(
-                color: _isSaving ? Colors.grey : const Color(0xFF0055FF),
+                color: (_isSaving || 
+                        _titleController.text.trim().isEmpty || 
+                        _titleController.text.length > 50 || 
+                        _contentController.text.length > 2000)
+                        ? AppColors.black300
+                        : const Color(0xFF0055FF),
               ),
             ),
           ),
@@ -183,8 +229,28 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
             TextField(
               controller: _titleController,
               maxLength: 50,
-              minLines: 2,
-              maxLines: null,
+              maxLines: 2, // 최대 2줄까지만
+              keyboardType: TextInputType.multiline,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(50),
+                // 두 번째 줄바꿈(\n)부터 차단
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  final oldText = oldValue.text;
+                  final newText = newValue.text;
+                  
+                  // 기존 줄바꿈 개수
+                  final oldLineCount = '\n'.allMatches(oldText).length;
+                  // 새로운 줄바꿈 개수
+                  final newLineCount = '\n'.allMatches(newText).length;
+                  
+                  // 이미 1개의 줄바꿈(2줄)이 있고, 새로 추가된 텍스트에 줄바꿈이 있으면 차단
+                  if (oldLineCount >= 1 && newLineCount > oldLineCount) {
+                    return oldValue; // 두 번째 줄바꿈부터 입력 차단
+                  }
+                  
+                  return newValue;
+                }),
+              ],
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
               decoration: InputDecoration(
                 counterText: '', // 기본 글자 수 숨김
@@ -219,6 +285,9 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
               maxLines: null,
               keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.newline,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(2000),
+              ],
               style: const TextStyle(fontSize: 14, color: AppColors.black900),
               decoration: InputDecoration(
                 counterText: '', // 기본 카운터 제거
