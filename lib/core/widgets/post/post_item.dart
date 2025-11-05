@@ -34,6 +34,40 @@ class PostItem extends StatelessWidget {
     this.fromScreen
   });
 
+  /// 화면 너비에 따라 username의 최대 표시 길이를 반환
+  /// 
+  /// 설정 예시:
+  /// - 화면 너비 >= 400: 15자
+  /// - 화면 너비 >= 350: 12자
+  /// - 화면 너비 >= 300: 10자
+  /// - 그 외: 8자
+  /// 
+  /// 이 값들을 필요에 따라 조정하세요.
+  int _getMaxUsernameLength(double screenWidth) {
+    if (screenWidth >= 420) {
+      return 20;
+    } else if (screenWidth >= 400) {
+      return 18;
+    } else if (screenWidth >= 375) {
+      return 14;
+    } else {
+      return 12;
+    }
+  }
+
+  /// username을 화면 너비에 맞춰 자르기
+  String _getTruncatedUsername(String userName, bool isMyPost, double screenWidth) {
+    if (!isMyPost) {
+      return userName;
+    }
+    
+    final maxLength = _getMaxUsernameLength(screenWidth);
+    if (userName.length > maxLength) {
+      return '${userName.substring(0, maxLength - 3)}...';
+    }
+    return userName;
+  }
+
   @override
   Widget build(BuildContext context) {
     final stopwatch = Stopwatch()..start();
@@ -119,10 +153,16 @@ class PostItem extends StatelessWidget {
                         backgroundColor: Colors.grey[300],
                       ),
                       const SizedBox(width: 9),
-                      Text(isMyPost && userName.length > 13
-                          ? '${userName.substring(0, 10)}...'
-                          : userName,
-                          style: const TextStyle(fontSize: 14, color: AppColors.black900, height: 1.5, letterSpacing: -0.32)),
+                      Builder(
+                        builder: (context) {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          final truncatedName = _getTruncatedUsername(userName, isMyPost, screenWidth);
+                          return Text(
+                            truncatedName,
+                            style: const TextStyle(fontSize: 14, color: AppColors.black900, height: 1.5, letterSpacing: -0.32),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
