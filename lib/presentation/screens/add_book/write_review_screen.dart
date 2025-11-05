@@ -265,7 +265,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         actions: [
           TextButton(
             onPressed: (_isSaving || 
-                        _titleController.text.trim().isEmpty || 
                         _titleController.text.length > 50 || 
                         _contentController.text.length > 2000) 
                         ? null 
@@ -274,7 +273,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               '확인',
               style: TextStyle(
                 color: (_isSaving || 
-                        _titleController.text.trim().isEmpty || 
                         _titleController.text.length > 50 || 
                         _contentController.text.length > 2000)
                         ? AppColors.black300

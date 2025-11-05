@@ -175,7 +175,6 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
         actions: [
           TextButton(
             onPressed: (_isSaving || 
-                        _titleController.text.trim().isEmpty || 
                         _titleController.text.length > 50 || 
                         _contentController.text.length > 2000) 
                         ? null 
@@ -184,7 +183,6 @@ class _EditReviewScreenState extends State<EditReviewScreen> {
               '저장',
               style: TextStyle(
                 color: (_isSaving || 
-                        _titleController.text.trim().isEmpty || 
                         _titleController.text.length > 50 || 
                         _contentController.text.length > 2000)
                         ? AppColors.black300
