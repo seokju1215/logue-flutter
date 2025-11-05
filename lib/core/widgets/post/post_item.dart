@@ -128,111 +128,117 @@ class PostItem extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (isMyPost)
-                  Row(
-                    children: [
-                      OutlinedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => BookDetailScreen(bookId: post.bookId!),
-                          ));
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.black300),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                          padding: const EdgeInsets.symmetric(horizontal: 19),
-                          minimumSize: const Size(0, 34),
-                        ),
-                        child: const Text('책 둘러보기 →',
-                            style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1, fontWeight: FontWeight.w400)),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.more_vert),
-                        onPressed: () async {
-                          final action = await showModalBottomSheet<String>(
-                            context: context,
-                            useRootNavigator: true,           // ✅ 루트 네비게이터 위에 띄움 → 바텀 네비까지 덮음
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (ctx) {
-                              // ✅ 불필요한 padding 제거: 가장 아래에서 시작
-                              return SafeArea(
-                                top: false,
-                                // bottom: false도 가능. 홈 인디케이터 공간까지 덮고 싶으면 false 유지
-                                child: PostActionBottomSheet(
-                                  is_archived: post.is_archived,
-                                  fromScreen: fromScreen,
-                                ),
-                              );
-                            },
-                          );
-
-                          if (action == 'share') {
-                            // 공유 기능 구현
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('공유 기능이 준비 중입니다')),
-                            );
-                          } else if (action == 'edit') {
-                            final result = await Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => EditReviewScreen(post: post, fromScreen: 'post_item',),
+                  Transform.translate(
+                    offset: const Offset(5.5, 0),
+                    child: Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => BookDetailScreen(bookId: post.bookId!),
                             ));
-                            if (result == true) {
-                              onEditSuccess?.call();
-                            }
-                          } else if (action == 'archive') {
-                            // 보관함으로 이동 기능 구현
-                            try {
-                              final userBookApi = UserBookApi(Supabase.instance.client);
-                              await userBookApi.archiveBook(post.id);
-                              fromScreen == 'single_post_screen'? onDeleteSuccess?.call() :onArchiveSuccess?.call(); // 보관 후 목록 새로고침
-                            } catch (e) {
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.black300),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                            padding: const EdgeInsets.symmetric(horizontal: 19),
+                            minimumSize: const Size(0, 34),
+                          ),
+                          child: const Text('책 둘러보기 →',
+                              style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1, fontWeight: FontWeight.w400)),
+                        ),
+                        Transform.translate(
+                          offset: const Offset(-5.5, 0), // 왼쪽으로 8픽셀 이동
+                          child: IconButton(
+                            icon: const Icon(Icons.more_vert),
+                            onPressed: () async {
+                            final action = await showModalBottomSheet<String>(
+                              context: context,
+                              useRootNavigator: true,           // ✅ 루트 네비게이터 위에 띄움 → 바텀 네비까지 덮음
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (ctx) {
+                                // ✅ 불필요한 padding 제거: 가장 아래에서 시작
+                                return SafeArea(
+                                  top: false,
+                                  // bottom: false도 가능. 홈 인디케이터 공간까지 덮고 싶으면 false 유지
+                                  child: PostActionBottomSheet(
+                                    is_archived: post.is_archived,
+                                    fromScreen: fromScreen,
+                                  ),
+                                );
+                              },
+                            );
+
+                            if (action == 'share') {
+                              // 공유 기능 구현
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('보관 중 오류가 발생했습니다')),
+                                const SnackBar(content: Text('공유 기능이 준비 중입니다')),
                               );
+                            } else if (action == 'edit') {
+                              final result = await Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => EditReviewScreen(post: post, fromScreen: 'post_item',),
+                              ));
+                              if (result == true) {
+                                onEditSuccess?.call();
+                              }
+                            } else if (action == 'archive') {
+                              // 보관함으로 이동 기능 구현
+                              try {
+                                final userBookApi = UserBookApi(Supabase.instance.client);
+                                await userBookApi.archiveBook(post.id);
+                                fromScreen == 'single_post_screen'? onDeleteSuccess?.call() :onArchiveSuccess?.call(); // 보관 후 목록 새로고침
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('보관 중 오류가 발생했습니다')),
+                                );
+                              }
+                            } else if (action == 'profile') {
+                              // 프로필로 이동 기능 구현
+                              try {
+                                final userBookApi = UserBookApi(Supabase.instance.client);
+                                await userBookApi.moveToProfile(post.id);
+                                onDeleteSuccess?.call(); // 프로필 이동 후 목록 새로고침
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('프로필 이동 중 오류가 발생했습니다: $e')),
+                                );
+                              }
+                            } else if (action == 'delete') {
+                              if(post.is_archived == false) {
+                                await showDialog(
+                                  context: context,
+                                  builder: (rejectDialogContext) => RejectDeleteDialog(
+                                    onDelete: () async {
+                                      Navigator.pop(rejectDialogContext);
+                                    },
+                                  ),
+                                );
+                              } else{
+                                await showDialog(
+                                  context: context,
+                                  builder: (deleteDialogContext) => PostDeleteDialog(
+                                    onDelete: () async {
+                                      Navigator.pop(deleteDialogContext);
+                                      final userBookApi = UserBookApi(Supabase.instance.client);
+                                      try {
+                                        await userBookApi.deleteBook(post.id);
+                                        onDeleteSuccess?.call();
+                                      } catch (_) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                );
+                              }
                             }
-                          } else if (action == 'profile') {
-                            // 프로필로 이동 기능 구현
-                            try {
-                              final userBookApi = UserBookApi(Supabase.instance.client);
-                              await userBookApi.moveToProfile(post.id);
-                              onDeleteSuccess?.call(); // 프로필 이동 후 목록 새로고침
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('프로필 이동 중 오류가 발생했습니다: $e')),
-                              );
-                            }
-                          } else if (action == 'delete') {
-                            if(post.is_archived == false) {
-                              await showDialog(
-                                context: context,
-                                builder: (rejectDialogContext) => RejectDeleteDialog(
-                                  onDelete: () async {
-                                    Navigator.pop(rejectDialogContext);
-                                  },
-                                ),
-                              );
-                            } else{
-                              await showDialog(
-                                context: context,
-                                builder: (deleteDialogContext) => PostDeleteDialog(
-                                  onDelete: () async {
-                                    Navigator.pop(deleteDialogContext);
-                                    final userBookApi = UserBookApi(Supabase.instance.client);
-                                    try {
-                                      await userBookApi.deleteBook(post.id);
-                                      onDeleteSuccess?.call();
-                                    } catch (_) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
-                                      );
-                                    }
-                                  },
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      ),
-                    ],
+                          },
+                        ),
+                        ),
+                      ],
+                    ),
                   )
                 else
                   OutlinedButton(
