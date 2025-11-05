@@ -367,7 +367,13 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
                       )
                     ],
                   )
-                : _results.isEmpty
+                : _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.black900),
+                        ),
+                      )
+                    : _results.isEmpty
                         ? Center(
                             child: Transform.translate(
                               offset: AppConstants.getCenterOffset(context),
