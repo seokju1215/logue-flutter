@@ -39,11 +39,14 @@ class FollowUserTile extends ConsumerWidget {
 
   /// 화면 너비와 버튼 유무에 따라 username의 최대 표시 길이를 반환
   /// 
-  /// 팔로우 버튼과 X 버튼이 모두 있을 때: 공간이 제한적이므로 더 짧게
-  /// 버튼이 하나만 있거나 없을 때: 공간이 더 넓으므로 더 길게
-  int _getMaxUsernameLength(double screenWidth, bool hasBothButtons) {
+  /// 팔로우 버튼과 X 버튼이 모두 있을 때: 가장 제한적 공간
+  /// 팔로우 버튼만 있을 때: 중간 제한 (약간 더 넓음)
+  /// 버튼이 없을 때: 가장 넓은 공간
+  int _getMaxUsernameLength(double screenWidth, bool hasFollowButton, bool hasRemoveButton) {
+    final hasBothButtons = hasFollowButton && hasRemoveButton;
+    
     if (hasBothButtons) {
-      // 팔로우 버튼과 X 버튼이 모두 있을 때 (제한적 공간)
+      // 팔로우 버튼과 X 버튼이 모두 있을 때 (가장 제한적 공간)
       if (screenWidth >= 420) {
         return 20;
       } else if (screenWidth >= 400) {
@@ -53,8 +56,15 @@ class FollowUserTile extends ConsumerWidget {
       } else {
         return 13;
       }
+    } else if (hasFollowButton) {
+      // 팔로우 버튼만 있을 때 (중간 제한)
+       if (screenWidth >= 400) {
+        return 20;
+      } else {
+        return 18;
+      }
     } else {
-      // 버튼이 하나만 있거나 없을 때 (더 넓은 공간)
+      // 버튼이 없을 때 (가장 넓은 공간)
       if (screenWidth >= 400) {
         return 20;
       } else {
@@ -64,8 +74,8 @@ class FollowUserTile extends ConsumerWidget {
   }
 
   /// username을 화면 너비와 버튼 유무에 맞춰 자르기
-  String _getTruncatedUsername(String username, double screenWidth, bool hasBothButtons) {
-    final maxLength = _getMaxUsernameLength(screenWidth, hasBothButtons);
+  String _getTruncatedUsername(String username, double screenWidth, bool hasFollowButton, bool hasRemoveButton) {
+    final maxLength = _getMaxUsernameLength(screenWidth, hasFollowButton, hasRemoveButton);
     
     if (username.length > maxLength) {
       return '${username.substring(0, maxLength - 3)}...';
@@ -92,7 +102,6 @@ class FollowUserTile extends ConsumerWidget {
     }();
 
     final showRemoveButton = isMyProfile && tabType == FollowListType.followers;
-    final hasBothButtons = showFollowButton && showRemoveButton;
 
     return Padding(
       padding: showRemoveButton
@@ -122,7 +131,7 @@ class FollowUserTile extends ConsumerWidget {
                       Builder(
                         builder: (context) {
                           final screenWidth = MediaQuery.of(context).size.width;
-                          final truncatedName = _getTruncatedUsername(username, screenWidth, hasBothButtons);
+                          final truncatedName = _getTruncatedUsername(username, screenWidth, showFollowButton, showRemoveButton);
                           return Text(truncatedName,
                               style: const TextStyle(
                                   fontSize: 14, color: AppColors.black900));

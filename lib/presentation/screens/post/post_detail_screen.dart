@@ -25,6 +25,47 @@ class PostDetailScreen extends StatelessWidget {
   const PostDetailScreen(
       {super.key, required this.post, this.fromScreen, this.onDeleteSuccess, this.onEditSuccess, this.onArchiveSuccess,required this.isMyPost});
 
+  /// 화면 너비와 more_vert 아이콘 유무에 따라 username의 최대 표시 길이를 반환
+  /// 
+  /// more_vert 아이콘이 있을 때 (isMyPost == true): 공간이 제한적이므로 더 짧게
+  /// more_vert 아이콘이 없을 때 (isMyPost == false): 공간이 더 넓으므로 더 길게
+  int _getMaxUsernameLength(double screenWidth, bool hasMoreVertIcon) {
+    if (hasMoreVertIcon) {
+      // more_vert 아이콘이 있을 때 (현재 적용된 기준)
+      if (screenWidth >= 420) {
+        return 20;
+      } else if (screenWidth >= 400) {
+        return 18;
+      } else if (screenWidth >= 375) {
+        return 14;
+      } else {
+        return 12;
+      }
+    } else {
+      // more_vert 아이콘이 없을 때 (더 긴 길이 허용)
+      if (screenWidth >= 400) {
+        return 20;
+      } else if (screenWidth >= 390) {
+        return 18;
+      } else if (screenWidth >= 375) {
+        return 18;
+      } else {
+        return 16;
+      }
+    }
+  }
+
+  /// username을 화면 너비와 more_vert 아이콘 유무에 맞춰 자르기
+  String _getTruncatedUsername(String userName, bool isMyPost, double screenWidth) {
+    final hasMoreVertIcon = isMyPost; // isMyPost가 true면 more_vert 아이콘이 있음
+    final maxLength = _getMaxUsernameLength(screenWidth, hasMoreVertIcon);
+    
+    if (userName.length > maxLength) {
+      return '${userName.substring(0, maxLength - 3)}...';
+    }
+    return userName;
+  }
+
   @override
   Widget build(BuildContext context) {
     final imageUrl = post.image ?? '';
@@ -36,9 +77,15 @@ class PostDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(userName, style: TextStyle(fontSize: 16,
-          color: AppColors.black900,
-          fontWeight: FontWeight.w500,),),
+        title: Builder(
+          builder: (context) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final truncatedName = _getTruncatedUsername(userName, isMyPost, screenWidth);
+            return Text(truncatedName, style: TextStyle(fontSize: 16,
+              color: AppColors.black900,
+              fontWeight: FontWeight.w500,),);
+          },
+        ),
         centerTitle: true,
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
@@ -77,10 +124,16 @@ class PostDetailScreen extends StatelessWidget {
                           backgroundColor: Colors.grey[300],
                         ),
                         const SizedBox(width: 8),
-                        Text(userName, style: const TextStyle(fontSize: 14,
-                            color: AppColors.black900,
-                            height: 1.5,
-                            letterSpacing: -0.32)),
+                        Builder(
+                          builder: (context) {
+                            final screenWidth = MediaQuery.of(context).size.width;
+                            final truncatedName = _getTruncatedUsername(userName, isMyPost, screenWidth);
+                            return Text(truncatedName, style: const TextStyle(fontSize: 14,
+                                color: AppColors.black900,
+                                height: 1.5,
+                                letterSpacing: -0.32));
+                          },
+                        ),
                       ],
                     ),
                   ),
