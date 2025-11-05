@@ -34,34 +34,41 @@ class PostItem extends StatelessWidget {
     this.fromScreen
   });
 
-  /// 화면 너비에 따라 username의 최대 표시 길이를 반환
+  /// 화면 너비와 more_vert 아이콘 유무에 따라 username의 최대 표시 길이를 반환
   /// 
-  /// 설정 예시:
-  /// - 화면 너비 >= 400: 15자
-  /// - 화면 너비 >= 350: 12자
-  /// - 화면 너비 >= 300: 10자
-  /// - 그 외: 8자
-  /// 
-  /// 이 값들을 필요에 따라 조정하세요.
-  int _getMaxUsernameLength(double screenWidth) {
-    if (screenWidth >= 420) {
-      return 20;
-    } else if (screenWidth >= 400) {
-      return 18;
-    } else if (screenWidth >= 375) {
-      return 14;
+  /// more_vert 아이콘이 있을 때 (isMyPost == true): 공간이 제한적이므로 더 짧게
+  /// more_vert 아이콘이 없을 때 (isMyPost == false): 공간이 더 넓으므로 더 길게
+  int _getMaxUsernameLength(double screenWidth, bool hasMoreVertIcon) {
+    if (hasMoreVertIcon) {
+      // more_vert 아이콘이 있을 때 (현재 적용된 기준)
+      if (screenWidth >= 420) {
+        return 20;
+      } else if (screenWidth >= 400) {
+        return 18;
+      } else if (screenWidth >= 375) {
+        return 14;
+      } else {
+        return 12;
+      }
     } else {
-      return 12;
+      // more_vert 아이콘이 없을 때 (더 긴 길이 허용)
+       if (screenWidth >= 400) {
+        return 20;
+      } else if (screenWidth >= 390) {
+         return 18;
+       } else if (screenWidth >= 375) {
+        return 18;
+      } else {
+        return 16;
+      }
     }
   }
 
-  /// username을 화면 너비에 맞춰 자르기
+  /// username을 화면 너비와 more_vert 아이콘 유무에 맞춰 자르기
   String _getTruncatedUsername(String userName, bool isMyPost, double screenWidth) {
-    if (!isMyPost) {
-      return userName;
-    }
+    final hasMoreVertIcon = isMyPost; // isMyPost가 true면 more_vert 아이콘이 있음
+    final maxLength = _getMaxUsernameLength(screenWidth, hasMoreVertIcon);
     
-    final maxLength = _getMaxUsernameLength(screenWidth);
     if (userName.length > maxLength) {
       return '${userName.substring(0, maxLength - 3)}...';
     }

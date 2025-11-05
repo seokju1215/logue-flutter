@@ -37,6 +37,42 @@ class FollowUserTile extends ConsumerWidget {
     this.isFollowing,
   });
 
+  /// 화면 너비와 버튼 유무에 따라 username의 최대 표시 길이를 반환
+  /// 
+  /// 팔로우 버튼과 X 버튼이 모두 있을 때: 공간이 제한적이므로 더 짧게
+  /// 버튼이 하나만 있거나 없을 때: 공간이 더 넓으므로 더 길게
+  int _getMaxUsernameLength(double screenWidth, bool hasBothButtons) {
+    if (hasBothButtons) {
+      // 팔로우 버튼과 X 버튼이 모두 있을 때 (제한적 공간)
+      if (screenWidth >= 420) {
+        return 20;
+      } else if (screenWidth >= 400) {
+        return 18;
+      } else if (screenWidth >= 375) {
+        return 15;
+      } else {
+        return 13;
+      }
+    } else {
+      // 버튼이 하나만 있거나 없을 때 (더 넓은 공간)
+      if (screenWidth >= 400) {
+        return 20;
+      } else {
+        return 20;
+      }
+    }
+  }
+
+  /// username을 화면 너비와 버튼 유무에 맞춰 자르기
+  String _getTruncatedUsername(String username, double screenWidth, bool hasBothButtons) {
+    final maxLength = _getMaxUsernameLength(screenWidth, hasBothButtons);
+    
+    if (username.length > maxLength) {
+      return '${username.substring(0, maxLength - 3)}...';
+    }
+    return username;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // 로컬 상태가 있으면 우선 사용, 없으면 Riverpod 상태 사용
@@ -56,6 +92,7 @@ class FollowUserTile extends ConsumerWidget {
     }();
 
     final showRemoveButton = isMyProfile && tabType == FollowListType.followers;
+    final hasBothButtons = showFollowButton && showRemoveButton;
 
     return Padding(
       padding: showRemoveButton
@@ -82,9 +119,15 @@ class FollowUserTile extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(username,
-                          style: const TextStyle(
-                              fontSize: 14, color: AppColors.black900)),
+                      Builder(
+                        builder: (context) {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          final truncatedName = _getTruncatedUsername(username, screenWidth, hasBothButtons);
+                          return Text(truncatedName,
+                              style: const TextStyle(
+                                  fontSize: 14, color: AppColors.black900));
+                        },
+                      ),
                       Text(name,
                           style: const TextStyle(
                               fontSize: 12, color: AppColors.black500)),
