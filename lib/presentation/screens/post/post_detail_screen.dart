@@ -77,15 +77,9 @@ class PostDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Builder(
-          builder: (context) {
-            final screenWidth = MediaQuery.of(context).size.width;
-            final truncatedName = _getTruncatedUsername(userName, isMyPost, screenWidth);
-            return Text(truncatedName, style: TextStyle(fontSize: 16,
+        title: Text(userName, style: TextStyle(fontSize: 16,
               color: AppColors.black900,
-              fontWeight: FontWeight.w500,),);
-          },
-        ),
+              fontWeight: FontWeight.w500,),),
         centerTitle: true,
         leading: IconButton(
           icon: SvgPicture.asset('assets/back_arrow.svg'),
