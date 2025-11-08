@@ -356,6 +356,10 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
             if (mounted) {
               setState(() => profile = newProfile as Map<String, dynamic>);
             }
+
+            if (mounted) {
+              await loadBooks();
+            }
           }
         },
       )
@@ -457,7 +461,8 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                     ),
                   );
                   if (result == true) {
-                    _fetchProfile();
+                    await _fetchProfile();
+                    await loadBooks();
                   }
                 },
               ),
@@ -734,7 +739,8 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 ),
               );
               if (result == true) {
-                _fetchProfile();
+                await _fetchProfile();
+                await loadBooks();
               }
             },
             child: const Text("프로필 편집",
