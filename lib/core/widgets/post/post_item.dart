@@ -46,9 +46,9 @@ class PostItem extends StatelessWidget {
       } else if (screenWidth >= 400) {
         return 18;
       } else if (screenWidth >= 375) {
-        return 14;
+        return 15;
       } else {
-        return 12;
+        return 13;
       }
     } else {
       // more_vert 아이콘이 없을 때 (더 긴 길이 허용)
@@ -176,7 +176,7 @@ class PostItem extends StatelessWidget {
                 const Spacer(),
                 if (isMyPost)
                   Transform.translate(
-                    offset: const Offset(5.5, 0),
+                    offset: const Offset(22, 0),
                     child: Row(
                       children: [
                         OutlinedButton(
@@ -195,8 +195,10 @@ class PostItem extends StatelessWidget {
                               style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1, fontWeight: FontWeight.w400)),
                         ),
                         Transform.translate(
-                          offset: const Offset(-5.5, 0), // 왼쪽으로 8픽셀 이동
+                          offset: const Offset(-3, 0), // 왼쪽으로 8픽셀 이동
                           child: IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                             icon: const Icon(Icons.more_vert),
                             onPressed: () async {
                             final action = await showModalBottomSheet<String>(
