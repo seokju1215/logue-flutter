@@ -22,6 +22,7 @@ class PostItem extends StatelessWidget {
   final VoidCallback? onArchiveSuccess;
   final VoidCallback? onTap;
   final String? fromScreen;
+  final double? horizontalPadding;
 
   const PostItem({
     super.key,
@@ -31,7 +32,8 @@ class PostItem extends StatelessWidget {
     this.onEditSuccess,
     this.onArchiveSuccess,
     this.onTap,
-    this.fromScreen
+    this.fromScreen,
+    this.horizontalPadding,
   });
 
   /// 화면 너비와 more_vert 아이콘 유무에 따라 username의 최대 표시 길이를 반환
@@ -41,14 +43,14 @@ class PostItem extends StatelessWidget {
   int _getMaxUsernameLength(double screenWidth, bool hasMoreVertIcon) {
     if (hasMoreVertIcon) {
       // more_vert 아이콘이 있을 때 (현재 적용된 기준)
-      if (screenWidth >= 420) {
+      if (screenWidth >= 400) {
         return 20;
-      } else if (screenWidth >= 400) {
-        return 18;
+      } else if (screenWidth >= 390) {
+        return 19;
       } else if (screenWidth >= 375) {
-        return 15;
+        return 18;
       } else {
-        return 13;
+        return 16;
       }
     } else {
       // more_vert 아이콘이 없을 때 (더 긴 길이 허용)
@@ -77,6 +79,9 @@ class PostItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double effectiveHorizontalPadding =
+        isMyPost ? (horizontalPadding ?? 0) : (horizontalPadding ?? 22);
+
     final stopwatch = Stopwatch()..start();
     debugPrint('🚀 PostItem 렌더링 시작 - ID: ${post.id}');
     debugPrint('   📊 Post 데이터:');
@@ -130,183 +135,180 @@ class PostItem extends StatelessWidget {
           builder: (context) {
             final userSectionStart = DateTime.now();
             debugPrint('   👤 사용자 정보 섹션 렌더링 시작');
-            final userSectionWidget = Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    final result = Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => OtherProfileScreen(userId: post.userId),
-                    ));
-                    if (result == true) {
-                      onEditSuccess?.call(); // 여기를 onRefresh? 로 바꿔도 좋음
-                    }
-                  },
-                  child: Row(
-                    children: [
-                      (avatarUrl.isEmpty || avatarUrl == 'basic')
-                          ? CircleAvatar(
-                        radius: 22.5,
-                        backgroundColor: Colors.grey[300],
-                        child: Image.asset(
-                          'assets/basic_avatar.png',
-                          width: 45,
-                          height: 45,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                          : CircleAvatar(
-                        radius: 22.5,
-                        backgroundImage: NetworkImage(avatarUrl),
-                        backgroundColor: Colors.grey[300],
-                      ),
-                      const SizedBox(width: 9),
-                      Builder(
-                        builder: (context) {
-                          final screenWidth = MediaQuery.of(context).size.width;
-                          final truncatedName = _getTruncatedUsername(userName, isMyPost, screenWidth);
-                          return Text(
-                            truncatedName,
-                            style: const TextStyle(fontSize: 14, color: AppColors.black900, height: 1.5, letterSpacing: -0.32),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                if (isMyPost)
-                  Transform.translate(
-                    offset: const Offset(22, 0),
+            final userSectionWidget = Padding(
+              padding: isMyPost ? EdgeInsets.only(left : 22, right: 4) : EdgeInsets.symmetric(horizontal: 22),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      final result = Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => OtherProfileScreen(userId: post.userId),
+                      ));
+                      if (result == true) {
+                        onEditSuccess?.call(); // 여기를 onRefresh? 로 바꿔도 좋음
+                      }
+                    },
                     child: Row(
                       children: [
-                        OutlinedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => BookDetailScreen(bookId: post.bookId!),
-                            ));
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.black300),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                            padding: const EdgeInsets.symmetric(horizontal: 19),
-                            minimumSize: const Size(0, 34),
+                        (avatarUrl.isEmpty || avatarUrl == 'basic')
+                            ? CircleAvatar(
+                          radius: 22.5,
+                          backgroundColor: Colors.grey[300],
+                          child: Image.asset(
+                            'assets/basic_avatar.png',
+                            width: 45,
+                            height: 45,
+                            fit: BoxFit.cover,
                           ),
-                          child: const Text('책 둘러보기 →',
-                              style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1, fontWeight: FontWeight.w400)),
+                        )
+                            : CircleAvatar(
+                          radius: 22.5,
+                          backgroundImage: NetworkImage(avatarUrl),
+                          backgroundColor: Colors.grey[300],
                         ),
-                        Transform.translate(
-                          offset: const Offset(-3, 0), // 왼쪽으로 8픽셀 이동
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            icon: const Icon(Icons.more_vert),
-                            onPressed: () async {
-                            final action = await showModalBottomSheet<String>(
-                              context: context,
-                              useRootNavigator: true,           // ✅ 루트 네비게이터 위에 띄움 → 바텀 네비까지 덮음
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (ctx) {
-                                // ✅ 불필요한 padding 제거: 가장 아래에서 시작
-                                return SafeArea(
-                                  top: false,
-                                  // bottom: false도 가능. 홈 인디케이터 공간까지 덮고 싶으면 false 유지
-                                  child: PostActionBottomSheet(
-                                    is_archived: post.is_archived,
-                                    fromScreen: fromScreen,
-                                  ),
-                                );
-                              },
+                        const SizedBox(width: 9),
+                        Builder(
+                          builder: (context) {
+                            final screenWidth = MediaQuery.of(context).size.width;
+                            final truncatedName = _getTruncatedUsername(userName, isMyPost, screenWidth);
+                            return Text(
+                              truncatedName,
+                              style: const TextStyle(fontSize: 14, color: AppColors.black900, height: 1.5, letterSpacing: -0.32),
                             );
-
-                            if (action == 'share') {
-                              // 공유 기능 구현
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('공유 기능이 준비 중입니다')),
-                              );
-                            } else if (action == 'edit') {
-                              final result = await Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => EditReviewScreen(post: post, fromScreen: 'post_item',),
-                              ));
-                              if (result == true) {
-                                onEditSuccess?.call();
-                              }
-                            } else if (action == 'archive') {
-                              // 보관함으로 이동 기능 구현
-                              try {
-                                final userBookApi = UserBookApi(Supabase.instance.client);
-                                await userBookApi.archiveBook(post.id);
-                                fromScreen == 'single_post_screen'? onDeleteSuccess?.call() :onArchiveSuccess?.call(); // 보관 후 목록 새로고침
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('보관 중 오류가 발생했습니다')),
-                                );
-                              }
-                            } else if (action == 'profile') {
-                              // 프로필로 이동 기능 구현
-                              try {
-                                final userBookApi = UserBookApi(Supabase.instance.client);
-                                await userBookApi.moveToProfile(post.id);
-                                onDeleteSuccess?.call(); // 프로필 이동 후 목록 새로고침
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('프로필 이동 중 오류가 발생했습니다: $e')),
-                                );
-                              }
-                            } else if (action == 'delete') {
-                              if(post.is_archived == false) {
-                                await showDialog(
-                                  context: context,
-                                  builder: (rejectDialogContext) => RejectDeleteDialog(
-                                    onDelete: () async {
-                                      Navigator.pop(rejectDialogContext);
-                                    },
-                                  ),
-                                );
-                              } else{
-                                await showDialog(
-                                  context: context,
-                                  builder: (deleteDialogContext) => PostDeleteDialog(
-                                    onDelete: () async {
-                                      Navigator.pop(deleteDialogContext);
-                                      final userBookApi = UserBookApi(Supabase.instance.client);
-                                      try {
-                                        await userBookApi.deleteBook(post.id);
-                                        onDeleteSuccess?.call();
-                                      } catch (_) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                );
-                              }
-                            }
                           },
-                        ),
                         ),
                       ],
                     ),
-                  )
-                else
-                  OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => BookDetailScreen(bookId: post.bookId!),
-                      ));
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.black300, width: 1),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 19),
-                      minimumSize: const Size(0, 34),
-                    ),
-
-                    child: const Text('책 둘러보기 →',
-                        style: TextStyle(fontSize: 14, color: AppColors.black500, fontWeight: FontWeight.w400)),
                   ),
-              ],
+                  const Spacer(),
+                  if (isMyPost)
+                    Row(
+                        children: [
+                          OutlinedButton(
+                            onPressed: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => BookDetailScreen(bookId: post.bookId!),
+                              ));
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.black300),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                              padding: const EdgeInsets.symmetric(horizontal: 19),
+                              minimumSize: const Size(0, 34),
+                            ),
+                            child: const Text('책 둘러보기',
+                                style: TextStyle(fontSize: 14, color: AppColors.black500, height: 1, fontWeight: FontWeight.w400)),
+                          ),
+                          IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: const Icon(Icons.more_vert),
+                              onPressed: () async {
+                              final action = await showModalBottomSheet<String>(
+                                context: context,
+                                useRootNavigator: true,           // ✅ 루트 네비게이터 위에 띄움 → 바텀 네비까지 덮음
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (ctx) {
+                                  // ✅ 불필요한 padding 제거: 가장 아래에서 시작
+                                  return SafeArea(
+                                    top: false,
+                                    // bottom: false도 가능. 홈 인디케이터 공간까지 덮고 싶으면 false 유지
+                                    child: PostActionBottomSheet(
+                                      is_archived: post.is_archived,
+                                      fromScreen: fromScreen,
+                                    ),
+                                  );
+                                },
+                              );
+
+                              if (action == 'share') {
+                                // 공유 기능 구현
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('공유 기능이 준비 중입니다')),
+                                );
+                              } else if (action == 'edit') {
+                                final result = await Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) => EditReviewScreen(post: post, fromScreen: 'post_item',),
+                                ));
+                                if (result == true) {
+                                  onEditSuccess?.call();
+                                }
+                              } else if (action == 'archive') {
+                                // 보관함으로 이동 기능 구현
+                                try {
+                                  final userBookApi = UserBookApi(Supabase.instance.client);
+                                  await userBookApi.archiveBook(post.id);
+                                  fromScreen == 'single_post_screen'? onDeleteSuccess?.call() :onArchiveSuccess?.call(); // 보관 후 목록 새로고침
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('보관 중 오류가 발생했습니다')),
+                                  );
+                                }
+                              } else if (action == 'profile') {
+                                // 프로필로 이동 기능 구현
+                                try {
+                                  final userBookApi = UserBookApi(Supabase.instance.client);
+                                  await userBookApi.moveToProfile(post.id);
+                                  onDeleteSuccess?.call(); // 프로필 이동 후 목록 새로고침
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('프로필 이동 중 오류가 발생했습니다: $e')),
+                                  );
+                                }
+                              } else if (action == 'delete') {
+                                if(post.is_archived == false) {
+                                  await showDialog(
+                                    context: context,
+                                    builder: (rejectDialogContext) => RejectDeleteDialog(
+                                      onDelete: () async {
+                                        Navigator.pop(rejectDialogContext);
+                                      },
+                                    ),
+                                  );
+                                } else{
+                                  await showDialog(
+                                    context: context,
+                                    builder: (deleteDialogContext) => PostDeleteDialog(
+                                      onDelete: () async {
+                                        Navigator.pop(deleteDialogContext);
+                                        final userBookApi = UserBookApi(Supabase.instance.client);
+                                        try {
+                                          await userBookApi.deleteBook(post.id);
+                                          onDeleteSuccess?.call();
+                                        } catch (_) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('책 삭제 중 오류가 발생했어요')),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                      )
+                  else
+                    OutlinedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => BookDetailScreen(bookId: post.bookId!),
+                        ));
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.black300, width: 1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                        padding: const EdgeInsets.symmetric(horizontal: 19),
+                        minimumSize: const Size(0, 34),
+                      ),
+
+                      child: const Text('책 둘러보기 →',
+                          style: TextStyle(fontSize: 14, color: AppColors.black500, fontWeight: FontWeight.w400)),
+                    ),
+                ],
+              ),
             );
             final userSectionEnd = DateTime.now();
             final userSectionDuration = userSectionEnd.difference(userSectionStart);
@@ -328,7 +330,10 @@ class PostItem extends StatelessWidget {
               final titleSectionEnd = DateTime.now();
               final titleSectionDuration = titleSectionEnd.difference(titleSectionStart);
               debugPrint('   ⏱️ 리뷰 제목 섹션 소요시간: ${titleSectionDuration.inMicroseconds}μs');
-              return titleWidget;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: titleWidget,
+              );
             },
           ),
         const SizedBox(height: 4),
@@ -340,18 +345,21 @@ class PostItem extends StatelessWidget {
             debugPrint('     - reviewContent 길이: ${post.reviewContent?.length ?? 0}');
             debugPrint('     - reviewContent 미리보기: ${post.reviewContent?.substring(0, (post.reviewContent?.length ?? 0).clamp(0, 50))}...');
             
-            final contentWidget = Container(
-              constraints: const BoxConstraints(minHeight: 0),
-              child: AnimatedSize(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                child: PostContent(
-                  post: post, 
-                  fromScreen: fromScreen, 
-                  onDeleteSuccess: onDeleteSuccess, 
-                  onEditSuccess: onEditSuccess, 
-                  onArchiveSuccess: onArchiveSuccess, 
-                  isMyPost: isMyPost,
+            final contentWidget = Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 0),
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: PostContent(
+                    post: post,
+                    fromScreen: fromScreen,
+                    onDeleteSuccess: onDeleteSuccess,
+                    onEditSuccess: onEditSuccess,
+                    onArchiveSuccess: onArchiveSuccess,
+                    isMyPost: isMyPost,
+                  ),
                 ),
               ),
             );

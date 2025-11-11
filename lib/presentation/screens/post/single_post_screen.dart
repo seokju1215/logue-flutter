@@ -114,8 +114,8 @@ class _SinglePostScreenState extends State<SinglePostScreen> {
                       key: _itemKeys[index],
                       child: Padding(
                         padding: const EdgeInsets.only(
-                          left: 22,
-                          right: 22,
+                          left: 0,
+                          right: 0,
                           top: 51,
                           bottom: 27,
                         ),

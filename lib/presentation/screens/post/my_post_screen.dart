@@ -260,7 +260,7 @@ class _MyBookPostScreenState extends State<MyBookPostScreen> {
               return KeyedSubtree(
                 key: _itemKeys.length > index ? _itemKeys[index] : GlobalKey(),
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 22, right: 22, top: 51, bottom: 27),
+                  padding: const EdgeInsets.only(left: 0, right: 0, top: 51, bottom: 27),
                   child: PostItem(
                     isMyPost: false,
                     post: post,

@@ -181,8 +181,8 @@ class _HomeFollowingTabState extends State<HomeFollowingTab> {
             // 실제 셀
             return Padding(
               padding: const EdgeInsets.only(
-                left: 22,
-                right: 22,
+                left: 0,
+                right: 0,
                 top: 51,
                 bottom: 27,
               ),
