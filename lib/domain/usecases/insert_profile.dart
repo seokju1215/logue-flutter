@@ -11,6 +11,7 @@ class InsertProfileUseCase {
     required String job,
     required String bio,
     required String avatarUrl,
+    required DateTime lastSeenAt,
   }) async {
     await client.from('profiles').insert({
       'id': id,
@@ -18,7 +19,8 @@ class InsertProfileUseCase {
       'name': name,
       'job': job,
       'bio': bio,
-      'avatar_url' : avatarUrl
+      'avatar_url': avatarUrl,
+      'last_seen_at': lastSeenAt.toIso8601String(),
     });
   }
 }
