@@ -46,11 +46,11 @@ class PostItem extends StatelessWidget {
       if (screenWidth >= 400) {
         return 20;
       } else if (screenWidth >= 390) {
-        return 19;
-      } else if (screenWidth >= 375) {
         return 18;
+      } else if (screenWidth >= 375) {
+        return 17;
       } else {
-        return 16;
+        return 15;
       }
     } else {
       // more_vert 아이콘이 없을 때 (더 긴 길이 허용)

@@ -148,7 +148,7 @@ class PostDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 19),
                       minimumSize: const Size(0, 34),
                     ),
-                    child: const Text('책 둘러보기 →', style: TextStyle(fontSize: 14,
+                    child: Text( isMyPost ? '책 둘러보기' : '책 둘러보기 →', style: TextStyle(fontSize: 14,
                         color: AppColors.black500,
                         height: 1,
                         fontWeight: FontWeight.w400),),

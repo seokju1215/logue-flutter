@@ -60,9 +60,11 @@ class FollowUserTile extends ConsumerWidget {
       // 팔로우 버튼만 있을 때 (중간 제한)
        if (screenWidth >= 400) {
         return 20;
+      } else if (screenWidth >= 390) {
+        return 19;
       } else {
-        return 18;
-      }
+         return 17;
+       }
     } else {
       // 버튼이 없을 때 (가장 넓은 공간)
       if (screenWidth >= 400) {

@@ -626,25 +626,28 @@ class ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserve
                 ],
               ),
             ),
-            GestureDetector(
-              onTap: _isBubbleVisible ? null : () => _showZoomedAvatar(avatarUrl),
-              child: Hero(
-                tag: 'profile-avatar',
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.black100, width: 1),
-                  ),
-                  child: CircleAvatar(
-                    radius: 40.5,
-                    backgroundImage:
-                        avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
-                    child: avatarUrl == 'basic'
-                        ? Image.asset('assets/basic_avatar.png',
-                            width: 80, height: 80)
-                        : null,
+            Padding(
+              padding: const EdgeInsets.only(left:8.0),
+              child: GestureDetector(
+                onTap: _isBubbleVisible ? null : () => _showZoomedAvatar(avatarUrl),
+                child: Hero(
+                  tag: 'profile-avatar',
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.black100, width: 1),
+                    ),
+                    child: CircleAvatar(
+                      radius: 40.5,
+                      backgroundImage:
+                          avatarUrl == 'basic' ? null : NetworkImage(avatarUrl),
+                      child: avatarUrl == 'basic'
+                          ? Image.asset('assets/basic_avatar.png',
+                              width: 80, height: 80)
+                          : null,
+                    ),
                   ),
                 ),
               ),

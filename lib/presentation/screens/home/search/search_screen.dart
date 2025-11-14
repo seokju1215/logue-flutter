@@ -257,12 +257,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
 
                   return GestureDetector(
                     onTap: () {
-                      _pageController.animateToPage(index,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut);
+                      if (_currentIndex == index) {
+                        return;
+                      }
+
+                      void goToPage() {
+                        if (!_pageController.hasClients) return;
+
+                        final currentPage =
+                            _pageController.page?.round() ?? _currentIndex;
+
+                        if ((currentPage - index).abs() > 1) {
+                          _pageController.jumpToPage(index);
+                        } else {
+                          _pageController.animateToPage(
+                            index,
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      }
+
                       setState(() {
                         _currentIndex = index;
                       });
+
+                      if (_pageController.hasClients) {
+                        goToPage();
+                      } else {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          goToPage();
+                        });
+                      }
                     },
                     child: Padding(
                       padding: EdgeInsets.only(
