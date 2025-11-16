@@ -890,7 +890,7 @@ setState(() {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () async {
-                            if (_totalCount >= 1000) {
+                            if (_totalCount >= 2000) {
                               showDialog(
                                 context: context,
                                 barrierDismissible: true,
@@ -898,7 +898,7 @@ setState(() {
                                   return const AnnouncementDialog(
                                     title: '안내',
                                     body:
-                                    '현재 책장에 추가 가능한\n책의 한도는 1,000권이에요.\n더 많은 책을 추가하실 수 있도록\n빠른 시일 내로 확장해드릴게요!!\n독서를 좋아해 주셔서 감사합니다.',
+                                    '현재 책장에 추가 가능한\n책의 한도는 2,000권이에요.\n더 많은 책을 추가하실 수 있도록\n빠른 시일 내로 확장해드릴게요!!\n독서를 좋아해 주셔서 감사합니다.',
                                   );
                                 },
                               );

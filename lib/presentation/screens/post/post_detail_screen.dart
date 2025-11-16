@@ -32,14 +32,14 @@ class PostDetailScreen extends StatelessWidget {
   int _getMaxUsernameLength(double screenWidth, bool hasMoreVertIcon) {
     if (hasMoreVertIcon) {
       // more_vert 아이콘이 있을 때 (현재 적용된 기준)
-      if (screenWidth >= 420) {
+      if (screenWidth >= 400) {
         return 20;
-      } else if (screenWidth >= 400) {
+      } else if (screenWidth >= 390) {
         return 18;
       } else if (screenWidth >= 375) {
-        return 14;
+        return 17;
       } else {
-        return 12;
+        return 15;
       }
     } else {
       // more_vert 아이콘이 없을 때 (더 긴 길이 허용)
@@ -89,200 +89,210 @@ class PostDetailScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 9),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 프로필 + 책 둘러보기 + 더보기 (삭제/취소)
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => OtherProfileScreen(userId: post.userId),
-                      ));
-                    },
-                    child: Row(
-                      children: [
-                        (avatarUrl.isEmpty || avatarUrl == 'basic')
-                            ? CircleAvatar(
-                          radius: 22.5,
-                          backgroundColor: AppColors.black100,
-                          child: Image.asset(
-                              'assets/basic_avatar.png', width: 45, height: 45),
-                        )
-                            : CircleAvatar(
-                          radius: 22.5,
-                          backgroundImage: NetworkImage(avatarUrl),
-                          backgroundColor: Colors.grey[300],
-                        ),
-                        const SizedBox(width: 8),
-                        Builder(
-                          builder: (context) {
-                            final screenWidth = MediaQuery.of(context).size.width;
-                            final truncatedName = _getTruncatedUsername(userName, isMyPost, screenWidth);
-                            return Text(truncatedName, style: const TextStyle(fontSize: 14,
-                                color: AppColors.black900,
-                                height: 1.5,
-                                letterSpacing: -0.32));
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              BookDetailScreen(bookId: post.bookId!),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.black300),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 19),
-                      minimumSize: const Size(0, 34),
-                    ),
-                    child: Text( isMyPost ? '책 둘러보기' : '책 둘러보기 →', style: TextStyle(fontSize: 14,
-                        color: AppColors.black500,
-                        height: 1,
-                        fontWeight: FontWeight.w400),),
-                  ),
-                  if (isMyPost)
-                    IconButton(
-                        icon: const Icon(Icons.more_vert),
-                        onPressed: () async {
-                          debugPrint(
-                              '🔍 PostActionBottomSheet 호출: is_archived=${post
-                                  .is_archived}');
-                          final action = await showModalBottomSheet<String>(
-                            context: context,
-                            useRootNavigator: true,
-                            // ✅ 루트 네비게이터 위에 띄움 → 바텀 네비까지 덮음
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (ctx) {
-                              // ✅ 불필요한 padding 제거: 가장 아래에서 시작
-                              return SafeArea(
-                                top: false,
-                                // bottom: false도 가능. 홈 인디케이터 공간까지 덮고 싶으면 false 유지
-                                child: PostActionBottomSheet(
-                                  is_archived: post.is_archived,
-                                  fromScreen: fromScreen,
-                                ),
-                              );
+              Padding(
+                padding: EdgeInsets.only(left:22, right: isMyPost ? 4 : 22),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => OtherProfileScreen(userId: post.userId),
+                        ));
+                      },
+                      child: Row(
+                        children: [
+                          (avatarUrl.isEmpty || avatarUrl == 'basic')
+                              ? CircleAvatar(
+                            radius: 22.5,
+                            backgroundColor: AppColors.black100,
+                            child: Image.asset(
+                                'assets/basic_avatar.png', width: 45, height: 45),
+                          )
+                              : CircleAvatar(
+                            radius: 22.5,
+                            backgroundImage: NetworkImage(avatarUrl),
+                            backgroundColor: Colors.grey[300],
+                          ),
+                          const SizedBox(width: 8),
+                          Builder(
+                            builder: (context) {
+                              final screenWidth = MediaQuery.of(context).size.width;
+                              final truncatedName = _getTruncatedUsername(userName, isMyPost, screenWidth);
+                              return Text(truncatedName, style: const TextStyle(fontSize: 14,
+                                  color: AppColors.black900,
+                                  height: 1.5,
+                                  letterSpacing: -0.32));
                             },
-                          );
-                          debugPrint('🔍 PostActionBottomSheet 결과: $action');
-
-                          if (action == 'share') {
-                            // 공유 기능 구현
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('공유 기능이 준비 중입니다')),
-                            );
-                          } else if (action == 'edit') {
-                            final result = await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      EditReviewScreen(
-                                        post: post, fromScreen: 'post_detail',),
-                                ));
-                            if (result == true) {
-                              onEditSuccess?.call();
-                            }
-                          } else if (action == 'archive') {
-                            // 보관함으로 이동 기능 구현
-                            try {
-                              final userBookApi = UserBookApi(
-                                  Supabase.instance.client);
-                              await userBookApi.archiveBook(post.id);
-                              fromScreen == 'single_post_screen'
-                                  ? onDeleteSuccess?.call()
-                                  : onArchiveSuccess?.call(); // 보관 후 목록 새로고침
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('보관 중 오류가 발생했습니다')),
-                              );
-                            }
-                          } else if (action == 'profile') {
-                            // 프로필로 이동 기능 구현
-                            debugPrint('🔍 프로필로 이동 시도: ${post.id}');
-                            try {
-                              final userBookApi = UserBookApi(
-                                  Supabase.instance.client);
-                              await userBookApi.moveToProfile(post.id);
-                              debugPrint('✅ 프로필로 이동 성공: ${post.id}');
-                              onDeleteSuccess?.call(); // 프로필 이동 후 목록 새로고침
-                            } catch (e) {
-                              debugPrint('❌ 프로필로 이동 실패: $e');
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text('프로필 이동 중 오류가 발생했습니다: $e')),
-                              );
-                            }
-                          } else if (action == 'delete') {
-                            if (post.is_archived == false) {
-                              await showDialog(
-                                context: context,
-                                builder: (rejectDialogContext) =>
-                                    RejectDeleteDialog(
-                                      onDelete: () async {
-                                        Navigator.pop(rejectDialogContext);
-                                      },
-                                    ),
-                              );
-                            } else {
-                              await showDialog(
-                                context: context,
-                                builder: (deleteDialogContext) =>
-                                    PostDeleteDialog(
-                                      onDelete: () async {
-                                        Navigator.pop(deleteDialogContext);
-                                        final userBookApi = UserBookApi(
-                                            Supabase.instance.client);
-                                        try {
-                                          await userBookApi.deleteBook(post.id);
-                                          onDeleteSuccess?.call();
-                                        } catch (_) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(content: Text(
-                                                '책 삭제 중 오류가 발생했어요')),
-                                          );
-                                        }
-                                      },
-                                    ),
-                              );
-                            }
-                          }
-                        },
+                          ),
+                        ],
+                      ),
                     ),
-                ],
+                    const Spacer(),
+                    OutlinedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                BookDetailScreen(bookId: post.bookId!),
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.black300),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5)),
+                        padding: const EdgeInsets.symmetric(horizontal: 19),
+                        minimumSize: const Size(0, 34),
+                      ),
+                      child: Text( isMyPost ? '책 둘러보기' : '책 둘러보기 →', style: TextStyle(fontSize: 14,
+                          color: AppColors.black500,
+                          height: 1,
+                          fontWeight: FontWeight.w400),),
+                    ),
+                    if (isMyPost)
+                      IconButton(
+                          icon: const Icon(Icons.more_vert),
+                          onPressed: () async {
+                            debugPrint(
+                                '🔍 PostActionBottomSheet 호출: is_archived=${post
+                                    .is_archived}');
+                            final action = await showModalBottomSheet<String>(
+                              context: context,
+                              useRootNavigator: true,
+                              // ✅ 루트 네비게이터 위에 띄움 → 바텀 네비까지 덮음
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (ctx) {
+                                // ✅ 불필요한 padding 제거: 가장 아래에서 시작
+                                return SafeArea(
+                                  top: false,
+                                  // bottom: false도 가능. 홈 인디케이터 공간까지 덮고 싶으면 false 유지
+                                  child: PostActionBottomSheet(
+                                    is_archived: post.is_archived,
+                                    fromScreen: fromScreen,
+                                  ),
+                                );
+                              },
+                            );
+                            debugPrint('🔍 PostActionBottomSheet 결과: $action');
+
+                            if (action == 'share') {
+                              // 공유 기능 구현
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('공유 기능이 준비 중입니다')),
+                              );
+                            } else if (action == 'edit') {
+                              final result = await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        EditReviewScreen(
+                                          post: post, fromScreen: 'post_detail',),
+                                  ));
+                              if (result == true) {
+                                onEditSuccess?.call();
+                              }
+                            } else if (action == 'archive') {
+                              // 보관함으로 이동 기능 구현
+                              try {
+                                final userBookApi = UserBookApi(
+                                    Supabase.instance.client);
+                                await userBookApi.archiveBook(post.id);
+                                fromScreen == 'single_post_screen'
+                                    ? onDeleteSuccess?.call()
+                                    : onArchiveSuccess?.call(); // 보관 후 목록 새로고침
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('보관 중 오류가 발생했습니다')),
+                                );
+                              }
+                            } else if (action == 'profile') {
+                              // 프로필로 이동 기능 구현
+                              debugPrint('🔍 프로필로 이동 시도: ${post.id}');
+                              try {
+                                final userBookApi = UserBookApi(
+                                    Supabase.instance.client);
+                                await userBookApi.moveToProfile(post.id);
+                                debugPrint('✅ 프로필로 이동 성공: ${post.id}');
+                                onDeleteSuccess?.call(); // 프로필 이동 후 목록 새로고침
+                              } catch (e) {
+                                debugPrint('❌ 프로필로 이동 실패: $e');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('프로필 이동 중 오류가 발생했습니다: $e')),
+                                );
+                              }
+                            } else if (action == 'delete') {
+                              if (post.is_archived == false) {
+                                await showDialog(
+                                  context: context,
+                                  builder: (rejectDialogContext) =>
+                                      RejectDeleteDialog(
+                                        onDelete: () async {
+                                          Navigator.pop(rejectDialogContext);
+                                        },
+                                      ),
+                                );
+                              } else {
+                                await showDialog(
+                                  context: context,
+                                  builder: (deleteDialogContext) =>
+                                      PostDeleteDialog(
+                                        onDelete: () async {
+                                          Navigator.pop(deleteDialogContext);
+                                          final userBookApi = UserBookApi(
+                                              Supabase.instance.client);
+                                          try {
+                                            await userBookApi.deleteBook(post.id);
+                                            onDeleteSuccess?.call();
+                                          } catch (_) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(content: Text(
+                                                  '책 삭제 중 오류가 발생했어요')),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                );
+                              }
+                            }
+                          },
+                      ),
+                  ],
+                ),
               ),
+
               const SizedBox(height: 10),
               if (reviewTitle.isNotEmpty)
-                Text(
-                  reviewTitle,
-                  style: const TextStyle(
-                      fontSize: 16,
-                      color: AppColors.black900,
-                      height: 1.4,
-                      letterSpacing: -0.32
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: Text(
+                    reviewTitle,
+                    style: const TextStyle(
+                        fontSize: 16,
+                        color: AppColors.black900,
+                        height: 1.4,
+                        letterSpacing: -0.32
+                    ),
                   ),
                 ),
               const SizedBox(height: 12),
-              Text(
-                reviewContent,
-                style: const TextStyle(fontSize: 14,
-                    color: AppColors.black500,
-                    height: 2,
-                    letterSpacing: -0.32),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Text(
+                  reviewContent,
+                  style: const TextStyle(fontSize: 14,
+                      color: AppColors.black500,
+                      height: 2,
+                      letterSpacing: -0.32),
+                ),
               ),
             ],
           ),
