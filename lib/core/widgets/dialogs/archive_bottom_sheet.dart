@@ -631,19 +631,14 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
     }
   }
 
-  List<Widget> _buildShelves({
-    required int itemCount,
-    required double itemHeight,
-    required double runSpacing,
-    required double topOffset,
-  }) {
+  List<Widget> _buildShelves(int bookCount, double itemHeight, double bookShelfSpacing, double firstShelfY) {
     const booksPerRow = 5;
-    final rowCount = (itemCount / booksPerRow).ceil();
+    final shelfCount = (bookCount / booksPerRow).ceil();
 
-    return List.generate(rowCount, (i) {
-      final shelfTop = topOffset + (itemHeight + 22) * i; // 약간 더 촘촘하게
+    return List.generate(shelfCount, (i) {
+      final shelfY = firstShelfY + (itemHeight + bookShelfSpacing) * i;
       return Positioned(
-        top: shelfTop,
+        top: shelfY,
         left: 0,
         right: 0,
         child: Container(
@@ -830,50 +825,44 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                 builder: (context, constraints) {
                   const crossAxisCount = 5;
                   const crossAxisSpacing = 11.7;
-                  const runSpacing = 35.0;
                   const itemAspectRatio = 98 / 145;
-                  const topOffsetForShelf = 90.0;
+                  const bookPadding = 22.0;
 
+                  final availableWidth =
+                      constraints.maxWidth - (bookPadding * 2);
                   final totalSpacing =
                       crossAxisSpacing * (crossAxisCount - 1);
                   final itemWidth =
-                      (constraints.maxWidth - totalSpacing) /
-                          crossAxisCount;
+                      (availableWidth - totalSpacing) / crossAxisCount;
                   final itemHeight = itemWidth / itemAspectRatio;
-
-                  final rows =
-                  (_localBooks.length / crossAxisCount).ceil();
-                  final gridHeight =
-                      rows * itemHeight + (rows - 1) * runSpacing;
+                  
+                  // 책과 선반 사이의 간격을 유동적으로 계산
+                  // 책 높이의 40% 정도를 선반과의 간격으로 설정 (더 넓게)
+                  final bookShelfSpacing = (itemHeight * 0.4).clamp(25.0, 60.0);
+                  
+                  // 첫 번째 선반의 위치도 책 크기에 맞게 유동적으로 계산
+                  // 책 높이의 60% 정도를 첫 번째 선반 위치로 설정
+                  final firstShelfY = itemHeight.clamp(50.0, 120.0);
 
                   return Scrollbar(
                     child: SingleChildScrollView(
                       controller: _scrollController,
                       padding: EdgeInsets.zero,
-                      child: SizedBox(
-                        height: gridHeight + topOffsetForShelf,
-                        width: double.infinity,
-                        child: Stack(
-                          children: [
-                            ..._buildShelves(
-                              itemCount: _localBooks.length,
-                              itemHeight: itemHeight,
-                              runSpacing: runSpacing,
-                              topOffset: topOffsetForShelf,
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 22),
-                              child: GridView.builder(
+                      child: Stack(
+                        children: [
+                          // 그리드
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(22, 0, 22, 10),
+                            child: GridView.builder(
                                 physics:
                                 const NeverScrollableScrollPhysics(),
                                 shrinkWrap: true,
                                 itemCount: _localBooks.length,
                                 gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: crossAxisCount,
                                   crossAxisSpacing: crossAxisSpacing,
-                                  mainAxisSpacing: runSpacing,
+                                  mainAxisSpacing: bookShelfSpacing,
                                   childAspectRatio: itemAspectRatio,
                                 ),
                                 itemBuilder: (context, index) {
@@ -946,8 +935,9 @@ class _ArchiveBottomSheetState extends State<ArchiveBottomSheet> {
                                 },
                               ),
                             ),
-                          ],
-                        ),
+                          // 선반
+                          ..._buildShelves(_localBooks.length, itemHeight, bookShelfSpacing, firstShelfY),
+                        ],
                       ),
                     ),
                   );
