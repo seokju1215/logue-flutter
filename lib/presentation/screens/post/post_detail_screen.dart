@@ -32,8 +32,10 @@ class PostDetailScreen extends StatelessWidget {
   int _getMaxUsernameLength(double screenWidth, bool hasMoreVertIcon) {
     if (hasMoreVertIcon) {
       // more_vert 아이콘이 있을 때 (현재 적용된 기준)
-      if (screenWidth >= 400) {
+      if (screenWidth >= 410) {
         return 20;
+      } else if (screenWidth >= 400) {
+        return 19;
       } else if (screenWidth >= 390) {
         return 18;
       } else if (screenWidth >= 375) {
