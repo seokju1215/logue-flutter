@@ -92,6 +92,16 @@ class _SplashScreenState extends State<SplashScreen> {
             .maybeSingle();
       } catch (e) {
         debugPrint('❌ 프로필 조회 실패 (네트워크 오류): $e');
+        // 네트워크 오류 시에도 last_seen_at 업데이트 시도
+        try {
+          await client
+              .from('profiles')
+              .update({'last_seen_at': DateTime.now().toUtc().toIso8601String()})
+              .eq('id', user.id);
+          debugPrint('✅ last_seen_at 업데이트 완료 (프로필 조회 실패 시): ${user.id}');
+        } catch (updateError) {
+          debugPrint('❌ last_seen_at 업데이트 실패 (프로필 조회 실패 시): $updateError');
+        }
         // 네트워크 오류 시 기본 플로우로 진행 (메인 화면으로 이동)
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(context, '/main', (route) => false);
@@ -201,6 +211,21 @@ class _SplashScreenState extends State<SplashScreen> {
     } catch (e, stackTrace) {
       debugPrint('❌ _checkSession 전체 실패: $e');
       debugPrint('스택 트레이스: $stackTrace');
+      
+      // 최종 예외 처리 시에도 last_seen_at 업데이트 시도
+      final user = client.auth.currentSession?.user;
+      if (user != null) {
+        try {
+          await client
+              .from('profiles')
+              .update({'last_seen_at': DateTime.now().toUtc().toIso8601String()})
+              .eq('id', user.id);
+          debugPrint('✅ last_seen_at 업데이트 완료 (최종 예외 처리 시): ${user.id}');
+        } catch (updateError) {
+          debugPrint('❌ last_seen_at 업데이트 실패 (최종 예외 처리 시): $updateError');
+        }
+      }
+      
       // 최종 예외 처리: 네트워크 오류 시에도 앱이 열리도록 메인 화면으로 이동
       if (!mounted) return;
       try {

@@ -211,7 +211,7 @@ class _Select3BooksScreenState extends State<Select3BooksScreen> {
       job: '사용자',
       bio: '',
       avatarUrl: 'basic',
-      lastSeenAt: DateTime.now(),
+      lastSeenAt: DateTime.now().toUtc(),
     );
 
     try {

@@ -123,6 +123,17 @@ void main() async {
             final user = session.user;
             final email = user.email;
             
+            // last_seen_at 업데이트
+            try {
+              await Supabase.instance.client
+                  .from('profiles')
+                  .update({'last_seen_at': DateTime.now().toUtc().toIso8601String()})
+                  .eq('id', user.id);
+              print('✅ last_seen_at 업데이트 완료 (로그인): ${user.id}');
+            } catch (e) {
+              print('❌ last_seen_at 업데이트 실패 (로그인): $e');
+            }
+            
             // Firebase Analytics 로그인 이벤트
             try {
               await FirebaseAnalyticsUtil.logLogin(method: 'email', userId: user.id);
