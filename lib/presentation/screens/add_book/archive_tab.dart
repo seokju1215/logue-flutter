@@ -70,7 +70,7 @@ class _ArchiveTabState extends State<ArchiveTab> {
         'p_user_id': uid
       });
 
-      int count;
+      int count = 0;
       if (res == null) {
         count = 0;
       } else if (res is int) {
@@ -80,13 +80,34 @@ class _ArchiveTabState extends State<ArchiveTab> {
       } else if (res is Map && res.values.isNotEmpty) {
         // 드물게 {"get_archived_books_count": 123} 형태일 수도 있음
         final v = res.values.first;
-        count = (v is num) ? v.toInt() : 0;
+        if (v is int) {
+          count = v;
+        } else if (v is num) {
+          count = v.toInt();
+        } else {
+          // 문자열이나 다른 타입인 경우 파싱 시도
+          try {
+            count = int.parse(v.toString());
+          } catch (e) {
+            debugPrint('⚠️ get_archived_books_count 파싱 실패: $v');
+            count = 0;
+          }
+        }
       } else {
-        count = 0;
+        // 다른 타입인 경우 문자열로 변환 후 파싱 시도
+        try {
+          count = int.parse(res.toString());
+        } catch (e) {
+          debugPrint('⚠️ get_archived_books_count 파싱 실패: $res');
+          count = 0;
+        }
       }
 
       if (mounted) {
-        setState(() => _totalCount = count);
+        setState(() {
+          _totalCount = count;
+        });
+        debugPrint('📊 _fetchTotalCount 완료: $_totalCount (타입: ${_totalCount.runtimeType})');
       }
     } catch (e) {
       debugPrint('❌ 총 권수 가져오기 실패: $e');
@@ -144,15 +165,21 @@ class _ArchiveTabState extends State<ArchiveTab> {
       await widget.bookDataService!.loadAllBooks();
       final archivedBooks = widget.bookDataService!.archivedBooks;
       
+      // 정확한 총 개수를 서버에서 가져오기
+      await _fetchTotalCount();
+      
       if (mounted) {
         setState(() {
           _localBooks.addAll(archivedBooks);
-          _totalCount = archivedBooks.length;
+          // _fetchTotalCount()에서 가져온 값이 있으면 사용, 없으면 archivedBooks.length 사용
+          if (_totalCount == 0) {
+            _totalCount = archivedBooks.length;
+          }
           _hasMore = false;
           originalOrder = _localBooks.map((b) => b['id'] as String).toList();
           _isInitialLoading = false;
         });
-        debugPrint('✅ BookDataService에서 보관함 데이터 로드 완료: ${archivedBooks.length}권');
+        debugPrint('✅ BookDataService에서 보관함 데이터 로드 완료: ${archivedBooks.length}권, 총 개수: $_totalCount권');
         
         // 새로 추가된 책들을 찾아서 상위 컴포넌트에 알림
         final newBookIds = _localBooks.map((book) => book['id'] as String).toSet();
@@ -172,10 +199,12 @@ class _ArchiveTabState extends State<ArchiveTab> {
     }
     
     // BookDataService가 없거나 실패한 경우 기존 RPC 함수 사용
+    // total_count를 먼저 가져오기
+    await _fetchTotalCount();
     await _loadNextPage();
     
     if (mounted) {
-setState(() {
+      setState(() {
         _isInitialLoading = false;
       });
     }
@@ -203,9 +232,51 @@ setState(() {
 
       final rows = rpc.cast<Map<String, dynamic>>();
 
-      // total_count 추출
+      // total_count 추출 (큰 숫자도 안전하게 처리)
+      // _fetchTotalCount()에서 이미 가져온 값이 있으면 우선 사용
+      // 페이지네이션 결과의 total_count는 보조적으로만 사용
       if (rows.isNotEmpty) {
-        _totalCount = (rows.first['total_count'] as int?) ?? 0;
+        final totalCountValue = rows.first['total_count'];
+        if (totalCountValue != null && _totalCount == 0) {
+          // _fetchTotalCount()에서 값을 가져오지 못한 경우에만 사용
+          int newTotalCount = 0;
+          if (totalCountValue is int) {
+            newTotalCount = totalCountValue;
+          } else if (totalCountValue is num) {
+            newTotalCount = totalCountValue.toInt();
+          } else {
+            // 문자열이나 다른 타입인 경우 파싱 시도
+            try {
+              newTotalCount = int.parse(totalCountValue.toString());
+            } catch (e) {
+              debugPrint('⚠️ total_count 파싱 실패: $totalCountValue');
+              newTotalCount = 0;
+            }
+          }
+          if (newTotalCount > 0) {
+            _totalCount = newTotalCount;
+            debugPrint('📊 total_count 업데이트 (from page, fallback): $_totalCount (타입: ${_totalCount.runtimeType})');
+          }
+        } else if (totalCountValue != null) {
+          // _fetchTotalCount()에서 이미 값을 가져온 경우, 더 큰 값으로 업데이트
+          int newTotalCount = 0;
+          if (totalCountValue is int) {
+            newTotalCount = totalCountValue;
+          } else if (totalCountValue is num) {
+            newTotalCount = totalCountValue.toInt();
+          } else {
+            try {
+              newTotalCount = int.parse(totalCountValue.toString());
+            } catch (e) {
+              newTotalCount = 0;
+            }
+          }
+          // 더 큰 값으로 업데이트 (정확한 값 보장)
+          if (newTotalCount > _totalCount) {
+            _totalCount = newTotalCount;
+            debugPrint('📊 total_count 업데이트 (더 큰 값): $_totalCount (타입: ${_totalCount.runtimeType})');
+          }
+        }
       }
 
       // 2) 현재 페이지의 book 이미지 한번에 조회
