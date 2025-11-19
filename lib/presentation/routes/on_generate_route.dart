@@ -108,7 +108,10 @@ Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     case '/username_edit':
       final map = args as Map<String, dynamic>;
       return MaterialPageRoute(
-        builder: (_) => UserNameEdit(currentUsername: map['username'] ?? ''),
+        builder: (_) => UserNameEdit(
+          currentUsername: map['username'] ?? '',
+          originalUsername: map['originalUsername'] ?? '',
+        ),
       );
 
     case '/name_edit':

@@ -33,6 +33,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   late String job;
   late String bio;
   late bool showArchivedBooks;
+  late String originalUsername; // 원래 username 저장
   bool isEdited = false;
   bool _isSaving = false; // 저장 중 중복 실행 방지
   File? tempAvatarFile; // 임시 아바타 파일
@@ -43,6 +44,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     final profile = widget.initialProfile;
 
     username = profile['username'] ?? '';
+    originalUsername = profile['username'] ?? ''; // 원래 username 저장
     avatarUrl = profile['avatar_url'] ?? 'basic';
     name = profile['name'] ?? '';
     job = profile['job'] ?? '';
@@ -307,14 +309,19 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         final result = await Navigator.pushNamed(
                           context,
                           '/username_edit',
-                          arguments: {'username': username},
+                          arguments: {
+                            'username': username,
+                            'originalUsername': originalUsername,
+                          },
                         );
 
                         if (result != null && result is Map<String, dynamic>) {
                           if (mounted) {
+                            final newUsername = result['username'] ?? username;
                             setState(() {
-                              username = result['username'] ?? username;
-                              isEdited = true;
+                              username = newUsername;
+                              // 원래 username과 비교하여 isEdited 결정
+                              isEdited = newUsername.toLowerCase() != originalUsername.toLowerCase();
                             });
                           }
                         }

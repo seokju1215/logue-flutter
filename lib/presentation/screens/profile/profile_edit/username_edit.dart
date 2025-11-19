@@ -6,10 +6,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserNameEdit extends StatefulWidget {
   final String currentUsername;
+  final String originalUsername; // 원래 username (중복 체크에서 제외)
 
   const UserNameEdit({
     Key? key,
     required this.currentUsername,
+    required this.originalUsername,
   }) : super(key: key);
 
   @override
@@ -19,7 +21,6 @@ class UserNameEdit extends StatefulWidget {
 class _UserNameEdit extends State<UserNameEdit> {
   late TextEditingController _controller;
   bool isValidFormat = true;
-  bool hasChanged = false;
   bool isDuplicate = false;
   String? errorText;
   Timer? _debounce;
@@ -39,6 +40,11 @@ class _UserNameEdit extends State<UserNameEdit> {
   }
 
   Future<bool> _isUsernameTaken(String username) async {
+    // 원래 username과 같으면 중복이 아님
+    if (username.toLowerCase() == widget.originalUsername.toLowerCase()) {
+      return false;
+    }
+
     final client = Supabase.instance.client;
     final response = await client
         .from('profiles')
@@ -52,7 +58,6 @@ class _UserNameEdit extends State<UserNameEdit> {
   void _onChanged() {
     final originalText = _controller.text;
     final text = originalText.trim();
-    final changed = text.toLowerCase() != widget.currentUsername.toLowerCase();
 
     // 공백 검사 (원본 텍스트로 검사)
     final hasSpace = originalText.contains(' ');
@@ -61,7 +66,6 @@ class _UserNameEdit extends State<UserNameEdit> {
     final validFormat = RegExp(r'^(?=[a-zA-Z0-9._]{3,20}$)(?=.*[a-zA-Z0-9]).*$').hasMatch(text);
 
     setState(() {
-      hasChanged = changed;
       isValidFormat = validFormat && !hasSpace;
       errorText = null;
       isDuplicate = false;
@@ -69,7 +73,7 @@ class _UserNameEdit extends State<UserNameEdit> {
 
     _debounce?.cancel();
 
-    if (changed && validFormat && !hasSpace) {
+    if (validFormat && !hasSpace) {
       _debounce = Timer(const Duration(milliseconds: 500), () async {
         final taken = await _isUsernameTaken(text);
         if (!mounted) return;
@@ -81,7 +85,7 @@ class _UserNameEdit extends State<UserNameEdit> {
           });
         }
       });
-    } else if (changed && (!validFormat || hasSpace)) {
+    } else if (!validFormat || hasSpace) {
       setState(() {
         errorText = '사용자 이름 $text은(는) 사용할 수 없습니다.';
       });
@@ -89,20 +93,20 @@ class _UserNameEdit extends State<UserNameEdit> {
   }
 
   void _onConfirm() {
-    final newUsername = _controller.text.toLowerCase();
-    if (!isValidFormat || !hasChanged) return;
+    final newUsername = _controller.text.trim().toLowerCase();
+    if (!isValidFormat) return;
     Navigator.pop(context, {'username': newUsername});
   }
 
   @override
   Widget build(BuildContext context) {
-    final isConfirmEnabled = hasChanged && isValidFormat;
+    final isConfirmEnabled = isValidFormat;
 
     Color borderColor = Colors.grey;
     if (_controller.text.isNotEmpty) {
       if (!isValidFormat) {
         borderColor = AppColors.red500;
-      } else if (hasChanged) {
+      } else {
         borderColor = AppColors.blue500;
       }
     }
