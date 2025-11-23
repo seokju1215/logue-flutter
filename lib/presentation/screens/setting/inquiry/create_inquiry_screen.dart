@@ -42,6 +42,7 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
     // 텍스트 변경 리스너 추가
     _subjectController.addListener(() => setState(() {}));
     _contentController.addListener(() => setState(() {}));
+    _emailController.addListener(() => setState(() {}));
   }
 
   @override
@@ -65,6 +66,13 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
 
     if (_contentController.text.trim().isEmpty) {
       _showSnackBar('문의 내용을 입력해주세요.');
+      return;
+    }
+
+    // 이메일 필수 여부 확인
+    final bool isEmailRequired = _selectedInquiryType != '없는 책 추가 요청';
+    if (isEmailRequired && (!_emailReply || _emailController.text.trim().isEmpty)) {
+      _showSnackBar('이메일을 입력해주세요.');
       return;
     }
 
@@ -119,10 +127,19 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 이메일 필수 여부 확인
+    final bool isEmailRequired = _selectedInquiryType.isNotEmpty && 
+                                 _selectedInquiryType != '없는 책 추가 요청';
+    
+    // 이메일 유효성 검사
+    final bool isEmailValid = !isEmailRequired || 
+                             (_emailReply && _emailController.text.trim().isNotEmpty);
+    
     // 버튼 활성화 조건
     final bool isFormValid = _selectedInquiryType.isNotEmpty && 
                              _subjectController.text.trim().isNotEmpty && 
-                             _contentController.text.trim().isNotEmpty;
+                             _contentController.text.trim().isNotEmpty &&
+                             isEmailValid;
 
     return Scaffold(
       appBar: AppBar(
@@ -230,6 +247,12 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
                               setState(() {
                                 _selectedInquiryType = type;
                                 _isDropdownOpen = false;
+                                // "없는 책 추가 요청"이 아니면 이메일 답변 받기를 자동으로 체크
+                                if (type != '없는 책 추가 요청') {
+                                  _emailReply = true;
+                                } else {
+                                  _emailReply = false;
+                                }
                               });
                             },
                             child: Container(
@@ -260,9 +283,12 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
             // 이메일 답변 받기 섹션
             GestureDetector(
               onTap: () {
-                setState(() {
-                  _emailReply = !_emailReply;
-                });
+                // "없는 책 추가 요청"일 때만 체크박스 토글 가능
+                if (_selectedInquiryType == '없는 책 추가 요청') {
+                  setState(() {
+                    _emailReply = !_emailReply;
+                  });
+                }
               },
               child: Container(
                 width: double.infinity,
@@ -276,11 +302,13 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
                           scale: 1.2, // 1.0이 기본, 이 값을 키우면 전체 크기 증가
                           child: Checkbox(
                             value: _emailReply,
-                            onChanged: (value) {
-                              setState(() {
-                                _emailReply = value ?? false;
-                              });
-                            },
+                            onChanged: _selectedInquiryType == '없는 책 추가 요청' 
+                                ? (value) {
+                                    setState(() {
+                                      _emailReply = value ?? false;
+                                    });
+                                  }
+                                : null, // 다른 문의 유형일 때는 비활성화
                             activeColor: AppColors.black900,
                             fillColor: MaterialStateProperty.resolveWith((states) {
                               if (states.contains(MaterialState.selected)) {
