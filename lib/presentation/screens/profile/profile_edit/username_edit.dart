@@ -23,7 +23,8 @@ class _UserNameEdit extends State<UserNameEdit> {
   bool isValidFormat = true;
   bool isDuplicate = false;
   String? errorText;
-  Timer? _debounce;
+  Future<void>? _pendingCheck;
+  bool _isChecking = false; // 중복 체크 진행 중 여부
 
   @override
   void initState() {
@@ -34,7 +35,6 @@ class _UserNameEdit extends State<UserNameEdit> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -71,20 +71,12 @@ class _UserNameEdit extends State<UserNameEdit> {
       isDuplicate = false;
     });
 
-    _debounce?.cancel();
-
     if (validFormat && !hasSpace) {
-      _debounce = Timer(const Duration(milliseconds: 50), () async {
-        final taken = await _isUsernameTaken(text);
-        if (!mounted) return;
-        if (taken) {
-          setState(() {
-            isValidFormat = false;
-            isDuplicate = true;
-            errorText = '사용자 이름 $text은(는) 이미 다른 사람이 사용하고 있어요.';
-          });
-        }
+      // 이전 검증 요청이 있으면 취소하고 바로 새 검증 실행
+      setState(() {
+        _isChecking = true;
       });
+      _pendingCheck = _checkUsernameAvailability(text);
     } else if (!validFormat || hasSpace) {
       setState(() {
         errorText = '사용자 이름 $text은(는) 사용할 수 없습니다.';
@@ -92,15 +84,76 @@ class _UserNameEdit extends State<UserNameEdit> {
     }
   }
 
-  void _onConfirm() {
+  Future<void> _checkUsernameAvailability(String text) async {
+    final taken = await _isUsernameTaken(text);
+    if (!mounted) return;
+    
+    // 현재 입력된 텍스트와 검증한 텍스트가 같은지 확인 (입력 중 변경되었을 수 있음)
+    final currentText = _controller.text.trim();
+    if (currentText != text) {
+      // 입력이 변경되었으면 결과 무시
+      setState(() {
+        _isChecking = false;
+      });
+      return;
+    }
+    
+    setState(() {
+      _isChecking = false;
+      if (taken) {
+        isValidFormat = false;
+        isDuplicate = true;
+        errorText = '사용자 이름 $text은(는) 이미 다른 사람이 사용하고 있어요.';
+      }
+    });
+  }
+
+  Future<void> _onConfirm() async {
     final newUsername = _controller.text.trim().toLowerCase();
-    if (!isValidFormat) return;
+    
+    // 형식 검증
+    final hasSpace = _controller.text.contains(' ');
+    final validFormat = RegExp(r'^(?=[a-zA-Z0-9._]{3,20}$)(?=.*[a-zA-Z0-9]).*$').hasMatch(newUsername);
+    
+    if (!validFormat || hasSpace) {
+      setState(() {
+        isValidFormat = false;
+        errorText = '사용자 이름 $newUsername은(는) 사용할 수 없습니다.';
+      });
+      return;
+    }
+    
+    // 최종 중복 체크 (확인 버튼을 누를 때 한 번 더 확인)
+    setState(() {
+      _isChecking = true;
+    });
+    
+    final taken = await _isUsernameTaken(newUsername);
+    
+    if (!mounted) return;
+    
+    if (taken) {
+      setState(() {
+        _isChecking = false;
+        isValidFormat = false;
+        isDuplicate = true;
+        errorText = '사용자 이름 $newUsername은(는) 이미 다른 사람이 사용하고 있어요.';
+      });
+      return;
+    }
+    
+    // 중복이 아니면 적용
+    setState(() {
+      _isChecking = false;
+    });
+    
     Navigator.pop(context, {'username': newUsername});
   }
 
   @override
   Widget build(BuildContext context) {
-    final isConfirmEnabled = isValidFormat;
+    // 중복 체크 중이거나 형식이 유효하지 않으면 확인 버튼 비활성화
+    final isConfirmEnabled = isValidFormat && !_isChecking;
 
     Color borderColor = Colors.grey;
     if (_controller.text.isNotEmpty) {

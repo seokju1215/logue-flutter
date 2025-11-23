@@ -146,101 +146,6 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 이메일 답변 받기 섹션
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _emailReply = !_emailReply;
-                });
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Transform.scale(
-                        scale: 1.2, // 1.0이 기본, 이 값을 키우면 전체 크기 증가
-                        child: Checkbox(
-                          value: _emailReply,
-                          onChanged: (value) {
-                            setState(() {
-                              _emailReply = value ?? false;
-                            });
-                          },
-                          activeColor: AppColors.black900,
-                          fillColor: MaterialStateProperty.resolveWith((states) {
-                            if (states.contains(MaterialState.selected)) {
-                              return AppColors.black900;
-                            }
-                            return AppColors.black300;
-                          }),
-                          checkColor: Colors.white,
-                          side: const BorderSide(
-                            color: AppColors.black300,
-                            width: 1,
-                          ),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      )
-                    ),
-                    SizedBox(width: 9,),
-                    const Text(
-                      '이메일로 문의 답변 받기 (선택)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.21,
-                        color: AppColors.black900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (_emailReply) ...[
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 36,
-                child: TextField(
-                  controller: _emailController,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.23,
-                    color: AppColors.black900,
-                  ),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: '문의에 대해 답변 받으실 이메일을 입력해주세요.',
-                    hintStyle: const TextStyle(
-                      fontSize: 13,
-                      height: 1.23,
-                      color: AppColors.black500,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: AppColors.black300),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: AppColors.black300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(color: AppColors.black300),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 10,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 38),
-            
             // 문의사항 섹션
             Stack(
               children: [
@@ -266,6 +171,7 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
               ],
             ),
             const SizedBox(height: 16),
+
             
             // 문의 유형 선택
             AnimatedContainer(
@@ -351,6 +257,100 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
               ),
             ),
             const SizedBox(height: 21),
+            // 이메일 답변 받기 섹션
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _emailReply = !_emailReply;
+                });
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Transform.scale(
+                          scale: 1.2, // 1.0이 기본, 이 값을 키우면 전체 크기 증가
+                          child: Checkbox(
+                            value: _emailReply,
+                            onChanged: (value) {
+                              setState(() {
+                                _emailReply = value ?? false;
+                              });
+                            },
+                            activeColor: AppColors.black900,
+                            fillColor: MaterialStateProperty.resolveWith((states) {
+                              if (states.contains(MaterialState.selected)) {
+                                return AppColors.black900;
+                              }
+                              return AppColors.black300;
+                            }),
+                            checkColor: Colors.white,
+                            side: const BorderSide(
+                              color: AppColors.black300,
+                              width: 1,
+                            ),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        )
+                    ),
+                    SizedBox(width: 9,),
+                    const Text(
+                      '이메일로 문의 답변 받기',
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.21,
+                        color: AppColors.black900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_emailReply) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 36,
+                child: TextField(
+                  controller: _emailController,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.23,
+                    color: AppColors.black900,
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: '문의에 대해 답변 받으실 이메일을 입력해주세요.',
+                    hintStyle: const TextStyle(
+                      fontSize: 13,
+                      height: 1.23,
+                      color: AppColors.black500,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(color: AppColors.black300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(color: AppColors.black300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(color: AppColors.black300),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
             
             // 문의 제목
             Row(
