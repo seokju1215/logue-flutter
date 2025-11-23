@@ -74,7 +74,7 @@ class _UserNameEdit extends State<UserNameEdit> {
     _debounce?.cancel();
 
     if (validFormat && !hasSpace) {
-      _debounce = Timer(const Duration(milliseconds: 500), () async {
+      _debounce = Timer(const Duration(milliseconds: 50), () async {
         final taken = await _isUsernameTaken(text);
         if (!mounted) return;
         if (taken) {
