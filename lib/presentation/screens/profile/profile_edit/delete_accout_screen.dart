@@ -159,7 +159,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               child: Text(
                 '계정 탈퇴 유의사항 (반드시 확인해 주세요)\n\n'
                     '탈퇴 즉시 계정 및 모든 데이터가\n완전히 삭제되며 복구가 불가능합니다.\n\n'
-                    '탈퇴에 사용된 계정은 14일간\n재가입에 사용할 수 없습니다.',
+                    '탈퇴된 계정은 14일간\n재가입이 불가합니다.',
                 style: TextStyle(fontSize: 12, color: AppColors.black500),
                 textAlign: TextAlign.center,
               ),
