@@ -75,7 +75,7 @@ class DeleteAccountDialog extends StatelessWidget {
                     right: 8,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.close, size: 24, color: AppColors.black300),
+                      child: const Icon(Icons.close, size: 24, color: AppColors.black900),
                     ),
                   ),
                 ],
