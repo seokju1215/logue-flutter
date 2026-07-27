@@ -27,13 +27,16 @@ class AladinBookApi {
     );
 
     try {
+      print('📡 알라딘 API 요청 시작: QueryType=$queryType, Query=$query');
       final response = await http.get(url).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
+          print('⏱️ 알라딘 API 타임아웃: QueryType=$queryType, Query=$query');
           throw Exception('알라딘 API 요청이 시간 초과되었습니다.');
         },
       );
 
+      print('📡 알라딘 API 응답 상태: ${response.statusCode}');
       if (response.statusCode == 200) {
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         final List items = decoded['item'] ?? [];
@@ -56,9 +59,12 @@ class AladinBookApi {
 
         return detailedBooks.where((book) => book != null).cast<Map<String, dynamic>>().toList();
       } else {
+        print('❌ 알라딘 API 응답 에러: statusCode=${response.statusCode}, body=${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
         throw Exception('알라딘 API 요청 실패: ${response.statusCode}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ 알라딘 API 예외 발생: $e');
+      print('📋 스택 트레이스: $stackTrace');
       rethrow;
     }
   }
@@ -75,13 +81,16 @@ class AladinBookApi {
         '$_lookupUrl?ttbkey=$ttbKey&itemIdType=ISBN13&ItemId=$isbn13&output=js&Version=20131101&OptResult=toc,fulldescription',
       );
 
+      print('📡 알라딘 ItemLookUp API 요청: ISBN13=$isbn13');
       final lookupResponse = await http.get(lookupUrl).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
+          print('⏱️ 알라딘 ItemLookUp API 타임아웃: ISBN13=$isbn13');
           throw Exception('상세 정보 조회가 시간 초과되었습니다.');
         },
       );
       
+      print('📡 알라딘 ItemLookUp API 응답 상태: ${lookupResponse.statusCode}');
       if (lookupResponse.statusCode == 200) {
         final lookupDecoded = jsonDecode(utf8.decode(lookupResponse.bodyBytes));
         final List lookupItems = lookupDecoded['item'] ?? [];
@@ -96,8 +105,12 @@ class AladinBookApi {
             item['cover'] = detailedItem['cover'];
           }
         }
+      } else {
+        print('❌ 알라딘 ItemLookUp API 응답 에러: statusCode=${lookupResponse.statusCode}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ 알라딘 ItemLookUp API 실패: $e');
+      print('📋 스택 트레이스: $stackTrace');
       // 상세 정보 가져오기 실패 시 기본 정보만 사용
     }
 

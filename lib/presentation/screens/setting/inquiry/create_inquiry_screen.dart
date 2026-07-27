@@ -285,9 +285,9 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
               onTap: () {
                 // "없는 책 추가 요청"일 때만 체크박스 토글 가능
                 if (_selectedInquiryType == '없는 책 추가 요청') {
-                  setState(() {
-                    _emailReply = !_emailReply;
-                  });
+                setState(() {
+                  _emailReply = !_emailReply;
+                });
                 }
               },
               child: Container(
@@ -304,9 +304,9 @@ class _CreateInquiryScreenState extends State<CreateInquiryScreen> {
                             value: _emailReply,
                             onChanged: _selectedInquiryType == '없는 책 추가 요청' 
                                 ? (value) {
-                                    setState(() {
-                                      _emailReply = value ?? false;
-                                    });
+                              setState(() {
+                                _emailReply = value ?? false;
+                              });
                                   }
                                 : null, // 다른 문의 유형일 때는 비활성화
                             activeColor: AppColors.black900,

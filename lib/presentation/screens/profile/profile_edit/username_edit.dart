@@ -73,7 +73,7 @@ class _UserNameEdit extends State<UserNameEdit> {
 
     if (validFormat && !hasSpace) {
       // 이전 검증 요청이 있으면 취소하고 바로 새 검증 실행
-      setState(() {
+          setState(() {
         _isChecking = true;
       });
       _pendingCheck = _checkUsernameAvailability(text);

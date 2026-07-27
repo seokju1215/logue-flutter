@@ -103,6 +103,12 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         body: body,
       );
 
+      // Edge Function 응답 상태 코드 확인
+      debugPrint('📡 Edge Function 응답 상태 (인생책): ${res.status}');
+      if (res.status != 200) {
+        debugPrint('❌ Edge Function 에러 (인생책): status=${res.status}, data=${res.data}');
+      }
+
       final decoded = res.data as Map<String, dynamic>;
       final rawUsers = decoded['lifebooks'] ?? [];
       final seenIds = <String>{};
@@ -161,6 +167,12 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         body: body,
       );
 
+      // Edge Function 응답 상태 코드 확인
+      debugPrint('📡 Edge Function 응답 상태: ${res.status}');
+      if (res.status != 200) {
+        debugPrint('❌ Edge Function 에러: status=${res.status}, data=${res.data}');
+      }
+
       final decoded = res.data as Map<String, dynamic>;
       final bookData = decoded['book'];
       final authors = _extractAuthors(bookData['author']?.toString() ?? '');
@@ -184,7 +196,9 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
       });
 
       await _fetchOtherBooks(authors);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ 책 정보 가져오기 실패: $e');
+      debugPrint('📋 스택 트레이스: $stackTrace');
       setState(() {
         errorMessage = e.toString();
         isLoading = false;
@@ -245,7 +259,9 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         
         // 2️⃣ 알라딘 API에서 저자로 책 검색 (실패해도 DB 결과는 표시)
         try {
+          debugPrint('📚 알라딘 API 호출 시작 (저자: $author)');
           final aladinResults = await api.searchBooksByAuthor(author);
+          debugPrint('✅ 알라딘 API 호출 성공 (저자: $author, 결과: ${aladinResults.length}개)');
           
           // 알라딘 결과 추가 (DB에 이미 있는 ISBN과 겹치는 것은 제외)
           // search_screen과 동일한 로직: DB 결과의 ISBN과 겹치는 알라딘 책은 검색 결과에서 제외
@@ -263,8 +279,9 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
               seenTitles.add(title);
             }
           }
-        } catch (e) {
+        } catch (e, stackTrace) {
           debugPrint('❌ 알라딘 API 실패 (저자: $author): $e');
+          debugPrint('📋 알라딘 API 스택 트레이스: $stackTrace');
           // 알라딘 API 실패해도 DB 결과는 계속 사용
         }
         
