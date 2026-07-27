@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 .env
+.omc
 
 # Flutter/Dart/Pub
 .dart_tool/
